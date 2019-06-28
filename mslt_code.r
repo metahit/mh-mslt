@@ -38,7 +38,7 @@ options(scipen=999)
 
 # ---- chunk-1 ----
 
-source("MSLT/code/functions.R")
+source("code/functions.R")
 
 ## AVOID HARDCODING NAMES
 

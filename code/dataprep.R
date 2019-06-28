@@ -15,7 +15,9 @@ i_sex <- c("male", "female")
 
 ## Source functions
 
-source("MSLT/code/functions.R")
+getwd()
+
+source("code/functions.R")
 
 # ---- chunk-1 ----
 
@@ -28,13 +30,13 @@ source("MSLT/code/functions.R")
 
 ## Defining folder where the data is stored (stored externally in my dropbox as the GBD files are large)
 
-data_folder <- "C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017"
+data_folder <- "C:/Users/Bele/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017"
 temp_folder <- paste0(data_folder,"/temp") 
 result_folder <- paste0(data_folder,"/final")
 gbdfile_name <- "/IHME-GBD_2017_DATA-f849372f-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
 
 ## Next two lines defines locations that will be extracted. 
-LGAs <- unlist(read.csv("MSLT/data/gbd/LGAs to be extracted.csv")[,2]) # CREATE FILE FOR YOUR LOCATIONS OF INTEREST, HERE LOCALITIES IN CITY OF BRISTOL REGION
+LGAs <- unlist(read.csv("data/gbd/LGAs to be extracted.csv")[,2]) # CREATE FILE FOR YOUR LOCATIONS OF INTEREST, HERE LOCALITIES IN CITY OF BRISTOL REGION
 
 data_extracted <- NULL
 
@@ -219,7 +221,7 @@ gbd_df[[tolower(paste(dmeasure, "rate", disease_short_names$sname[d], sep = "_")
 
 # ------ Write csv file to process in Dismod/Disbayes-------- # TO PROCESS
 
-write_csv(gbd_df, "MSLT/data/city regions/bristol/dismod/input_data.csv")
+write_csv(gbd_df, "data/city regions/bristol/dismod/input_data.csv")
 
 
 
@@ -232,7 +234,7 @@ library(devtools)
 ## The code below generates age, sex and disease specific data frames to process with disbayes. 
 ## Chris Jackson generated the code for one dataset and I added a loop to do all diseases by age an sex. 
 
-in_data <- read.csv("MSLT/data/city regions/bristol/dismod/input_data.csv")
+in_data <- read.csv("data/city regions/bristol/dismod/input_data.csv")
 
 ## Check names to see that all data is available for calculations
 
@@ -243,14 +245,14 @@ index <- 1
 for (d in 1:nrow(disease_short_names)){
   for (sex_index in i_sex){
     
-    # Exclude all cause and road injuries
+    ## this is not excluding all causes and road injuries
     
-    if (disease_short_names$disease[d] == "All causes"){
+    if (disease_short_names$disease[d] == "All causes" && disease_short_names$disease[d] == "Road injuries"){
       # cat("\n") #Uncomment to see list
     }
+    # 
+    # if (disease_short_names$disease[d] == "Road injuries"){
     
-    if (disease_short_names$disease[d] == "Road injuries"){
-    }
     else {
     
     var_name <- paste0("rate_", disease_short_names$sname[d])
@@ -315,7 +317,7 @@ for (d in 1:nrow(disease_short_names)){
 }
 
 # ## Uncoment to check 
-# View(disbayes_input_list[[1]])
+# View(disbayes_input_list[[30]])
 
 
 ## Loop to save each data frame within disbayes_list (to check data inputs, but disbayes is run with list above)
@@ -326,11 +328,7 @@ for (d in 1:nrow(disease_short_names)){
     for (sex_index in i_sex){
       
       ##Save to csv
-      write_csv(disbayes_input_list[[index]], paste0("MSLT/data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".csv"))
-      
-      # ##Save to rda
-      # 
-      save(disbayes_input_list, file = paste0("MSLT/data/city regions/bristol/dismod/input/",disease_short_names$sname[d], "_", sex_index,".rda"))
+      write_csv(disbayes_input_list[[index]], paste0("data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".csv"))
       
       index <- index +1
     }
@@ -362,7 +360,7 @@ for (d in 1:nrow(disease_short_names)){
     }
     else {
       
-      data <- data.frame(read.csv(paste0("MSLT/data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".csv")))
+      data <- data.frame(read.csv(paste0("data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".csv")))
     
     # Exclude all cause and road injuries
     
@@ -380,7 +378,7 @@ for (d in 1:nrow(disease_short_names)){
       list(cf=rep(0.0056, datstan$nage)),
       list(cf=rep(0.0071, datstan$nage))
     )
-    gbdcf <- stan("MSLT/disbayes-master/gbdcf-unsmoothed.stan", data=datstan, init=inits)
+    gbdcf <- stan("disbayes-master/gbdcf-unsmoothed.stan", data=datstan, init=inits)
     
     ## Extract Summary statistics
     
@@ -402,6 +400,8 @@ for (d in 1:nrow(disease_short_names)){
     }
   }
 }
+
+View(disbayes_output_list[[14]])
 
 ## List of complete data for disbayes, it includes incidence from input calculations based on gbd and case fatality, estimated with disbayes
 ## The above disbayes_output code is ommiting some diseases, may be convergence issues, to check with Chris. 
@@ -465,3 +465,7 @@ disease_life_table_input <- disease_life_table_input[1:202,]
 
 
 View(disease_life_table_input)
+
+
+write.csv(disease_life_table_input, "data/city regions/bristol/disease_input_data.csv")
+
