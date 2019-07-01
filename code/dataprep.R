@@ -3,7 +3,10 @@
 
 # ---- chunk-intro ----
 
-## Define parameters
+## City regions, prepare a dataset for each of them
+
+
+## Define parameters (start with Bristol)
 
 localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somerset', 'South Gloucestershire')
 
