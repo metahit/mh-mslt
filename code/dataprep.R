@@ -1,12 +1,32 @@
 
 ## Create R Markdown for data preparation
+## ADD ROAD TRAUMA DATA (MORTALITY AND YLD RATES TO MASTER DATAFRAME)
+## ADD LRI MORTALITY AND YLDS RATES TO MASTER DATAFRAME
+
 
 # ---- chunk-intro ----
 
-## City regions, prepare a dataset for each of them
+## City regions, prepare a dataset for each of them (THIS SHOULD LOOK UP IN ANNA'S LOOK UP TABLE, IN DIFFERENT REPOSITORY, HOW DO WE CONNECT?)
+
+# Sheffield City Region Combined Authority: Barnsley, Doncaster, Rotherham, Sheffield.
+# 
+# North East Combined Authority: County Durham, Gateshead, Newcastle upon Tyne, North Tyneside, Northumberland, South Tyneside, Sunderland.
+# 
+# Greater Manchester Combined Authority: Bolton, Bury, Manchester, Oldham, Rochdale, Salford, Stockport, Tameside, Trafford, Wigan.
+# 
+# Liverpool City Region Combined Authority: Halton, Knowsley, Liverpool, St. Helens, Sefton, Wirral.
+# 
+# West Yorkshire Combined Authority: Bradford, Calderdale, Kirklees, Leeds, Wakefield.
+# 
+# Bristol: Bath and North East Somerset, City of Bristol, North Somerset, South Gloucestershire.
+# 
+# Nottingham: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Nottingham, Newark and Sherwood, Rushcliffe.
+# 
+# West Midlands Combined Authority: Birmingham, Coventry, Dudley, Sandwell, Solihull, Walsall, Wolverhampton.
 
 
-## Define parameters (start with Bristol)
+## ALI TO HELP WITH BEST APPROACH TO THIS. 
+## Define parameters (start with Bristol). THIS SHOULD BE MATCH WITH https://github.com/metahit/mh-execute/blob/master/inputs/mh_regions_lad_lookup.csv
 
 localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somerset', 'South Gloucestershire')
 
@@ -372,7 +392,8 @@ for (d in 1:nrow(disease_short_names)){
     ## The saved data for input may be deleted or not, perhaps useful to check errors. 
     
     # data.frame(read.csv(paste0("MSLT/data/city regions/bristol/dismod/input/", d_index, "_", sex_index, ".csv")))
-    
+    ## Why these priors? (inits?)
+    ## Optiomization procresses from Dismod, can we incoporporate
     
     datstan <- c(as.list(data), nage=nrow(data))
     inits <- list(
@@ -472,3 +493,4 @@ View(disease_life_table_input)
 
 write.csv(disease_life_table_input, "data/city regions/bristol/disease_input_data.csv")
 
+disbayes_output_list[[13]]$sex_disease

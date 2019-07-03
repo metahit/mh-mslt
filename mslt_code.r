@@ -1,11 +1,11 @@
 ##### To do
-
-# Add remission if we decide to use it for cancers
-# Use disbayes to test dismod alternative, also mslt alternative? same principle. 
+View(disease_life_table_list_bl[[1]])
+View(general_life_table_list_bl[[1]])
+disease_short_names
+# Add remission if we decide to use it for cancers: wont be added
+# Use disbayes to test dismod alternative: compare couple of disease processed in dismod and disbayes
 # move all parameters to the top of the code (e.g. disease life table generation)
-# move disbayes to mslt.code
-# move all parameters to the top of the table
-# Include uncertainty parameters from disbayes estimates in model
+
 # Prevalence estimates in the GBD assume remission after 10 years. If we do not assume remission, then we need to: 1) use only incidence and mortlaity
 # for cancers estimates in Dismod; 2) Deflate DW by the ratio of Dismod estimated prevalence and GBD prevalence. 
 # From GBD appendix: "Prevalence for all cancers is estimated for a maximum of ten years after incidence, as in GBD 2013-2016. Prevalence beyond the
@@ -15,6 +15,10 @@
 # Do a set of Dismod outputs with remission for cancers to test the difference in results. 
 # use yml to define variables to facilitate reuse of code. See Carls suggestions.config.yml
 # Get all data from the GBD
+# add diabetes do CVD loop
+# add road injuries spreadsheet and data (by victim type)
+# apply RRs correction methods (see Jan's 2010 paper, this is what rr erzats function does)
+# Modelling of lower respiratory infecito
 getwd()
 # Change to own wd
 
