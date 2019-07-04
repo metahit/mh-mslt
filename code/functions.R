@@ -36,7 +36,7 @@ SortGbdInput <- function(in_data, in_year, in_locality) {
 ## Selects year and localities from GBD data frame dowloaded from: http://ghdx.healthdata.org/gbd-results-tool
 
 # --- RunLocDf ---- TRY TO REMOVE LIST AND USE VECOTR VARIABLES
-# 
+# Test code with some data
 # i_data <- gbd_data_localities_raw[[1]]
 
 
@@ -60,6 +60,7 @@ RunLocDf <- function(i_data) {
           
           
           if (nrow(idf) > 0){
+            
             
             population_numbers <- filter(idf, metric == "Number") %>% select("val")
             
@@ -118,6 +119,8 @@ RunLocDf <- function(i_data) {
   }
   return(gbd_df)
 }
+
+
 
 
 ## Sorts out each locality data frame into a list with column names for age, sex, and each cause and disease combination and calculates population numbers.

@@ -36,6 +36,7 @@ require(ggplot2)
 require(gridExtra)
 require(pillar)
 require(devtools)
+require(janitor)
 
 # rm (list = ls())
 options(scipen=999)

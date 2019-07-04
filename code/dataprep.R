@@ -28,6 +28,24 @@
 ## ALI TO HELP WITH BEST APPROACH TO THIS. 
 ## Define parameters (start with Bristol). THIS SHOULD BE MATCH WITH https://github.com/metahit/mh-execute/blob/master/inputs/mh_regions_lad_lookup.csv
 
+## Look up table for city regions 
+
+look_up_table <- read.csv("C:/Users/Bele/Dropbox/Collaborations/James Woodcock/mh-execute/inputs/mh_regions_lad_lookup.csv")
+
+city_regions <- data.frame(unique(look_up_table$cityregion))
+city_regions <- city_regions[2:10,]
+
+## Dataframe with local goverment areas within each city region
+
+local_goverment_areas <-  look_up_table %>% filter(look_up_table$cityregion != "")
+
+
+## Here we should have a loop to do all the processing in a loop for each of the localities (CHECK WITH ALI)
+
+city_region <- bristol
+
+## BELOW IS NOT CONNECTED TO ABOVE CODE
+
 localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somerset', 'South Gloucestershire')
 
 year <- 2017
@@ -44,6 +62,8 @@ source("code/functions.R")
 
 # ---- chunk-1 ----
 
+## GBD MISSING DATA FOR NOTTINGHAM: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Newark and Sherwood, Rushcliffe and City of London. 
+
 ## Get data from GBD dowloaded data for England (all localities)
 ## Use code developed by Marko Tainio to extract zip files
 ## Created in February-March 2019 by Marko Tainio (modified by Belen Zapata June 2019 for Metahit project)
@@ -56,14 +76,14 @@ source("code/functions.R")
 data_folder <- "C:/Users/Bele/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017"
 temp_folder <- paste0(data_folder,"/temp") 
 result_folder <- paste0(data_folder,"/final")
-gbdfile_name <- "/IHME-GBD_2017_DATA-f849372f-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
+gbdfile_name <- "/IHME-GBD_2017_DATA-0a504496-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
 
 ## Next two lines defines locations that will be extracted. 
 LGAs <- unlist(read.csv("data/gbd/LGAs to be extracted.csv")[,2]) # CREATE FILE FOR YOUR LOCATIONS OF INTEREST, HERE LOCALITIES IN CITY OF BRISTOL REGION
 
 data_extracted <- NULL
 
-for (i in 1:18) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
+for (i in 1:40) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
   file_number <- i
   
   file_select <- paste0(data_folder,gbdfile_name, i,".zip")
@@ -114,9 +134,9 @@ names(gbd_input) = gsub(pattern = "_name", replacement = "", x = names(gbd_input
 
 gbd_input <- select(gbd_input,-contains("id"))
 
-### Only keep rows for Local Goverment Area of Interest
+### Only keep rows for Local Goverment Area of Interest and change factors to characters, otherwise matching parameters does not work (e.g. localities is a character)
 
-gbd_input <- filter(gbd_input, location %in% localities)
+gbd_input <- filter(gbd_input, location %in% localities) %>% mutate_if(is.factor, as.character)
 
 ### We first derive populaiton and cases numbers (e.g. all cause mortality) for each locality and then aggregate at the City Region level. 
 ### Loop to create a raw data set for 2017 for each of the localities to then process to get requiered data for disbayes/dismod. 
@@ -133,6 +153,10 @@ for (l in localities){
   }
 }
 
+## Save file as example for Ali
+
+write.csv(gbd_data_localities_raw[[1]], "data/city regions/example_RunLocDF.csv" )
+
 ## Uncomment to check selection
 # View(gbd_data_localities_raw[[1]])
 
@@ -140,8 +164,15 @@ for (l in localities){
 
 gbd_loc_data_processed <- lapply(gbd_data_localities_raw, RunLocDf)
 
-## Uncomment to check selection
-# View(gbd_loc_data_processed[[1]])
+## Ali, here I am running the code for one locality with the example data, and it does not calculate population for younger ages
+
+test_gbd_processed <- RunLocDf(read.csv("data/city regions/example_RunLocDF.csv"))
+
+
+## Uncomment to check selection.
+
+## NO POPULATION NUMBERS FOR UNDER 15, CAUSES PROBLEMS WITH DISMOD CALCULATIONS. 
+# View(gbd_loc_data_processed[[4]])
 
 ## Add up all localities in a data frame for Bristol City Region: population, causes-measures rates and numbers. 
 
@@ -173,7 +204,7 @@ gbd_Bristol_2017 <- gbd_Bristol %>%
   separate(sex_age_cat, c("sex", "age"), "_")
 
 
-names(gbd_Bristol_2017)
+# names(gbd_Bristol_2017)
 
 # ------------------- Dismod/Disbayes input data set ---------------------------#
 
@@ -340,7 +371,7 @@ for (d in 1:nrow(disease_short_names)){
 }
 
 # ## Uncoment to check 
-# View(disbayes_input_list[[30]])
+# View(disbayes_input_list[[1]])
 
 
 ## Loop to save each data frame within disbayes_list (to check data inputs, but disbayes is run with list above)
