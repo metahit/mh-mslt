@@ -35,10 +35,7 @@ SortGbdInput <- function(in_data, in_year, in_locality) {
 
 ## Selects year and localities from GBD data frame dowloaded from: http://ghdx.healthdata.org/gbd-results-tool
 
-# --- RunLocDf ---- TRY TO REMOVE LIST AND USE VECOTR VARIABLES
-# Test code with some data
-# i_data <- gbd_data_localities_raw[[1]]
-
+# --- RunLocDf ----
 
 RunLocDf <- function(i_data) {
   
@@ -61,19 +58,62 @@ RunLocDf <- function(i_data) {
           
           if (nrow(idf) > 0){
             
-            
             population_numbers <- filter(idf, metric == "Number") %>% select("val")
             
-            idf_rate <- filter(idf, metric == "Rate") %>% select("val")
+            idf_rate <- filter(idf, metric == "Rate") %>% select("val") 
             
-            idf$population_number <- (100000 * population_numbers$val) / idf_rate$val
+            current_idf_rate <- idf_rate
             
-            idf$rate_per_1 <- round(idf_rate$val / 100000, 6)
+            current_population_numbers <- population_numbers
+            
+            
+            idf$population_number <- 0
+            
+            if (idf_rate$val != 0 && population_numbers$val != 0)
+              idf$population_number <- (100000 * population_numbers$val) / idf_rate$val
+            
+            else{
+              
+              current_idf_rate <- idf_rate
+              
+              current_population_numbers <- population_numbers
+              
+              idf <- filter(i_data, sex == gender & age == agroup & measure == dmeasure & val > 0) 
+              
+              idf <- filter(idf, cause == unique(idf$cause)[1])
+              
+              idf$cause <- dn
+              
+              population_numbers <- filter(idf, metric == "Number") %>% select("val")
+              
+              idf_rate <- filter(idf, metric == "Rate") %>% select("val") 
+              
+              # browser()
+              
+              idf$population_number <- 0
+              
+              if (idf_rate$val != 0 && population_numbers$val != 0)
+                idf$population_number <- (100000 * population_numbers$val) / idf_rate$val
+              
+            }
+            
+            # if (is.nan(idf$population_number)){
+            #   browser()
+            # }
+            
+            idf$rate_per_1 <- round(current_idf_rate$val / 100000, 6)
+          
             
             idf[[tolower(paste(dmeasure, "rate", disease_short_names$sname[d], sep = "_"))]] <- idf$rate_per_1
             
-            idf[[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]] <- population_numbers$val
+            idf[[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$val
             
+            #print(unique(i_data$age)[ag])
+            #print(gender)
+            
+            # if (ag == "Under 5" && gender == "Female"){
+            #   browser()
+            # }
             #idf$rate_per_1 <- NULL
             
             idf <- filter(idf, metric == "Number")
@@ -111,6 +151,7 @@ RunLocDf <- function(i_data) {
         # browser()
         age_sex_df[setdiff(names(gbd_df), names(age_sex_df))] <- 0
         gbd_df[setdiff(names(age_sex_df), names(gbd_df))] <- 0
+        
         gbd_df <- rbind(gbd_df, age_sex_df)
         
         
@@ -119,6 +160,7 @@ RunLocDf <- function(i_data) {
   }
   return(gbd_df)
 }
+
 
 
 

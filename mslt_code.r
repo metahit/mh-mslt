@@ -1,7 +1,5 @@
 ##### To do
-View(disease_life_table_list_bl[[1]])
-View(general_life_table_list_bl[[1]])
-disease_short_names
+
 # Add remission if we decide to use it for cancers: wont be added
 # Use disbayes to test dismod alternative: compare couple of disease processed in dismod and disbayes
 # move all parameters to the top of the code (e.g. disease life table generation)

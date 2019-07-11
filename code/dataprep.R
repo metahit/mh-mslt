@@ -3,7 +3,6 @@
 ## ADD ROAD TRAUMA DATA (MORTALITY AND YLD RATES TO MASTER DATAFRAME)
 ## ADD LRI MORTALITY AND YLDS RATES TO MASTER DATAFRAME
 
-
 # ---- chunk-intro ----
 
 ## City regions, prepare a dataset for each of them (THIS SHOULD LOOK UP IN ANNA'S LOOK UP TABLE, IN DIFFERENT REPOSITORY, HOW DO WE CONNECT?)
@@ -100,7 +99,6 @@ for (i in 1:40) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT 
 unlink(paste0(temp_folder), recursive = TRUE)
 
 
-
 # ---- Chunk 2 ----
 
 ## Define measure (e.g. deaths) and cause parameters (e.g. all causes, breast cancer) (this is to avoid hard coding the parameters)
@@ -153,21 +151,20 @@ for (l in localities){
   }
 }
 
-## Save file as example for Ali
-
-write.csv(gbd_data_localities_raw[[1]], "data/city regions/example_RunLocDF.csv" )
-
-## Uncomment to check selection
-# View(gbd_data_localities_raw[[1]])
 
 ### Prepare data set per locality to calculate population numbers (I used lapply, may change for loop)
 
 gbd_loc_data_processed <- lapply(gbd_data_localities_raw, RunLocDf)
 
-## Ali, here I am running the code for one locality with the example data, and it does not calculate population for younger ages
+# View(gbd_loc_data_processed[[2]])
 
-test_gbd_processed <- RunLocDf(read.csv("data/city regions/example_RunLocDF.csv"))
+## Check calculated population numbers (differences saved in "data/city regions/population_checks/nomis_2019_07_10_111927.xlsx")
 
+# pop_bristol_city_total <- sum(gbd_loc_data_processed[[1]]$population_number)
+# pop_bath_total <- sum(gbd_loc_data_processed[[2]]$population_number)
+# pop_northsomerset_total <- sum(gbd_loc_data_processed[[3]]$population_number)
+# pop_south_glou_total <- sum(gbd_loc_data_processed[[4]]$population_number)
+# 
 
 ## Uncomment to check selection.
 
@@ -256,14 +253,6 @@ for (dm in 1:length(disease_measures_list)){
     dn <- disease_short_names$disease[d]
     dmeasure <- disease_measures_list[dm] %>% as.character()
 
-    ## If else will depend on final diseases
-    # # Exclude hdd and incidence and deaths and mdd (not included here)
-    # if((dm == "incidence" && dn == "hhd") || (dm == "deaths" && dn == "mdd" ) ){
-    #   # cat("\n") # Uncomment to see list
-    # }
-    # else {
-
-
 gbd_df[[tolower(paste(dmeasure, "rate", disease_short_names$sname[d], sep = "_"))]] <- gbd_df[[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]]/gbd_df$population_number
 
   }
@@ -288,7 +277,7 @@ library(devtools)
 ## The code below generates age, sex and disease specific data frames to process with disbayes. 
 ## Chris Jackson generated the code for one dataset and I added a loop to do all diseases by age an sex. 
 
-in_data <- read.csv("data/city regions/bristol/dismod/input_data.csv")
+in_data <- read_csv("data/city regions/bristol/dismod/input_data.csv")
 
 ## Check names to see that all data is available for calculations
 
@@ -299,14 +288,16 @@ index <- 1
 for (d in 1:nrow(disease_short_names)){
   for (sex_index in i_sex){
     
-    ## this is not excluding all causes and road injuries
-    
-    if (disease_short_names$disease[d] == "All causes" && disease_short_names$disease[d] == "Road injuries"){
+  
+    ## Write function to ignore short names that do not need processing
+
+    if (disease_short_names$sname[d] == "Allc" || disease_short_names$sname[d] == "Pdri"
+        || disease_short_names$sname[d] == "Cyri" || disease_short_names$sname[d] == "Mtri"
+        || disease_short_names$sname[d] == "Mvri" || disease_short_names$sname[d] == "Otri"
+        || disease_short_names$sname[d] == "Lwri") {
       # cat("\n") #Uncomment to see list
     }
-    # 
-    # if (disease_short_names$disease[d] == "Road injuries"){
-    
+
     else {
     
     var_name <- paste0("rate_", disease_short_names$sname[d])
@@ -327,7 +318,7 @@ for (d in 1:nrow(disease_short_names)){
     
     ## We assume remission is 0
 
-    disbayes_input_list[[index]]$rem <- 0
+    disbayes_input_list[[index]]$rem <- as.integer(0)
 
     ## create denominator for disbayes code
 
@@ -346,7 +337,8 @@ for (d in 1:nrow(disease_short_names)){
 
 
     outage <- 0:100  # assume inc/prev/mort same in each year within a five-year age group
-    ind <- findInterval(outage, disbayes_input_list[[index]]$agegr)
+    
+    ind <- findInterval(outage, disbayes_input_list[[index]]$agegrp)
     disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
     disbayes_input_list[[index]]$age <- outage
 
@@ -370,8 +362,8 @@ for (d in 1:nrow(disease_short_names)){
   }
 }
 
-# ## Uncoment to check 
-# View(disbayes_input_list[[1]])
+# ## Uncoment to check (use as input for disbayes, check that not all diseases are here)
+# View(disbayes_input_list[[2]])
 
 
 ## Loop to save each data frame within disbayes_list (to check data inputs, but disbayes is run with list above)
@@ -381,11 +373,23 @@ index <- 1
 for (d in 1:nrow(disease_short_names)){
     for (sex_index in i_sex){
       
+      ## replace with function for disease/injuries that we do not need to model
+      
+      if (disease_short_names$sname[d] == "Allc" || disease_short_names$sname[d] == "Pdri"
+          || disease_short_names$sname[d] == "Cyri" || disease_short_names$sname[d] == "Mtri"
+          || disease_short_names$sname[d] == "Mvri" || disease_short_names$sname[d] == "Otri"
+          || disease_short_names$sname[d] == "Lwri") {
+        # cat("\n") #Uncomment to see list
+      }
+      
+      else {
+      
       ##Save to csv
-      write_csv(disbayes_input_list[[index]], paste0("data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".csv"))
+      saveRDS(disbayes_input_list[[index]], paste0("data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".rds"))
       
       index <- index +1
     }
+  }
 }
 
 ## Run Disbayes
@@ -394,10 +398,33 @@ for (d in 1:nrow(disease_short_names)){
 ## ALL CAUSE SHOULD BE EXCLUDED
 ## ADD disease names column, otherwise, no info on which diseases
 
+
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
+
+## test disbayes with one data set
+
+####
+
+test_disbayes2 <- readRDS("data/city regions/bristol/dismod/input/Ishd_female.rds")
+
+test_disbayes <- ihdlondon
+
+datstan <- c(as.list(test_disbayes2), nage=nrow(test_disbayes2))
+inits <- list(
+  list(cf=rep(0.0101, datstan$nage)),
+  list(cf=rep(0.0201, datstan$nage)),
+  list(cf=rep(0.0056, datstan$nage)),
+  list(cf=rep(0.0071, datstan$nage))
+)
+
+gbdcf_test <- stan("disbayes-master/gbdcf-unsmoothed.stan", data=datstan, init=inits)
+
+gbdcf_test_summary <- summary(gbdcf_test)$summary
+
+#####
 
 disbayes_output_list <- list()
 index <- 1
@@ -405,16 +432,18 @@ index <- 1
 for (d in 1:nrow(disease_short_names)){
   for (sex_index in i_sex){
     
-    # data <- disbayes_input_list[[index]]
+    data <- disbayes_input_list[[index]]
     
-        if (disease_short_names$disease[d] == "All causes"){
+    if (disease_short_names$sname[d] == "Allc" || disease_short_names$sname[d] == "Pdri"
+        || disease_short_names$sname[d] == "Cyri" || disease_short_names$sname[d] == "Mtri"
+        || disease_short_names$sname[d] == "Mvri" || disease_short_names$sname[d] == "Otri"
+        || disease_short_names$sname[d] == "Lwri") {
       # cat("\n") #Uncomment to see list
     }
-    if (disease_short_names$disease[d] == "Road injuries"){
-    }
+    
     else {
-      
-      data <- data.frame(read.csv(paste0("data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".csv")))
+      # 
+      # data <- data.frame(read_csv(paste0("data/city regions/bristol/dismod/input/", disease_short_names$sname[d], "_", sex_index, ".csv")))
     
     # Exclude all cause and road injuries
     
