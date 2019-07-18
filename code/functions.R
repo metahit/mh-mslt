@@ -162,6 +162,19 @@ RunLocDf <- function(i_data) {
 }
 
 
+# --- InterFunc ---
+
+InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
+
+# --- IsNanDataFrame ---
+
+IsNanDataFrame <- function(x)
+  do.call(cbind, lapply(x, is.nan))
+
+# --- IsInfDataFrame ---
+
+IsInfDataFrame <- function(x)
+  do.call(cbind, lapply(x, is.infinite))
 
 
 

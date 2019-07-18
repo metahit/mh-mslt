@@ -47,6 +47,8 @@ source("code/functions.R")
 
 # ---- chunk 2 ----
 
+### MOVE TO DATA PREPARATION
+
 # ---------------------- Creating MSLT df ---------------------------
 
 # Start with gbd dataframe generated in dataprep.R script
@@ -290,6 +292,8 @@ mslt_df <- replace(mslt_df, is.na(mslt_df), 0)
 # --------------------add incidence and case fatality ----------------- #
 
 
+## ABOVE MOVED TO DATA PREP (WHEN WORKING MOVE FROM HERE)
+
 # ---- chunk-6 ---- CODE TO PICK UP DIRECTLY FROM dismod OUTPUT EXCEL, temporarly I copied and paste. Discuss with Alan and Carl
 
 ## Use dismod output and add to mslt_df (UPDATE)
@@ -339,6 +343,7 @@ i_disease
   
 ## Develop a code to just keep DW included in i_disease
 
+## check
 mslt_df <- select(mslt_df, -c("dw_adj_rdin", "dw_adj_lwri", "dw_adj_allc", "dw_adj_adaod", "dw_adj_dmt2", "dw_adj_tbalc", "dw_adj_brsc", "dw_adj_utrc"))
 
 idata <- select(idata, -c(age, sex))
