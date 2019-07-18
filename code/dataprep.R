@@ -543,7 +543,7 @@ disease_life_table_input <- diseaseMeasuresAge %>%
   left_join(diseaseMeasuresCaseFatality) %>%
   left_join(diseaseMeasuresIncidence)
 
-## Only keeping first 202 rows, the rest just repeat the same observations. 
+## Only keeping first 202 rows, the rest just repeat the same observations. (Include prevalence and incidence outcomes)
 
 disease_life_table_input <- disease_life_table_input[1:202,]
 
