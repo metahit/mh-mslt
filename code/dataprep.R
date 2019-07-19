@@ -246,6 +246,31 @@ gbd_df[[tolower(paste(dmeasure, "rate", disease_short_names$sname[d], sep = "_")
 
 write_csv(gbd_df, "data/city regions/bristol/dismod/input_data.csv")
 
+
+# ---- chunk-2.5: Disability weights ----
+
+all_ylds_df <- dplyr::select(gbd_df, starts_with("ylds (years lived with disability)_number"))
+
+
+## Adjust all cause ylds for included diseases and injuries (exclude all cause )
+
+gbd_df[["allc_ylds_adj_rate_1"]] <- (gbd_df$`ylds (years lived with disability)_number_allc`  - rowSums(select(all_ylds_df, -`ylds (years lived with disability)_number_allc`))) / 
+  gbd_df$population_number
+
+# ------------------- DWs ---------------------------#
+
+disease_short_names <- mutate_all(disease_short_names, funs(tolower))
+
+for (i in 1:nrow(disease_short_names)){
+  gbd_df[[paste0("dw_adj_", disease_short_names$sname[i])]] <- 
+    (gbd_df[[paste0("ylds (years lived with disability)_number_", disease_short_names$sname[i])]] /
+       gbd_df[[paste0("prevalence_number_", disease_short_names$sname[i])]]) /
+    ( 1 - gbd_df[["allc_ylds_adj_rate_1"]])
+}
+
+gbd_df[mapply(is.infinite, gbd_df)] <- 0
+gbd_df <- replace(gbd_df, is.na(gbd_df), 0)
+
 # ---- chunk-3: Disbayes ----
 
 ## Disbayes data preparation
@@ -463,45 +488,12 @@ write.csv(disease_life_table_input, "data/city regions/bristol/disease_input_dat
 
 ## All data requierements to be procecessed in the mslt_code
 ## STILL NEED TO INCLUDE TRENDS IN DISEASES
-
-# ------------------- YLDs ---------------------------
-
-all_ylds_df <- dplyr::select(gbd_df, starts_with("ylds (years lived with disability)_number"))
-
-
-## Adjust all cause ylds for included diseases and injuries (exclude all cause )
-
-gbd_df[["allc_ylds_adj_rate_1"]] <- (gbd_df$`ylds (years lived with disability)_number_allc`  - rowSums(select(all_ylds_df, -`ylds (years lived with disability)_number_allc`))) / 
-  gbd_df$population_number
-
-# ------------------- DWs ---------------------------#
-
-disease_short_names <- mutate_all(disease_short_names, funs(tolower))
-
-for (i in 1:nrow(disease_short_names)){
-  gbd_df[[paste0("dw_adj_", disease_short_names$sname[i])]] <- 
-    (gbd_df[[paste0("ylds (years lived with disability)_number_", disease_short_names$sname[i])]] /
-       gbd_df[[paste0("prevalence_number_", disease_short_names$sname[i])]]) /
-    ( 1 - gbd_df[["allc_ylds_adj_rate_1"]])
-}
-
-# Check that dws were created
-# names(gbd_df)
-# View(gbd_df)
-
-# ------------------- Replace Nan and Inf numbers -------------------- #
-
-gbd_df[mapply(is.infinite, gbd_df)] <- 0
-gbd_df <- replace(gbd_df, is.na(gbd_df), 0)
-
-# ------------------- MSLT frame --------------------------- #
+## GET POPULATION DATA FROM SYNTHETIC POPULATION
 
 mslt_df <- data.frame(age = rep(c(0:100), 2), sex = append(rep("male", 101), 
                                                            rep("female", 101)))
 
-# ------------------- Add population numbers --------------------------- #
-
-## Model in five-year age cohorts, simulated from mid-age in cohort
+## Add age groups for cohort modelling
 
 mslt_df$age_cat [mslt_df$age == 2] <- 2
 mslt_df$age_cat [mslt_df$age == 7] <- 7
@@ -524,16 +516,27 @@ mslt_df$age_cat [mslt_df$age == 87] <- 87
 mslt_df$age_cat [mslt_df$age == 92] <- 92
 mslt_df$age_cat [mslt_df$age == 97] <- 97
 
+## Add population numbers (here we can choose, from GBD derived or directly from synthetic population)
+
 mslt_df$sex_age_cat <- paste(mslt_df$sex,mslt_df$age, sep = "_"  )
+
+## GBD population
 
 gbd_popn_df <- select(gbd_df, population_number, sex_age_cat)
 
+## Synthetic population (TO DO)
+
+synthetic_pop <- read_csv("data/population/pop_england_2017.csv")
+
+
 mslt_df <- left_join(mslt_df, gbd_popn_df, by = "sex_age_cat")
 
+# ---- chunk-6.1: Interpolate rates ----
 
-### Interpolate dws rate from 5-yr rates to 1-yr rates
+## Data has to be interpolated from 5-year age groups to 1-year age groups.
 
-## Add variable names to data frame
+## Create variable names.
+
 for (i in 1:nrow(disease_short_names)){
   
   if (disease_short_names$is_not_dis[i] == 0){
@@ -545,7 +548,7 @@ for (i in 1:nrow(disease_short_names)){
   }
 }
 
-## interpolate and add interpolated numbers to data frame mslt
+## Interpolate dw rates
 
 for (i in 1:nrow(disease_short_names)){
   for(sex_index in i_sex) {
@@ -553,9 +556,6 @@ for (i in 1:nrow(disease_short_names)){
       
       if (disease_short_names$is_not_dis[i] == 0){
         
-        #browser()
-        # i <- 2
-        # sex_index <- "female"
         var_name <- paste0(var, '_', disease_short_names$sname[i])
         
         data <- filter(gbd_df, sex == sex_index) %>% select(age, sex, age_cat, starts_with(var_name))
@@ -577,20 +577,19 @@ for (i in 1:nrow(disease_short_names)){
         interpolated[IsNanDataFrame(interpolated)] <- 0
         
         interpolated[IsInfDataFrame(interpolated)] <- 0
-        
-        #if (var_name %in% colnames(mslt_df)){
           
           mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
                   & mslt_df$sex == sex_index, ][[var_name]] <- interpolated[[var_name]]
-        #}
+        
       }
       
     }
   }
 }
 
-## Interpolate road injuries and all cause deaths and ylds
-## Add variable names to mslt data frame
+## Interpolate all cause mortality and pylds and road injuries
+
+### Create variable names
 
 for (i in 1:nrow(disease_short_names)){
   
@@ -610,19 +609,13 @@ for (i in 1:nrow(disease_short_names)){
 
 for (i in 1:nrow(disease_short_names)){
   for(sex_index in i_sex) {
-    for (var in c('deaths_rate')){#, 'deaths_rate', 'ylds (years lived with disability)_rate')){
-      
+    for (var in c('deaths_rate')) {
       if (disease_short_names$is_not_dis[i] == 1){
         
-        #browser()
-        # i <- 2
-        # sex_index <- "female"
         var_name1 <- paste0(var, '_', disease_short_names$sname[i])
         
         data <- filter(gbd_df, sex == sex_index) %>% select(age, sex, age_cat, starts_with(var_name1))
-        
-        
-        
+
         x <- data$age_cat
         y <- log(data[[var_name1]])
         
@@ -643,19 +636,16 @@ for (i in 1:nrow(disease_short_names)){
         
         mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
                 & mslt_df$sex == sex_index, ][[var_name1]] <- interpolated[[var_name1]]
-        #}
-      }
-      
+      }     
     }
   }
 }
-
 
 ### YLDs
 
 for (i in 1:nrow(disease_short_names)){
   for(sex_index in i_sex) {
-    for (var in c("ylds (years lived with disability)_rate")){#, 'deaths_rate', 'ylds (years lived with disability)_rate')){
+    for (var in c("ylds (years lived with disability)_rate")){
 
       if (disease_short_names$is_not_dis[i] == 1){
 
@@ -695,8 +685,12 @@ for (i in 1:nrow(disease_short_names)){
 names(mslt_df)[names(mslt_df) == "deaths_rate_allc"] <- "mx"
 names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_allc"] <- "pyld_rate"
 
-# --------------------add incidence and case fatality to mslt data frame ----------------- #
+# add incidence, case fatality and prevalence to mslt data frame 
 
 disease_life_table_input <- select(disease_life_table_input, -c(age, sex))
 
 mslt_df <- left_join(mslt_df, disease_life_table_input, by = "sex_age_cat")
+
+## ADJUST DISABILTIY WEIGHTS WITH DISBAYES GENERATED OUTCOMES
+
+

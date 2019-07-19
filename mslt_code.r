@@ -47,22 +47,6 @@ source("code/functions.R")
 
 # ---- chunk 2 ----
 
-
-
-idata <- disease_life_table_input
-
-# # Add age_sex category to match with mslt_df
-# 
-# idata$sex_age_cat <- paste(idata$sex,idata$age, sep = "_"  )
-
-idata <- select(idata, -c(age, sex))
-
-mslt_df <- left_join(mslt_df, idata, by = "sex_age_cat")
-
-# View(mslt_df)
-
-# ---- chunk-7 ----
-
 # Create baseline life tables
 
 general_life_table_list_bl <- list()
@@ -79,7 +63,7 @@ for (age in i_age_cohort){
 }
 
 ## Uncommnet to check life table list
-View(general_life_table_list_bl[[2]])
+# View(general_life_table_list_bl[[2]])
 
 # ---- chunk-8 ----
 
