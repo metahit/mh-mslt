@@ -47,7 +47,7 @@ source("code/functions.R")
 
 # ---- chunk 2 ----
 
-# Create baseline life tables
+## Create baseline life tables
 
 general_life_table_list_bl <- list()
 
@@ -65,7 +65,7 @@ for (age in i_age_cohort){
 ## Uncommnet to check life table list
 # View(general_life_table_list_bl[[2]])
 
-# ---- chunk-8 ----
+# ---- chunk-2 ----
 
 ## Run disease life (here issue with diseases not generated in disbayes)
 
@@ -76,6 +76,9 @@ i_disease
 ## ALSO NEED TO DROP COLUMNS IN DATA FRAME FOR VARIABLES NOT INCLUDED IN DISEASE INPUT TABLE. USE idata
   
 ## Develop a code to just keep DW included in i_disease
+
+## ADD LOOP TO AVOID INJURIES AND ALL CAUSE MORTALITY
+## ADD DISEASE LOOP USING DISEASES CREATED VARIABLE
 
 ## check
 mslt_df <- select(mslt_df, -c("dw_adj_rdin", "dw_adj_lwri", "dw_adj_allc", "dw_adj_adaod", "dw_adj_dmt2", "dw_adj_tbalc", "dw_adj_brsc", "dw_adj_utrc"))
