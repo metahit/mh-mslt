@@ -21,6 +21,7 @@ getwd()
 # Change to own wd
 
 # ---- chunk-intro ----
+
 require(dplyr)
 require(tidyverse)
 require(knitr)
@@ -35,6 +36,7 @@ require(gridExtra)
 require(pillar)
 require(devtools)
 require(janitor)
+require(reshape2)
 
 # rm (list = ls())
 options(scipen=999)
@@ -45,7 +47,17 @@ source("code/functions.R")
 
 ## AVOID HARDCODING NAMES
 
-# ---- chunk 2 ----
+year <- 2017
+
+# year_trend <- 2007
+
+
+## ADD 15-19 age cat
+i_age_cohort <- c(22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
+
+i_sex <- c("male", "female")
+
+# ---- chunk-2 ----
 
 ## Create baseline life tables
 
@@ -63,64 +75,96 @@ for (age in i_age_cohort){
 }
 
 ## Uncommnet to check life table list
-# View(general_life_table_list_bl[[2]])
 
-# ---- chunk-2 ----
 
-## Run disease life (here issue with diseases not generated in disbayes)
+# ---- chunk-3 ----
 
-## WE HAVE TO DO THIS FOR NOW, AS DISBAYES IS NOT GENERATING OUTPUTS FOR ALL DISEASES, SO THE DISEASE_SHORT_NAMES VARIABLE IS NOT SUITABLE
-i_disease <- c(tolower(unique(diseaseMeasures$disease)))
-i_disease
-
-## ALSO NEED TO DROP COLUMNS IN DATA FRAME FOR VARIABLES NOT INCLUDED IN DISEASE INPUT TABLE. USE idata
-  
-## Develop a code to just keep DW included in i_disease
-
-## ADD LOOP TO AVOID INJURIES AND ALL CAUSE MORTALITY
-## ADD DISEASE LOOP USING DISEASES CREATED VARIABLE
-
-## check
-mslt_df <- select(mslt_df, -c("dw_adj_rdin", "dw_adj_lwri", "dw_adj_allc", "dw_adj_adaod", "dw_adj_dmt2", "dw_adj_tbalc", "dw_adj_brsc", "dw_adj_utrc"))
-
-idata <- select(idata, -c(age, sex))
+## Create basline disease life tables
 
 disease_life_table_list_bl <- list()
 index <- 1
 
 for (age in i_age_cohort){
   for (sex in i_sex){
-    for (disease in i_disease){
+   for (d in 1:nrow(disease_short_names)){
       
-      # Exclude bc for Males
-      # if (sex == "male" && disease == "bc"){
-      #   # cat("\n") #Uncomment to see list
-      # # }
-      # # if (sex == "male" && disease == "uc"){
-      # #   # cat("\n") #Uncomment to see list
-      # # }
-      # # if (sex == "female" && disease == "pc"){
-      # #   # cat("\n") #Uncomment to see list
-      # }
-      # else {
-        # cat("age ", age, " sex ", sex, "and disease", disease, "\n") #Uncomment to see list
-        disease_life_table_list_bl[[index]] <- RunDisease(in_idata = mslt_df, in_sex = sex, in_mid_age = age, in_disease = disease)
-        index <- index + 1
+      # Exclude non-males diseases
+      if (sex == "male" && disease_short_names$sname[d] == "brsc"){
+      }
+      if (sex == "male" && disease_short_names$sname[d] == "utrc"){
+      }
+      ## Exclude non-chronic diseases and road injuries
+      if (disease_short_names$is_not_dis[d] == 1 | disease_short_names$is_not_dis[d] == 2){
+      }
+      else {
       
+      disease_life_table_list_bl[[index]] <- RunDisease(in_idata = mslt_df, in_sex = sex, in_mid_age = age, in_disease = disease_short_names$sname[d])
+        
+      index <- index + 1
+             
+      }
     }
   }
 }
-## Uncommnet to check disease life table list
-# View(disease_life_table_list_bl[[224]])
+
+View(disease_life_table_list_bl[[1]])
+
+# ---- chunk-4 ----
+
+## Generate baseline mortality and yld rates for non-diseases (and acute diseases)
+
+non_disease_list_bl <- list()
+index <- 1
+
+for (age in i_age_cohort) {
+  for (sex in i_sex) {
+    for (d in 1:nrow(disease_short_names)){
+      
+      ## Exclude chronic disease and all-cause mortality and pyld
+      if (disease_short_names$is_not_dis[d] == 0 || disease_short_names$is_not_dis[d] == 2) {
+      }
+        else {
+        non_disease_list_bl[[index]] <-  RunNonDisease (mslt_df, in_sex = sex, in_mid_age = age, in_non_disease = disease_short_names$sname[d])
+      
+      index <- index + 1
+              
+      }
+    }
+  }
+}
+# non_disease_list_bl        
+# test_non_disease <- RunNonDisease(mslt_df, "male", 2, "lwri")
+# View(test_non_disease)
 
 
-# ---- chunk-9 ----
+
+
+# ---- chunk 5 ----
+
+## add baseline diabetes prevalence 
+## calculate 
+
+# ---- chunk-6 ----
 
 ## Create value to use as factor changing incidence rates. REPLACE with (1-PIF) and use multiplicative PIF for common disease risk factors. 
 
 ## Rob's comment about PIFs calcs: see function "health burden" in metahit_functions.R
 
+## this is an example, to genrate scenario life tables, we need pifs by age and gender
+
 incidence_change <- 0.95
+
+## Example value to mofify road injuries and lwri mortality and ylds
+
+rate_ratio_mortality <- 1.1
+
+rate_ratio <- ylds <- 1.1
+
+lwri_mortality_change <- 0.95
+
+lwri_yld_change <- 0.95
+
+
 
 ## Generate scenario incidence (for each disease)
 
@@ -129,19 +173,23 @@ index <- 1
 
 for (age in i_age_cohort){
   for (sex in i_sex){
-    for (disease in i_disease) {
+    for (d in 1:nrow(disease_short_names)){
       
-      # # Exclude bc for Males
-      # if (sex == "male" && disease == "bc"){
-      #   # cat("\n") # Uncomment to see list
-      # }
-      # else {
+      # Exclude non-males diseases
+      if (sex == "male" && disease_short_names$sname[d] == "brsc"){
+      }
+      if (sex == "male" && disease_short_names$sname[d] == "utrc"){
+      }
+      ## Exclude non-chronic diseases and road injuries
+      if (disease_short_names$is_not_dis[d] == 1 || disease_short_names$is_not_dis[d] == 2){
+      }
+      else {
         
         incidence_sc[[index]] <- disease_life_table_list_bl[[index]]$incidence_disease *
           incidence_change
         index <- index + 1
         
-      # }
+      }
     }
   }
 }
@@ -149,33 +197,71 @@ for (age in i_age_cohort){
 ## Uncommnet to check scenario incidence
 # View(incidence_sc[[1]])
 
+# ---- chunk-7 ----
 
-# ---- chunk-10 ----
+## Mortality non chronic disease sceanrio
+
+non_disease_mortality_sc <- list()
+index <- 1
+index_output_list <- 1
+
+
+for (d in 1:nrow(disease_short_names)){
+  
+  
+  ## Exclude lower respiratory infection
+  if ((disease_short_names$sname[d] == "lwri" || disease_short_names$is_not_dis[d] == 0 ||
+       disease_short_names$is_not_dis[d] == 2 ) ){
+  }
+  else {
+    
+    var_name <- paste0("deaths_rate_", disease_short_names$sname[d])
+    
+    for (i in 1:length(non_disease_list_bl)){
+      
+      if (length(names(select(non_disease_list_bl[[i]], contains(var_name)))) > 0){
+        
+        df <- non_disease_list_bl[[i]] %>% as.data.frame()
+        
+        if (nrow(df) > 1){
+          non_disease_mortality_sc[[index_output_list]] <- df[[var_name]] * rate_ratio_mortality
+          
+          index_output_list <- index_output_list + 1
+        }
+        
+      }
+    }
+  }
+  
+  
+}
+
+# ---- chunk-7 ----
 
 disease_life_table_list_sc <- list()
 index <- 1
+
+
 for (age in i_age_cohort){
   for (sex in i_sex){
-    for (disease in i_disease) {
-      # # Exclude bc for Males
-      # if (sex == "male" && disease == "bc"){
-      #   # cat("\n") #Uncomment to see list
-      # }
-      # if (sex == "male" && disease == "uc"){
-      #   # cat("\n") #Uncomment to see list
-      # }
-      # if (sex == "female" && disease == "pc"){
-      #   # cat("\n") #Uncomment to see list
-      # }
-      # else {
-        # cat("age ", age, " sex ", sex, "and disease", disease, "\n")
-        # modify mslt_df's incidence for the said scenario
+    for (d in 1:nrow(disease_short_names)){
+      
+      # Exclude non-males diseases
+      if (sex == "male" && disease_short_names$sname[d] == "brsc"){
+      }
+      if (sex == "male" && disease_short_names$sname[d] == "utrc"){
+      }
+      ## Exclude non-chronic diseases and road injuries
+      if (disease_short_names$is_not_dis[d] == 1 | disease_short_names$is_not_dis[d] == 2){
+      }
+      else {
+
         td1 <- mslt_df
-        td1[td1$age >= age & td1$sex == sex,][[paste("incidence", disease, sep = "_")]] <- incidence_sc[[index]]
+        td1[td1$age >= age & td1$sex == sex,][[paste("incidence", disease_short_names$sname[d], sep = "_")]] <- incidence_sc[[index]]
         
         # Instead of idata, feed td to run scenarios
         disease_life_table_list_sc[[index]] <- RunDisease(in_idata = td1, in_sex = sex,
-                                                           in_mid_age = age, in_disease = disease)
+                                                           in_mid_age = age, in_disease = disease_short_names$sname[d])
         disease_life_table_list_sc[[index]]$diff_inc_disease <-
           disease_life_table_list_sc[[index]]$incidence_disease -   disease_life_table_list_bl[[index]]$incidence_disease
         disease_life_table_list_sc[[index]]$diff_prev_disease <-
@@ -185,14 +271,14 @@ for (age in i_age_cohort){
         disease_life_table_list_sc[[index]]$diff_pylds_disease <-
           (disease_life_table_list_sc[[index]]$px - disease_life_table_list_bl[[index]]$px) * disease_life_table_list_bl[[index]]$dw_disease
         index <- index + 1
-      # }
+       }
     }
   }
 }
 ## Uncommnet to check scenario life tables
 # View(disease_life_table_list_sc[[3]])
 
-# ---- chunk-11 ----
+# ---- chunk-8 ----
 
 ## Generate total change in mortality rate
 
@@ -550,7 +636,8 @@ for (age in i_age_cohort){
               p3 <- p_list_male[[male_index - 1]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
               p4 <- p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
               
-              jpeg(paste0(output_dir, "/", paste(age, sex, outcome, sep="_"), ".jpeg"))
+              jpeg(
+                (output_dir, "/", paste(age, sex, outcome, sep="_"), ".jpeg"))
               GridArrangSharedLegend (p1, p2, p3, p4, ncol = 2, nrow = 2, mainTitle = paste(ifelse(outcome == "mx", "Deaths", "Incidence"), sex, "cohort mid age", age),
                                           mainLeft = 'Cases', mainBottom = 'Age')
               dev.off()
@@ -571,7 +658,8 @@ for (age in i_age_cohort){
               p4 <- p_list_female[[female_index - 1]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
               p5 <- p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
               
-              jpeg(paste0(output_dir, "/", paste(age, sex, outcome, sep="_"), ".jpeg"))
+              jpeg(
+                (output_dir, "/", paste(age, sex, outcome, sep="_"), ".jpeg"))
               GridArrangSharedLegend (p1, p2, p3, p4, p5, ncol = 2, nrow = 3, mainTitle = paste(ifelse(outcome == "mx", "Deaths", "Incidence"), sex, "cohort mid age", age), mainLeft = 'Cases', mainBottom = 'Age')
               dev.off()
               

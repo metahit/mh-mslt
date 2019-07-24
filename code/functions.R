@@ -162,7 +162,7 @@ RunLocDf <- function(i_data) {
 }
 
 
-# --- InterFunc ---
+# --- InterFunc --- (Belen: within data preparation, if not in data preparation interpolation code, it does not work)
 
 InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
 
@@ -359,6 +359,27 @@ RunDisease <- function(in_idata, in_mid_age, in_sex, in_disease)
   dlt_df
 }
 
+
+# Run non_diseases
+
+RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
+
+  {
+
+  # deaths_rate <- paste("deaths_rate", in_non_disease, sep = "_")
+  # pyld_rate <- paste("ylds (years lived with disability)_rate", in_non_disease, sep = "_")
+  # 
+  # 
+  # # df$deaths_rate <- df[[deaths_rate]]
+  # # df$pyld_rate <- df[[pyld_rate]]
+
+  
+  df <- filter(in_idata, age >= in_mid_age & sex == in_sex) %>% select(sex, age,  paste("deaths_rate", in_non_disease, sep = "_"), paste("ylds (years lived with disability)_rate", in_non_disease, sep = "_"))
+  
+  
+  
+  return(df)
+}
 
 # RunPif (temp) ----
 
@@ -614,7 +635,7 @@ g_legend <- function(a.gplot){
   return(legend)
 }
 
-# ---- GetQualifiedDiseaseName ----
+# ---- GetQualifiedDiseaseName ---- (Belen: check if we need this function)
 # Function to get qualified names diseases
 
 GetQualifiedDiseaseName <- function (disease){
