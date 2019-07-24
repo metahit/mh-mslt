@@ -134,12 +134,12 @@ for (age in i_age_cohort) {
 }
 # non_disease_list_bl        
 # test_non_disease <- RunNonDisease(mslt_df, "male", 2, "lwri")
-# View(test_non_disease)
+View(non_disease_list_bl[[1]])
 
 
 
 
-# ---- chunk 5 ----
+# ---- chunk 5 ---- TO DO
 
 ## add baseline diabetes prevalence 
 ## calculate 
@@ -158,13 +158,79 @@ incidence_change <- 0.95
 
 rate_ratio_mortality <- 1.1
 
-rate_ratio <- ylds <- 1.1
+rate_ratio_ylds <- ylds <- 1.1
 
 lwri_mortality_change <- 0.95
 
 lwri_yld_change <- 0.95
 
 
+# ---- chunk-7----
+
+## Create non_disease lists, these are by age and sex for road injuries and lwri baseline and scenario, including calculation of difference in rates
+
+
+non_disease_list <- list()
+index <- 1
+
+for (age in i_age_cohort) {
+  for (sex in i_sex) {
+    for (d in 1:nrow(disease_short_names)){
+      
+      ## Exclude chronic disease and all-cause mortality and pyld
+      if (disease_short_names$is_not_dis[d] == 0 || disease_short_names$is_not_dis[d] == 2) {
+      }
+      else {
+        non_disease_list[[index]] <-  RunNonDisease (mslt_df, in_sex = sex, in_mid_age = age, in_non_disease = disease_short_names$sname[d])
+        
+        ## Add road injuries sceanrio deaths_rates and yld_rates
+        
+        if (disease_short_names$sname[d] == "lwri") {
+          
+          ## deaths sceanario    
+          non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])] <- 
+            non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+          ## ylds scenario
+          non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])] <- 
+            non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+          
+          
+        }
+        
+        else {
+          
+          # deaths sceanario    
+          non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])] <- 
+            non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+          ## ylds scenario
+          non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])] <- 
+            non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+          
+        }
+        
+        ## Difference variable
+        
+        ## deaths difference
+        non_disease_list[[index]][paste0("deaths_rate_diff_", disease_short_names$sname[d])] <- non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])]
+           - non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])]
+         ## ylds difference
+         non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_diff_", disease_short_names$sname[d])] <- 
+           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] -
+           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])]
+         
+
+        index <- index + 1
+      }
+    }
+  }  
+}
+
+
+# ---- chunk-7 ----
+
+## Create sceanrio disease life tables
+
+### Create modified incidence using pifs 
 
 ## Generate scenario incidence (for each disease)
 
@@ -194,49 +260,7 @@ for (age in i_age_cohort){
   }
 }
 
-## Uncommnet to check scenario incidence
-# View(incidence_sc[[1]])
-
-# ---- chunk-7 ----
-
-## Mortality non chronic disease sceanrio
-
-non_disease_mortality_sc <- list()
-index <- 1
-index_output_list <- 1
-
-
-for (d in 1:nrow(disease_short_names)){
-  
-  
-  ## Exclude lower respiratory infection
-  if ((disease_short_names$sname[d] == "lwri" || disease_short_names$is_not_dis[d] == 0 ||
-       disease_short_names$is_not_dis[d] == 2 ) ){
-  }
-  else {
-    
-    var_name <- paste0("deaths_rate_", disease_short_names$sname[d])
-    
-    for (i in 1:length(non_disease_list_bl)){
-      
-      if (length(names(select(non_disease_list_bl[[i]], contains(var_name)))) > 0){
-        
-        df <- non_disease_list_bl[[i]] %>% as.data.frame()
-        
-        if (nrow(df) > 1){
-          non_disease_mortality_sc[[index_output_list]] <- df[[var_name]] * rate_ratio_mortality
-          
-          index_output_list <- index_output_list + 1
-        }
-        
-      }
-    }
-  }
-  
-  
-}
-
-# ---- chunk-7 ----
+### Create scenario life tables with new pifs 
 
 disease_life_table_list_sc <- list()
 index <- 1
@@ -279,6 +303,10 @@ for (age in i_age_cohort){
 # View(disease_life_table_list_sc[[3]])
 
 # ---- chunk-8 ----
+
+
+
+# ---- chunk-9 ---- ADD non-diseases and diabetes (when done)
 
 ## Generate total change in mortality rate
 
