@@ -381,6 +381,32 @@ RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
   return(df)
 }
 
+
+# GetPif (for Metahit)
+
+GetPif <- function(in_pif, in_age, in_sex, pif_name){
+  df <- in_pif
+  p <- as.data.frame(filter(df, age >= in_age & sex == in_sex) %>% select(age, pif_name))
+  
+  ## Expand to repeat values between age groups, for example, same value from 17 to 21
+  
+  outage <- min(p$age):100
+  
+  ind <- findInterval(outage, p$age)
+  p <- p[ind,]
+  p$age <- outage
+  
+  return(p)
+}
+
+# 
+# test_pif <- GetPif(pif, 27, "male", "scen_pif_pa_ac")
+
+
+outage <- 1:max(age)
+
+ind <- findInterval(outage, p$age)
+
 # RunPif (temp) ----
 
 # The code for PIFs will depend on the data sources. 

@@ -28,15 +28,13 @@ require(knitr)
 require(kableExtra)
 require(citr)
 require(gridExtra)
-require(cowplot)
 require(ggpubr)
 require(grid)
 require(ggplot2)
-require(gridExtra)
 require(pillar)
 require(devtools)
 require(janitor)
-require(reshape2)
+
 
 # rm (list = ls())
 options(scipen=999)
@@ -51,11 +49,32 @@ year <- 2017
 
 # year_trend <- 2007
 
-
-## ADD 15-19 age cat
-i_age_cohort <- c(22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
+i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
 
 i_sex <- c("male", "female")
+
+## Get execute-mh diseases (CHECK WITH ALI TO USE RELATIVE PATH TO READ DIRECLTY FROM MH-EXECUTE DIRECTORY)
+
+disease_names_execute <- read_csv("C:/Users/Bele/Dropbox/Collaborations/James Woodcock/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
+
+disease_names_execute <- disease_names_execute[1:2]
+disease_names_execute$disease <- tolower(disease_names_execute$GBD_name)
+
+
+disease_short_names <- left_join(disease_short_names, disease_names_execute, by = "disease")
+
+## Add road injuries names
+### Flter injuries and drop "road injuries" from observations
+
+injuries <- select(disease_short_names, disease) %>%
+            filter(str_detect(disease, "injuries")) %>%
+            separate(disease, c("injuries", "unused1", "unused2", "unused3"), sep = " ", remove = FALSE, convert = FALSE)
+            
+injuries <- injuries[1:2]
+
+disease_short_names <- left_join(disease_short_names, injuries, by = "disease")
+  
+
 
 # ---- chunk-2 ----
 
@@ -107,48 +126,20 @@ for (age in i_age_cohort){
   }
 }
 
-View(disease_life_table_list_bl[[1]])
-
-# ---- chunk-4 ----
-
-## Generate baseline mortality and yld rates for non-diseases (and acute diseases)
-
-non_disease_list_bl <- list()
-index <- 1
-
-for (age in i_age_cohort) {
-  for (sex in i_sex) {
-    for (d in 1:nrow(disease_short_names)){
-      
-      ## Exclude chronic disease and all-cause mortality and pyld
-      if (disease_short_names$is_not_dis[d] == 0 || disease_short_names$is_not_dis[d] == 2) {
-      }
-        else {
-        non_disease_list_bl[[index]] <-  RunNonDisease (mslt_df, in_sex = sex, in_mid_age = age, in_non_disease = disease_short_names$sname[d])
-      
-      index <- index + 1
-              
-      }
-    }
-  }
-}
-# non_disease_list_bl        
-# test_non_disease <- RunNonDisease(mslt_df, "male", 2, "lwri")
-View(non_disease_list_bl[[1]])
 
 
-
-
-# ---- chunk 5 ---- TO DO
+# ---- chunk 4 ---- TO DO
 
 ## add baseline diabetes prevalence 
 ## calculate 
 
-# ---- chunk-6 ----
+# ---- chunk-5 ----
 
 ## Create value to use as factor changing incidence rates. REPLACE with (1-PIF) and use multiplicative PIF for common disease risk factors. 
 
 ## Rob's comment about PIFs calcs: see function "health burden" in metahit_functions.R
+
+### Add age categoies to Rob's PIF's tables
 
 ## this is an example, to genrate scenario life tables, we need pifs by age and gender
 
@@ -165,7 +156,7 @@ lwri_mortality_change <- 0.95
 lwri_yld_change <- 0.95
 
 
-# ---- chunk-7----
+# ---- chunk-6----
 
 ## Create non_disease lists, these are by age and sex for road injuries and lwri baseline and scenario, including calculation of difference in rates
 
@@ -189,10 +180,17 @@ for (age in i_age_cohort) {
           
           ## deaths sceanario    
           non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])] <- 
-            non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+            non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * as.numeric(GetPif(pif, age, sex, paste0("scen_pif_", disease_short_names$acronym[d])))
+          
+          # ## Added column to test whta is bringing in
+          # 
+          # non_disease_list[[index]]$test <-  0
+            # as.numeric(GetPif(pif, age, sex, "scen_pif_pa_ac"))
+          
+          
           ## ylds scenario
           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])] <- 
-            non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+            non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * 1
           
           
         }
@@ -201,10 +199,10 @@ for (age in i_age_cohort) {
           
           # deaths sceanario    
           non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])] <- 
-            non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+            non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * 1
           ## ylds scenario
           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])] <- 
-            non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
+            non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * 1
           
         }
         
@@ -224,6 +222,9 @@ for (age in i_age_cohort) {
     }
   }  
 }
+
+
+
 
 
 # ---- chunk-7 ----

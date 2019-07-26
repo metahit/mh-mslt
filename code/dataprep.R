@@ -35,11 +35,11 @@ year <- 2017
 
 year_trend <- 2007
 
-i_age_cohort <- c(22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
+i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
 
 i_sex <- c("male", "female")
 
-## Look up table to match local authority areas to city regions
+## Look up table to match local authority areas to city regions (USE REALTIVE PATH TO READ FROM EXECUTE-MH DIRECTORY)
 
 look_up_table <- read_csv("C:/Users/Bele/Dropbox/Collaborations/James Woodcock/mh-execute/inputs/mh_regions_lad_lookup.csv")
 
@@ -107,7 +107,7 @@ unlink(paste0(temp_folder), recursive = TRUE)
 
 ## Min Length is not changing anything, how can we make it characters in the first place, rather than having to ocnvert below before running RunLocDF?
 
-disease_short_names <- data.frame(disease = as.character(unique(data_extracted$cause_name)), 
+disease_short_names <- data.frame(disease = tolower(as.character(unique(data_extracted$cause_name))), 
                                   sname = tolower(abbreviate(unique(data_extracted$cause_name, max = 2))),
                                   stringsAsFactors = F)
 
@@ -118,8 +118,7 @@ disease_short_names <- disease_short_names %>% mutate(is_not_dis = ifelse((str_d
 
 disease_short_names[disease_short_names$sname == "allc", "is_not_dis"] <- 2
 
-
-disease_short_names <- disease_short_names %>% mutate_if(is.factor, as.character)
+## Add column to match names from mh-execute
 
 write_csv(disease_short_names, "data/parameters/disease_names.csv")
 
