@@ -374,13 +374,15 @@ RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
   # # df$pyld_rate <- df[[pyld_rate]]
 
   
-  df <- filter(in_idata, age >= in_mid_age & sex == in_sex) %>% select(sex, age,  paste("deaths_rate", in_non_disease, sep = "_"), paste("ylds (years lived with disability)_rate", in_non_disease, sep = "_"))
+  df <- filter(in_idata, age >= in_mid_age & sex == in_sex) %>% select(sex, age,  paste0("deaths_rate_", in_non_disease), paste0("yld_rate_", in_non_disease))
   
   
   
   return(df)
 }
 
+
+test_non_disease <- RunNonDisease(mslt_df, "male", 22, "motor")
 
 # GetPif (for Metahit)
 

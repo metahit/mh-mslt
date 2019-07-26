@@ -100,6 +100,7 @@ inits <- list(
  
  ### Add matching age categories
  ### NEED TO TAKE INTO ACCOUNT IN THE LOOP THAT PIFS ARE ONLY CALCULATED FOR ADULTS
+ ### NEED TO AGREE NAMING CONVENTION WITH PIFS (ROB), BEST IF WE BOTH IMPLEMENT ABBREVIATION OF ORIGINAL GBD DISEASES RATHER THAN MANUAL ENTRIES.
  
  pif <- read_csv("data/pif.csv")
 
@@ -143,6 +144,25 @@ names(pif)[names(pif) == "scen_car/taxi_Serious"] <- "pif_motor_ylds"
 names(pif)[names(pif) == "scen_motorcycle_Serious"  ] <- "pif_motorcyclist_ylds"
 
 
+### mslt_df names are not matching pifs names, need to change this, preferably, not manually
+
+#### MANUALLY TO CHECK THAT IT WORKS FOR ROAD INJURIES
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_pdri"] <- "deaths_rate_pedestrian"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_pdri"] <- "yld_rate_pedestrian"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_cyri"] <- "deaths_rate_cyclist"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_cyri"] <- "yld_rate_cyclist"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_mtri"] <- "deaths_rate_motorcyclist"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mtri"] <- "yld_rate_motorcyclist"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_mvri"] <- "deaths_rate_motor"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mvri"] <- "yld_rate_motor"
+
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_otri"] <- "deaths_rate_other"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_otri"] <- "yld_rate_other"
 ### Pifs injuries
 #### TWO LOOPS: ONE FOR YLDS AND THE OTHER FOR DEATHS, WE MAY BE ABLE TO TO ONLY ONE? CHECK WITH ALI
 
@@ -162,6 +182,7 @@ for (age in i_age_cohort){
           pifs_injuries_deaths[[index]] <- GetPif(pif, age, sex, var_name)
           pifs_injuries_deaths[[index]]$sex <- sex
           pifs_injuries_deaths[[index]]$injuries <- var_name
+          names(pifs_injuries_deaths[[index]])[names(pifs_injuries_deaths[[index]]) == var_name] <- "pif"
           index <- index + 1
       }
     }
@@ -184,6 +205,8 @@ for (age in i_age_cohort){
         pifs_injuries_ylds[[index]] <- GetPif(pif, age, sex, var_name)
         pifs_injuries_ylds[[index]]$sex <- sex
         pifs_injuries_ylds[[index]]$injuries <- var_name
+        names(pifs_injuries_ylds[[index]])[names(pifs_injuries_ylds[[index]]) == var_name] <- "pif"
+
         index <- index + 1
       }
     }
@@ -193,57 +216,40 @@ for (age in i_age_cohort){
  
 ### Need to add to the formula to pick up the pif value from one age till the next age range, for example, 17 up to next pif at age 22. 
  
- non_disease_list <- list()
- index <- 1
+non_disease_list_injuries <- list()
+index <- 1
 
- for (age in i_age_cohort) {
-   for (sex in i_sex) {
-     for (d in 1:nrow(disease_short_names)){
+
+ for (age in i_age_cohort){
+   for (sex in i_sex){
+     for (d in 1:nrow(injuries)){
 
        ## Exclude chronic disease and all-cause mortality and pyld
-       if (disease_short_names$is_not_dis[d] == 0 || disease_short_names$is_not_dis[d] == 2) {
-       }
+       if (injuries$injuries[d] == "other"){
+      }
        else {
-         non_disease_list[[index]] <-  RunNonDisease (mslt_df, in_sex = sex, in_mid_age = age, in_non_disease = disease_short_names$sname[d])
+         non_disease_list_injuries[[index]] <-  RunNonDisease (mslt_df, in_sex = sex, in_mid_age = age, in_non_disease = injuries$injuries[d])
 
-         ## Add road injuries sceanrio deaths_rates and yld_rates
-
-         if (disease_short_names$sname[d] == "lwri") {
-
-           ## deaths sceanario
-           non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])] <-
-             non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * (1-(GetPif(pif, age, sex, paste("pif_ihd")))
-           ## ylds scenario
-           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])] <-
-             non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * 1
+         ## deaths sceanario
+         non_disease_list_injuries[[index]][paste0("deaths_rate_sc_", injuries$injuries[d])] <- non_disease_list_injuries[[index]][paste0("deaths_rate_", injuries$injuries[d])] * 
+           (1-(pifs_injuries_deaths[[index]]$pif))
+         ## ylds scenario
+         non_disease_list_injuries[[index]][paste0("yld_rate_sc_", injuries$injuries[d])] <- non_disease_list_injuries[[index]][paste0("yld_rate_", injuries$injuries[d])] *
+           (1-(pifs_injuries_ylds[[index]]$pif))
 
 
-         }
-
-         else {
-
-           # deaths sceanario
-           non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])] <-
-             non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
-           ## ylds scenario
-           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])] <-
-             non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] * rate_ratio_mortality
-
-         }
-
-         ## Difference variable
-
+         ## add difference columns
+         
          ## deaths difference
-         non_disease_list[[index]][paste0("deaths_rate_diff_", disease_short_names$sname[d])] <- non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$sname[d])]
-         - non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$sname[d])]
+         non_disease_list_injuries[[index]][paste0("deaths_rate_diff_", injuries$injuries[d])] <- non_disease_list_injuries[[index]][paste0("deaths_rate_", injuries$injuries[d])]
+         - non_disease_list_injuries[[index]][paste0("deaths_rate_sc_", injuries$injuries[d])]
          ## ylds difference
-         non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_diff_", disease_short_names$sname[d])] <-
-           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_", disease_short_names$sname[d])] -
-           non_disease_list[[index]][paste0("ylds (years lived with disability)_rate_sc_", disease_short_names$sname[d])]
-
-
+         non_disease_list_injuries[[index]][paste0("yld_rate_diff_", injuries$injuries[d])] <-
+           non_disease_list_injuries[[index]][paste0("yld_rate_", injuries$injuries[d])] -
+           non_disease_list_injuries[[index]][paste0("yld_rate_sc_", injuries$injuries[d])]
+          
          index <- index + 1
-       }
-     }
-   }
- }
+      }
+    }
+  }
+}
