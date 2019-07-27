@@ -118,6 +118,8 @@ disease_short_names <- disease_short_names %>% mutate(is_not_dis = ifelse((str_d
 
 disease_short_names[disease_short_names$sname == "allc", "is_not_dis"] <- 2
 
+disease_short_names[disease_short_names$sname == "lwri", "is_not_dis"] <- 1
+
 ## Add column to match names from mh-execute
 
 write_csv(disease_short_names, "data/parameters/disease_names.csv")

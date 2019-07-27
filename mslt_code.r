@@ -53,26 +53,24 @@ i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92
 
 i_sex <- c("male", "female")
 
-## Get execute-mh diseases (CHECK WITH ALI TO USE RELATIVE PATH TO READ DIRECLTY FROM MH-EXECUTE DIRECTORY)
+## Get execute-mh diseases (CHECK WITH ALI TO USE RELATIVE PATH TO READ DIRECLTY FROM MH-EXECUTE DIRECTORY, DATA PREP??)
 
 disease_names_execute <- read_csv("C:/Users/Bele/Dropbox/Collaborations/James Woodcock/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
 
 disease_names_execute <- disease_names_execute[1:2]
 disease_names_execute$disease <- tolower(disease_names_execute$GBD_name)
 
-
 disease_short_names <- left_join(disease_short_names, disease_names_execute, by = "disease")
 
-## Add road injuries names
-### Flter injuries and drop "road injuries" from observations
+## Add injuries
 
-injuries <- select(disease_short_names, disease) %>%
-            filter(str_detect(disease, "injuries")) %>%
-            separate(disease, c("injuries", "unused1", "unused2", "unused3"), sep = " ", remove = FALSE, convert = FALSE)
+disease_short_names$acronym <- ifelse(str_detect(disease_short_names$disease, "injuries"), disease_short_names$disease, disease_short_names$acronym)
+
+## Only keep first word for acronyns
+
+disease_short_names$acronym <- word(disease_short_names$acronym, 1)
             
-injuries <- injuries[1:2]
 
-disease_short_names <- left_join(disease_short_names, injuries, by = "disease")
   
 
 

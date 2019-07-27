@@ -374,7 +374,7 @@ RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
   # # df$pyld_rate <- df[[pyld_rate]]
 
   
-  df <- filter(in_idata, age >= in_mid_age & sex == in_sex) %>% select(sex, age,  paste0("deaths_rate_", in_non_disease), paste0("yld_rate_", in_non_disease))
+  df <- filter(in_idata, age >= in_mid_age & sex == in_sex) %>% select(sex, age,  paste0("deaths_rate_", in_non_disease), paste0("ylds_rate_", in_non_disease))
   
   
   
