@@ -755,6 +755,25 @@ mslt_df <- left_join(mslt_df, disease_life_table_input_1, by = "sex_age_cat")
 
 ## ADJUST DISABILTIY WEIGHTS WITH DISBAYES GENERATED OUTCOMES
 
+names(mslt_df)[names(mslt_df) == "deaths_rate_pdri"] <- "deaths_rate_pedestrian"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_pdri"] <- "ylds_rate_pedestrian"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_cyri"] <- "deaths_rate_cyclist"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_cyri"] <- "ylds_rate_cyclist"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_mtri"] <- "deaths_rate_motorcyclist"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mtri"] <- "ylds_rate_motorcyclist"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_mvri"] <- "deaths_rate_motor"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mvri"] <- "ylds_rate_motor"
+
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_otri"] <- "deaths_rate_other"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_otri"] <- "ylds_rate_other"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_lwri"] <- "deaths_rate_lri"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_lwri"] <- "ylds_rate_lri"
+
 write_csv(mslt_df, ("data/mslt_df.csv"))
 
 ## Get PIFS from Rob adn expand from five year age groups to one. 
@@ -810,24 +829,7 @@ pif$pif_lri_ylds <- pif$pif_lri
 
 #### MANUALLY TO CHECK THAT IT WORKS FOR ROAD INJURIES
 
-names(mslt_df)[names(mslt_df) == "deaths_rate_pdri"] <- "deaths_rate_pedestrian"
-names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_pdri"] <- "ylds_rate_pedestrian"
 
-names(mslt_df)[names(mslt_df) == "deaths_rate_cyri"] <- "deaths_rate_cyclist"
-names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_cyri"] <- "ylds_rate_cyclist"
-
-names(mslt_df)[names(mslt_df) == "deaths_rate_mtri"] <- "deaths_rate_motorcyclist"
-names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mtri"] <- "ylds_rate_motorcyclist"
-
-names(mslt_df)[names(mslt_df) == "deaths_rate_mvri"] <- "deaths_rate_motor"
-names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mvri"] <- "ylds_rate_motor"
-
-
-names(mslt_df)[names(mslt_df) == "deaths_rate_otri"] <- "deaths_rate_other"
-names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_otri"] <- "ylds_rate_other"
-
-names(mslt_df)[names(mslt_df) == "deaths_rate_lwri"] <- "deaths_rate_lri"
-names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_lwri"] <- "ylds_rate_lri"
 
 
 p <- filter(pif, sex == "male")
@@ -849,4 +851,4 @@ pif_expanded_1$age <- outage
 
 pif_expanded <- rbind(pif_expanded, pif_expanded_1)
 
-
+write_csv(pif_expanded, "data/pif_expanded.csv")
