@@ -31,6 +31,7 @@ require(citr)
 
 SortGbdInput <- function(in_data, in_year, in_locality) {
   data <- in_data[which(in_data$year== in_year & in_data$location == in_locality),]
+
 }
 
 ## Selects year and localities from GBD data frame dowloaded from: http://ghdx.healthdata.org/gbd-results-tool
@@ -53,7 +54,8 @@ RunLocDf <- function(i_data) {
           
           agroup <- unique(i_data$age)[ag]
           
-          idf <- filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn)
+          idf <- filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn) 
+        
           
           
           if (nrow(idf) > 0){
@@ -102,7 +104,7 @@ RunLocDf <- function(i_data) {
             # }
             
             idf$rate_per_1 <- round(current_idf_rate$val / 100000, 6)
-          
+            
             
             idf[[tolower(paste(dmeasure, "rate", disease_short_names$sname[d], sep = "_"))]] <- idf$rate_per_1
             
@@ -164,7 +166,9 @@ RunLocDf <- function(i_data) {
 
 # --- InterFunc --- (Belen: within data preparation, if not in data preparation interpolation code, it does not work)
 
-InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
+### Embeded in loop
+
+# InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
 
 # --- IsNanDataFrame ---
 
@@ -275,6 +279,8 @@ RunDisease <- function(in_idata, in_mid_age, in_sex, in_disease)
   # create list of required columns
   ## intermediate variables lx, qx, wx and vx
   ###lx
+  
+  #browser()
   dlt_df$lx <- dlt_df$incidence_disease + dlt_df$case_fatality_disease
   ###qx
   dlt_df$qx <-  sqrt((dlt_df$incidence_disease - dlt_df$case_fatality_disease) * (dlt_df$incidence_disease - dlt_df$case_fatality_disease))
@@ -382,8 +388,6 @@ RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
 }
 
 
-test_non_disease <- RunNonDisease(mslt_df, "male", 22, "motor")
-
 # GetPif (for Metahit)
 
 GetPif <- function(in_pif, in_age, in_sex, pif_name){
@@ -404,10 +408,6 @@ GetPif <- function(in_pif, in_age, in_sex, pif_name){
 # 
 # test_pif <- GetPif(pif, 27, "male", "scen_pif_pa_ac")
 
-
-outage <- 1:max(age)
-
-ind <- findInterval(outage, p$age)
 
 # RunPif (temp) ----
 

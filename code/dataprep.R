@@ -120,6 +120,31 @@ disease_short_names[disease_short_names$sname == "allc", "is_not_dis"] <- 2
 
 disease_short_names[disease_short_names$sname == "lwri", "is_not_dis"] <- 1
 
+
+### Combine with acronyms from execute-mh
+
+## Get execute-mh diseases (CHECK WITH ALI TO USE RELATIVE PATH TO READ DIRECLTY FROM MH-EXECUTE DIRECTORY, DATA PREP??)
+
+disease_names_execute <- read_csv("C:/Users/Bele/Dropbox/Collaborations/James Woodcock/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
+
+disease_names_execute <- disease_names_execute[1:2]
+disease_names_execute$disease <- tolower(disease_names_execute$GBD_name)
+
+disease_short_names <- left_join(disease_short_names, disease_names_execute, by = "disease")
+
+## Add injuries
+
+disease_short_names$acronym <- ifelse(str_detect(disease_short_names$disease, "injuries"), disease_short_names$disease, disease_short_names$acronym)
+
+## Only keep first word for acronyns
+
+disease_short_names$acronym <- word(disease_short_names$acronym, 1)
+
+## Replace NAs with blank
+
+disease_short_names$acronym[is.na(disease_short_names$acronym)] <- "no_pif"
+
+
 ## Add column to match names from mh-execute
 
 write_csv(disease_short_names, "data/parameters/disease_names.csv")
@@ -140,6 +165,9 @@ names(gbd_input) = gsub(pattern = "_name", replacement = "", x = names(gbd_input
 gbd_input <- select(gbd_input,-contains("id"))
 
 gbd_input <- filter(gbd_input, location %in% localities) %>% mutate_if(is.factor, as.character)
+
+gbd_input$cause <- tolower(gbd_input$cause) 
+
 
 # ---- chunk-2.2: Sort data per local goverment area ----
 
@@ -278,8 +306,6 @@ gbd_df <- replace(gbd_df, is.na(gbd_df), 0)
 
 
 # ---- chunk-3: Disbayes ----
-
-View(gbd_df)
 
 ## Disbayes data preparation
 
@@ -562,7 +588,7 @@ for (d in 1:nrow(disease_short_names)){
   }
 }
 
-## Interpolate dw rates (NOT LOOPING THROUGH DISEASES)
+## Interpolate dw rates 
 
 
 for (d in 1:nrow(disease_short_names)){
@@ -729,9 +755,98 @@ mslt_df <- left_join(mslt_df, disease_life_table_input_1, by = "sex_age_cat")
 
 ## ADJUST DISABILTIY WEIGHTS WITH DISBAYES GENERATED OUTCOMES
 
-
-
 write_csv(mslt_df, ("data/mslt_df.csv"))
 
+## Get PIFS from Rob adn expand from five year age groups to one. 
+
+pif <- read_csv("data/pif.csv")
+
+pif$age [pif$age_cat =="16-19"] <- 17
+pif$age [pif$age_cat =="20-24"] <- 22
+pif$age [pif$age_cat =="25-29"] <- 27
+pif$age [pif$age_cat =="30-34"] <- 32
+pif$age [pif$age_cat =="35-39"] <- 37
+pif$age [pif$age_cat =="40-44"] <- 42
+pif$age [pif$age_cat =="45-49"] <- 47
+pif$age [pif$age_cat =="50-54"] <- 52
+pif$age [pif$age_cat =="55-59"] <- 57
+pif$age [pif$age_cat =="60-64"] <- 62
+pif$age [pif$age_cat =="65-69"] <- 67
+pif$age [pif$age_cat =="70-74"] <- 72
+pif$age [pif$age_cat =="75-79"] <- 77
+pif$age [pif$age_cat =="80-84"] <- 82
+pif$age [pif$age_cat =="85-89"] <- 87
+pif$age [pif$age_cat =="90-94"] <- 92
+pif$age [pif$age_cat =="95-120"] <- 97
+
+## Change names to get rid of risk factors combinations in the name (BEST IF I DO NOT HAVE TO DO THIS MANUALLY)
+
+names(pif)[names(pif) == "scen_pif_pa_ap_noise_no2_ihd"] <- "pif_ihd"
+names(pif)[names(pif) == "scen_pif_pa_ap_stroke"] <- "pif_stroke"
+names(pif)[names(pif) == "scen_pif_pa_colon" ] <- "pif_colon"
+names(pif)[names(pif) == "scen_pif_pa_t2d"] <- "pif_t2d"
+names(pif)[names(pif) == "scen_pif_pa_endo"] <- "pif_endo"
+names(pif)[names(pif) == "scen_pif_pa_ap_lc"] <- "pif_lc"
+names(pif)[names(pif) == "scen_pif_ap_lri"] <- "pif_lri"
+names(pif)[names(pif) == "scen_pif_ap_copd"] <- "pif_copd"
+names(pif)[names(pif) == "scen_pif_pa_breast"] <- "pif_breast"
+
+names(pif)[names(pif) == "scen_cyclist_Fatal"] <- "pif_cyclist_deaths"
+names(pif)[names(pif) == "scen_pedestrian_Fatal"] <- "pif_pedestrian_deaths"
+names(pif)[names(pif) == "scen_cyclist_Serious"] <- "pif_cyclist_ylds"
+names(pif)[names(pif) == "scen_pedestrian_Serious"] <- "pif_pedestrian_ylds"
+names(pif)[names(pif) == "scen_car/taxi_Fatal"] <- "pif_motor_deaths"
+names(pif)[names(pif) == "scen_motorcycle_Fatal"  ] <- "pif_motorcyclist_deaths"
+names(pif)[names(pif) == "scen_car/taxi_Serious"] <- "pif_motor_ylds"
+names(pif)[names(pif) == "scen_motorcycle_Serious"  ] <- "pif_motorcyclist_ylds"
+
+
+## Repeat pif lri for deaths and ylds
+
+pif$pif_lri_deaths <- pif$pif_lri
+pif$pif_lri_ylds <- pif$pif_lri
+
+### mslt_df names are not matching pifs names, need to change this, preferably, not manually
+
+#### MANUALLY TO CHECK THAT IT WORKS FOR ROAD INJURIES
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_pdri"] <- "deaths_rate_pedestrian"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_pdri"] <- "ylds_rate_pedestrian"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_cyri"] <- "deaths_rate_cyclist"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_cyri"] <- "ylds_rate_cyclist"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_mtri"] <- "deaths_rate_motorcyclist"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mtri"] <- "ylds_rate_motorcyclist"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_mvri"] <- "deaths_rate_motor"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_mvri"] <- "ylds_rate_motor"
+
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_otri"] <- "deaths_rate_other"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_otri"] <- "ylds_rate_other"
+
+names(mslt_df)[names(mslt_df) == "deaths_rate_lwri"] <- "deaths_rate_lri"
+names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_lwri"] <- "ylds_rate_lri"
+
+
+p <- filter(pif, sex == "male")
+
+outage <- min(p$age):100
+
+ind <- findInterval(outage, p$age)
+pif_expanded <- p[ind,]
+pif_expanded$age <- outage
+
+p_1 <- filter(pif, sex == "female")
+
+outage <- min(p_1$age):100
+
+ind <- findInterval(outage, p_1$age)
+pif_expanded_1 <- p_1[ind,]
+pif_expanded_1$age <- outage
+
+
+pif_expanded <- rbind(pif_expanded, pif_expanded_1)
 
 

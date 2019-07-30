@@ -172,7 +172,42 @@ names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_otri"]
 names(mslt_df)[names(mslt_df) == "deaths_rate_lwri"] <- "deaths_rate_lri"
 names(mslt_df)[names(mslt_df) == "ylds (years lived with disability)_rate_lwri"] <- "ylds_rate_lri"
 
-### PIFs_non_disease (injuries and lri)
+### PIFs 
+
+#### Pifs diseases
+
+pifs_disease <- list()
+index <- 1
+
+
+for (age in i_age_cohort) {
+  for (sex in i_sex) {
+    for (d in 1:nrow(disease_short_names)){
+      
+      ## Exclude chronic disease and all-cause mortality and  pyld
+      if (disease_short_names$is_not_dis[d] != 0 || disease_short_names$acronym[d] == "no_pif") {
+      }
+      else {
+        
+        var_name_disease <- paste0("pif_", disease_short_names$acronym[d])
+        
+        
+        pifs_disease[[index]] <- GetPif(pif, age, sex, var_name_disease)
+        pifs_disease[[index]]$sex <- sex
+        pifs_disease[[index]]$disease <- var_name_disease
+        names(pifs_disease[[index]])[names(pifs_disease[[index]]) == var_name_disease] <- "pif"
+        
+        index <- index + 1
+        
+      }
+    }
+  }
+}
+        
+        
+
+
+#### Non-disease (injuries and lri, applied directly to general life table mortality and ylds)
 
 pifs_no_disease_deaths <- list()
 index <- 1
@@ -192,8 +227,8 @@ for (age in i_age_cohort) {
 
       pifs_no_disease_deaths[[index]] <- GetPif(pif, age, sex, var_name_deaths)
       pifs_no_disease_deaths[[index]]$sex <- sex
-      pifs_no_disease_deaths[[index]]$injuries <- var_name_deaths
-      names(pifs_no_disease_deaths[[index]])[names(pifs_no_disease_deaths[[index]]) == var_name] <- "pif"
+      pifs_no_disease_deaths[[index]]$deaths <- var_name_deaths
+      names(pifs_no_disease_deaths[[index]])[names(pifs_no_disease_deaths[[index]]) == var_name_deaths] <- "pif"
       
       index <- index + 1
       
@@ -220,7 +255,7 @@ for (age in i_age_cohort) {
         
         pifs_no_disease_ylds[[index]] <- GetPif(pif, age, sex, var_name_ylds)
         pifs_no_disease_ylds[[index]]$sex <- sex
-        pifs_no_disease_ylds[[index]]$injuries <- var_name_deaths
+        pifs_no_disease_ylds[[index]]$deaths <- var_name_ylds
         names(pifs_no_disease_ylds[[index]])[names(pifs_no_disease_ylds[[index]]) == var_name_ylds] <- "pif"
         
         
@@ -233,7 +268,7 @@ for (age in i_age_cohort) {
 
 ##### Generate non_disease life tables with matching acronyms, WORKS, KEEP.
 
-non_disease_test_list <- list()
+non_disease_list <- list()
 index <- 1
 
 
@@ -245,27 +280,27 @@ for (age in i_age_cohort) {
       if (disease_short_names$is_not_dis[d] != 1 || disease_short_names$acronym[d] == "other") {
       }
       else {
-        non_disease_test_list[[index]] <-  RunNonDisease (mslt_df, in_sex = sex, in_mid_age = age, in_non_disease = disease_short_names$acronym[d])
+        non_disease_list[[index]] <-  RunNonDisease (mslt_df, in_sex = sex, in_mid_age = age, in_non_disease = disease_short_names$acronym[d])
         
       
           ## deaths sceanario
-          non_disease_test_list[[index]][paste0("deaths_rate_sc_", disease_short_names$acronym[d])] <-
-          non_disease_test_list[[index]][paste0("deaths_rate_", disease_short_names$acronym[d])] * (1 - pifs_no_disease_deaths[[index]]$pif)
+          non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$acronym[d])] <-
+          non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$acronym[d])] * (1 - pifs_no_disease_deaths[[index]]$pif)
 
 
           ## ylds scenario
-          non_disease_test_list[[index]][paste0("ylds_rate_sc_", disease_short_names$acronym[d])] <-
-          non_disease_test_list[[index]][paste0("ylds_rate_", disease_short_names$acronym[d])] * (1 - pifs_no_disease_ylds[[index]]$pif)
+          non_disease_list[[index]][paste0("ylds_rate_sc_", disease_short_names$acronym[d])] <-
+          non_disease_list[[index]][paste0("ylds_rate_", disease_short_names$acronym[d])] * (1 - pifs_no_disease_ylds[[index]]$pif)
 
 
         ## Difference variable
 
         ## deaths difference
-        non_disease_test_list[[index]][paste0("deaths_rate_diff_", disease_short_names$acronym[d])] <- non_disease_test_list[[index]][paste0("deaths_rate_", disease_short_names$acronym[d])] -
-                                                                                                      non_disease_test_list[[index]][paste0("deaths_rate_sc_", disease_short_names$acronym[d])]
+        non_disease_list[[index]][paste0("deaths_rate_diff_", disease_short_names$acronym[d])] <- non_disease_list[[index]][paste0("deaths_rate_", disease_short_names$acronym[d])] -
+                                                                                                      non_disease_list[[index]][paste0("deaths_rate_sc_", disease_short_names$acronym[d])]
         ## ylds difference
-        non_disease_test_list[[index]][paste0("ylds_rate_diff_", disease_short_names$acronym[d])] <- non_disease_test_list[[index]][paste0("ylds_rate_", disease_short_names$acronym[d])] -
-                                                                                                      non_disease_test_list[[index]][paste0("ylds_rate_sc_", disease_short_names$acronym[d])]
+        non_disease_list[[index]][paste0("ylds_rate_diff_", disease_short_names$acronym[d])] <- non_disease_list[[index]][paste0("ylds_rate_", disease_short_names$acronym[d])] -
+                                                                                                      non_disease_list[[index]][paste0("ylds_rate_sc_", disease_short_names$acronym[d])]
 
         index <- index + 1
 
@@ -275,4 +310,26 @@ for (age in i_age_cohort) {
 }
 
 
+### Expand Pifs table
+
+
+  
+p <- filter(pif, sex == "male")
+
+outage <- min(p$age):100
+
+ind <- findInterval(outage, p$age)
+pif_expanded <- p[ind,]
+pif_expanded$age <- outage
+
+p_1 <- filter(pif, sex == "female")
+
+outage <- min(p_1$age):100
+
+ind <- findInterval(outage, p_1$age)
+pif_expanded_1 <- p_1[ind,]
+pif_expanded_1$age <- outage
+
+
+pif_expanded <- rbind(pif_expanded, pif_expanded_1)
 
