@@ -27,6 +27,8 @@ source("code/functions.R")
 
 ## Data 
 
+## move name changes here
+
 relative_path <- '../mh-mslt/'
 pif_expanded <- read_csv(paste0(relative_path, "data/pif_expanded.csv"))
 mslt_df <- read_csv(paste0(relative_path, "data/mslt_df.csv"))
@@ -120,8 +122,8 @@ for (iage in i_age_cohort) {
         var_name_deaths <- paste0("pif_", disease_short_names$acronym[d], "_", "deaths")
         
         
-        pifs_no_disease_deaths[[index]] <- GetPif(pif, iage, isex, var_name_deaths)
-        pifs_no_disease_deaths[[index]]$sex <- sex
+        pifs_no_disease_deaths[[index]] <- GetPif(pif_expanded, iage, isex, var_name_deaths)
+        pifs_no_disease_deaths[[index]]$sex <- isex
         pifs_no_disease_deaths[[index]]$deaths <- var_name_deaths
         names(pifs_no_disease_deaths[[index]])[names(pifs_no_disease_deaths[[index]]) == var_name_deaths] <- "pif"
         
@@ -148,8 +150,8 @@ for (iage in i_age_cohort) {
         
         var_name_ylds<- paste0("pif_", disease_short_names$acronym[d], "_", "ylds")
         
-        pifs_no_disease_ylds[[index]] <- GetPif(pif, iage, isex, var_name_ylds)
-        pifs_no_disease_ylds[[index]]$sex <- sex
+        pifs_no_disease_ylds[[index]] <- GetPif(pif_expanded, iage, isex, var_name_ylds)
+        pifs_no_disease_ylds[[index]]$sex <- isex
         pifs_no_disease_ylds[[index]]$deaths <- var_name_ylds
         names(pifs_no_disease_ylds[[index]])[names(pifs_no_disease_ylds[[index]]) == var_name_ylds] <- "pif"
         
@@ -250,7 +252,7 @@ for (iage in i_age_cohort){
                                                            in_mid_age = iage, in_disease = disease_short_names$sname[d])
         
         
-        names(disease_life_table_list_sc)[index] <- paste(age, sex, disease_short_names$sname[d], sep = "_")
+        names(disease_life_table_list_sc)[index] <- paste(iage, isex, disease_short_names$sname[d], sep = "_")
         
         
         
@@ -517,12 +519,12 @@ for (iage in i_age_cohort){
           
           output_burden_sc <- cbind(output_burden_sc, td3)
           output_burden_sc <- cbind(output_burden_sc, td4)
-          output_burden_sc$age_cohort <- age
+          output_burden_sc$age_cohort <- iage
           output_burden_sc <- cbind(output_burden_sc, output_burden_change2)
           
         }
         
-        # cat(age, " - ", sex," - ",  disease," - ",  index, " - ", l_index,  "\n")
+        # cat(iage, " - ", isex," - ",  disease," - ",  index, " - ", l_index,  "\n")
         index <- index + 1
       }
       
