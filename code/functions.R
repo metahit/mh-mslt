@@ -557,8 +557,11 @@ PlotOutput <- function(in_data, in_age, in_population, in_outcomes, in_legend = 
   p <- p + scale_color_discrete(name = paste(in_legend), labels = c("Baseline", "Difference", "Scenario")) +
     theme(legend.title = element_text(size = 9))
   
-  p <- p + xlab ('Age') + ylab ('Cases') + labs (title = ifelse(length(in_disease) > 0, 
-                                                                in_disease, paste('Cohort', in_age, "years old", in_population, sep = " "))) +
+  p <- p + xlab ('Simulation year') + ylab ('Cases') + labs (title = ifelse(length(in_disease) > 0, paste(in_age, in_population, in_disease, sep = " "), "")) +
+                                                                
+                                                                
+                                                                
+                                                                # in_disease, paste('Cohort', in_age, "years old", in_population, sep = " "))) +
     theme(plot.title = element_text(hjust = 0.5, size = 9)) +
     theme(legend.text = element_text(size = 9)) +
     # theme(axis.title.x = element_text(size = 7)) +

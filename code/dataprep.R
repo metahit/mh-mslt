@@ -825,11 +825,14 @@ names(pif)[names(pif) == "scen_motorcycle_Serious"  ] <- "pif_motorcyclist_ylds"
 pif$pif_lri_deaths <- pif$pif_lri
 pif$pif_lri_ylds <- pif$pif_lri
 
+## Delete pif_lri
+
+pif <- select(pif, -c(pif_lri))
+
+
 ### mslt_df names are not matching pifs names, need to change this, preferably, not manually
 
 #### MANUALLY TO CHECK THAT IT WORKS FOR ROAD INJURIES
-
-
 
 
 p <- filter(pif, sex == "male")
