@@ -27,6 +27,8 @@ source("code/functions.R")
 
 ## Data 
 
+## move name changes here
+
 relative_path <- '../mh-mslt/'
 pif_expanded <- read_csv(paste0(relative_path, "data/pif_expanded.csv"))
 mslt_df <- read_csv(paste0(relative_path, "data/mslt_df.csv"))
@@ -118,14 +120,20 @@ for (iage in i_age_cohort){
         
         ### with this I do not need to change the mslt_df names
         
+        pifs_no_disease_deaths[[index]] <- GetPif(pif_expanded, iage, isex, var_name_deaths)
+        pifs_no_disease_deaths[[index]]$sex <- isex
+        pifs_no_disease_deaths[[index]]$deaths <- var_name_deaths
+        names(pifs_no_disease_deaths[[index]])[names(pifs_no_disease_deaths[[index]]) == var_name_deaths] <- "pif"
         
         
         
         pif_non_disease <- as.data.frame(filter(pif_expanded, age >= iage & sex == isex) %>% 
                                            dplyr::select(age, sex, contains(disease_short_names$acronym[disease_short_names$sname == disease_short_names$sname[d]]))) 
         
-        # browser()
-        
+        pifs_no_disease_ylds[[index]] <- GetPif(pif_expanded, iage, isex, var_name_ylds)
+        pifs_no_disease_ylds[[index]]$sex <- isex
+        pifs_no_disease_ylds[[index]]$deaths <- var_name_ylds
+        names(pifs_no_disease_ylds[[index]])[names(pifs_no_disease_ylds[[index]]) == var_name_ylds] <- "pif"
         
         td1[td1$age >= iage & td1$sex == isex,][[paste("ylds_rate", disease_short_names$acronym[d], sep = "_")]] <- 
           td1[td1$age >= iage & td1$sex == isex,][[paste("ylds_rate", disease_short_names$acronym[d], sep = "_")]]
@@ -584,7 +592,7 @@ for (iage in i_age_cohort){
           
         }
         
-        # cat(age, " - ", sex," - ",  disease," - ",  index, " - ", l_index,  "\n")
+        # cat(iage, " - ", isex," - ",  disease," - ",  index, " - ", l_index,  "\n")
         index <- index + 1
       }
     }
