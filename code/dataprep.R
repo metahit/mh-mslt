@@ -140,6 +140,13 @@ disease_short_names$acronym <- ifelse(str_detect(disease_short_names$disease, "i
 
 disease_short_names$acronym <- word(disease_short_names$acronym, 1)
 
+## Add males and females only diseases
+
+disease_short_names$males <- ifelse(disease_short_names$disease %in% c("breast cancer", "uterine cancer"), 0, 1)
+
+disease_short_names$females <- 1
+
+
 ## Replace NAs with blank
 
 disease_short_names$acronym[is.na(disease_short_names$acronym)] <- "no_pif"

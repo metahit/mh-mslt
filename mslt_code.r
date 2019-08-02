@@ -449,7 +449,7 @@ for (iage in i_age_cohort){
 
 # ---- chunk-12 ----
 
-## In the following list "output_life_table", 32 data frames are nested per age and sex cohort
+## In the following list "output_life_table", 34 data frames are nested per age and sex cohort
 
 output_burden <- list()
 l_index <- 1
@@ -720,6 +720,18 @@ i_outcome <- c("mx", "inc")
 
 ## Graphs for diseases
 
+## Generate number of plots diseases males and females (non-diseases see)
+
+nplots_males <- filter(disease_short_names, males == 1 &(!acronym %in% c('no_pif' , 'other') & is_not_dis == 0)) %>% nrow()
+
+nplots_females <- filter(disease_short_names, females == 1 &(!acronym %in% c('no_pif' , 'other') & is_not_dis == 0)) %>% nrow()
+
+
+## test 
+
+i_age_cohort <- 17
+i_sex <- "male"
+
 i_outcome <- c("mx", "inc")
 p_list_male <- list()
 p_list_female <- list()
@@ -745,24 +757,47 @@ for (iage in i_age_cohort){
             
             
             ## THE FOLLOWING IS NOT USED, BUT SHOULD TO HAVE ALL GRAPHS BY AGE AND SEX AND DISEASE IN ONE PAGE
-            
-            # if (male_index %% 4 == 0 && male_index > 0){
-            #   
-            #   p1 <- p_list_male[[male_index - 3]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   p2 <- p_list_male[[male_index - 2]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   p3 <- p_list_male[[male_index - 1]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   p4 <- p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   
-              # jpeg(output_dir, "/", paste(iage, isex, outcome, sep="_"), ".jpeg")
-            #   GridArrangSharedLegend (p1, p2, p3, p4, ncol = 2, nrow = 2, mainTitle = paste(ifelse(outcome == "mx", "Deaths", "Incidence"), sex, "cohort mid age", age),
-            #                               mainLeft = 'Cases', mainBottom = 'Age')
-              # dev.off()
-            #   
-            # }
+          
             
             
-            ggsave(p_index, file=paste(output_dir, disease_short_names$sname[d], "_", isex, iage, ".tiff", sep=""), width = 14, height = 10, units = "cm")
-            # ggsave(ggarrange(plot_list =p_list_male), file=paste(output_dir, isex, iage, ".tiff", sep=""), width = 14, height = 10, units = "cm") 
+            if (male_index %% nplots_males == 0 && male_index > 0){
+              
+              for (np in 1:nplots_males){
+                if (np != nplots_males)
+                  assign(paste0("local_plot_object", np), p_list_male[[male_index - (nplots_males - np)]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
+                else
+                  assign(paste0("local_plot_object", np), p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
+                  
+            #   
+              # p1 <- p_list_male[[male_index - 5]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+              # p2 <- p_list_male[[male_index - 4]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+              # p3 <- p_list_male[[male_index - 3]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+              # p4 <- p_list_male[[male_index - 2]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+              # p5 <- p_list_male[[male_index - 1]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+              # 
+              
+              }
+              
+              
+
+            #jpeg(filename = paste0(output_dir, paste(iage, isex, outcome, sep="_"), ".jpeg"))
+              # jpeg("test.jpeg")
+              # 
+            
+            
+            #GridArrangSharedLegend (p1, p2, p3, p4, p5, p6, ncol = 3, nrow = 2, mainTitle = paste(ifelse(outcome == 'mx', 'Deaths', 'Incidence'), isex, iage),
+                                    #mainLeft = 'Cases', mainBottom = 'Age')
+            #dev.off()
+
+            }
+            
+            ## This saves plots for each disease by age and sex
+              
+              
+            # ggsave(p_index, file=paste(output_dir, disease_short_names$sname[d], "_", isex, iage, ".tiff", sep=""), width = 14, height = 10, units = "cm")
+            
+            
+            ## Add plot by age and sex and all diseases
             
             
             
@@ -770,28 +805,28 @@ for (iage in i_age_cohort){
             
           }
           
-          if (isex == "female"){
-
-            p_list_female[[female_index]] <- p_index
-            
-            # if (female_index %% 5 == 0){
-            #   p1 <- p_list_female[[female_index - 4]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   p2 <- p_list_female[[female_index - 3]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   p3 <- p_list_female[[female_index - 2]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   p4 <- p_list_female[[female_index - 1]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   p5 <- p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
-            #   
-            ggsave(p_index, file=paste(output_dir, disease_short_names$sname[d], "_", isex, iage, ".tiff", sep=""), width = 14, height = 10, units = "cm")
-            #   GridArrangSharedLegend (p1, p2, p3, p4, p5, ncol = 2, nrow = 3, mainTitle = paste(ifelse(outcome == "mx", "Deaths", "Incidence"), sex, "cohort mid age", age), mainLeft = 'Cases', mainBottom = 'Age')
-              # dev.off()
-            #   
-            # }
-            female_index <- female_index + 1
-            
-            
-            
-            #### ADD NON DISEASE, USE A DIFFERENT INDEX FOR MALES AND FEMALES AS THEY HAVE DIFFERENT LENGHT SOURCE DATA
-          }
+          # if (isex == "female"){
+          # 
+          #   p_list_female[[female_index]] <- p_index
+          #   
+          #   # if (female_index %% 5 == 0){
+          #   #   p1 <- p_list_female[[female_index - 4]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+          #   #   p2 <- p_list_female[[female_index - 3]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+          #   #   p3 <- p_list_female[[female_index - 2]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+          #   #   p4 <- p_list_female[[female_index - 1]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+          #   #   p5 <- p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank())
+          #   #   
+          #   ggsave(p_index, file=paste(output_dir, disease_short_names$sname[d], "_", isex, iage, ".tiff", sep=""), width = 14, height = 10, units = "cm")
+          #   #   GridArrangSharedLegend (p1, p2, p3, p4, p5, ncol = 2, nrow = 3, mainTitle = paste(ifelse(outcome == "mx", "Deaths", "Incidence"), sex, "cohort mid age", age), mainLeft = 'Cases', mainBottom = 'Age')
+          #     # dev.off()
+          #   #   
+          #   # }
+          #   female_index <- female_index + 1
+          #   
+          #   
+          #   
+          #   #### ADD NON DISEASE, USE A DIFFERENT INDEX FOR MALES AND FEMALES AS THEY HAVE DIFFERENT LENGHT SOURCE DATA
+          # }
           
         }
       }
