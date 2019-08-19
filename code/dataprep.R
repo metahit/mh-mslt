@@ -609,8 +609,7 @@ for (d in 1:nrow(disease_short_names)){
         
         data <- filter(gbd_df, sex == sex_index) %>% select(age, sex, age_cat, starts_with(var_name))
         
-        # browser()
-        
+
         x <- data$age_cat
         y <- log(data[[var_name]])
         
