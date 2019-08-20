@@ -74,7 +74,7 @@ localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somer
 ## Defining folder where the data is stored (stored externally in my dropbox as the GBD files are large)
 ## CHANGE TO v-DRIVE
 
-data_folder <- "C:/Users/Bele/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017"
+data_folder <- "C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017"
 temp_folder <- paste0(data_folder,"/temp") 
 result_folder <- paste0(data_folder,"/final")
 gbdfile_name <- "/IHME-GBD_2017_DATA-0a504496-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
@@ -125,7 +125,7 @@ disease_short_names[disease_short_names$sname == "lwri", "is_not_dis"] <- 1
 
 ## Get execute-mh diseases (CHECK WITH ALI TO USE RELATIVE PATH TO READ DIRECLTY FROM MH-EXECUTE DIRECTORY, DATA PREP??)
 
-disease_names_execute <- read_csv("C:/Users/Bele/Dropbox/Collaborations/James Woodcock/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
+disease_names_execute <- read_csv("C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
 
 disease_names_execute <- disease_names_execute[1:2]
 disease_names_execute$disease <- tolower(disease_names_execute$GBD_name)

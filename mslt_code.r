@@ -67,12 +67,19 @@ for (iage in i_age_cohort){
 
 # ---- chunk-3 ----
 
+
+### Change order in disease short_names to start with diabetes. This is important when calculating the scenario disease life tables as diabetes is calculated first to then 
+### impact on cardiovascular disease calculations. 
+
+dia_index <- which(DISEASE_SHORT_NAMES$sname=='dmt2')
+dia_order <- c(dia_index,c(1:nrow(DISEASE_SHORT_NAMES))[-dia_index])
+
 disease_life_table_list_bl <- list()
 index <- 1
 
 for (iage in i_age_cohort){
   for (isex in i_sex){
-   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+   for (d in c(1:nrow(DISEASE_SHORT_NAMES))[dia_order]){
       
      
       ## Exclude non-males diseases and non-chronic diseases and road injuries and disease with no pif
@@ -282,6 +289,9 @@ age_sex_cols <- which(colnames(disease_life_table_list_sc[[index]])%in%c('age', 
 
 ### Sum mortality rate change scenarios (mx_sc_total)
 
+
+
+
 #### Diseases
 mx_sc_total_disease <- list()
 l_index <- 1
@@ -485,46 +495,40 @@ for (iage in i_age_cohort){
 
 ## In the following list "output_life_table", 34 data frames are nested per age and sex cohort
 
+## Outputs are generated following the index order of disease life tables baseline and scenarios where diabates is first calculated as it impacts on cardivascular diseases. 
+
+dia_index <- which(DISEASE_SHORT_NAMES$sname=='dmt2')
+dia_order <- c(dia_index,c(1:nrow(DISEASE_SHORT_NAMES))[-dia_index])
+
+
 output_burden <- list()
 l_index <- 1
 index <- 1
 index_n <- 1
-
-## Vectors diseases
-sc_cols <- which(colnames(disease_life_table_list_sc[[index]])%in%c('age', 'sex', 'incidence_disease', 'mx', 'px'))
-bl_cols <- which(colnames(disease_life_table_list_bl[[index]])%in%c('incidence_disease', 'mx', 'px'))
-
-## Vectors general life table
-l_sc_cols <- which(colnames(general_life_table_list_sc[[l_index]])%in%c('Lx', 'Lwx'))
-l_bl_cols <- which(colnames(general_life_table_list_bl[[l_index]])%in%c('Lx', 'Lwx'))
-
-
 for (iage in i_age_cohort){
   for (isex in i_sex){
     
-    # Males do not have breast cancer, that is why we need the if/else.
+    
     # We create a TRUE/FALSE variable for the loop to move into the next disease
     
     create_new <- T
-    for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+    for (d in c(1:nrow(DISEASE_SHORT_NAMES))[dia_order]){
       if (isex == "male" && (DISEASE_SHORT_NAMES$disease[d] %in% c("breast cancer", "uterine cancer"))
           || DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || DISEASE_SHORT_NAMES$acronym[d] == "no_pif" || DISEASE_SHORT_NAMES$acronym[d] == "other"){
       }
       else {
         
         if (create_new){
-          
-          ## Burden sceanrio rates per one
-          output_burden_sc <- disease_life_table_list_sc[[index]][,sc_cols]
+          output_burden_sc <- dplyr::select(disease_life_table_list_sc[[index]],
+                                            c('age', 'sex', 'incidence_disease', 'mx', 'px'))
           names(output_burden_sc)[names(output_burden_sc) == 'incidence_disease'] <-
             paste('incidence_disease', DISEASE_SHORT_NAMES$sname[d], "sc", sep = "_")
           names(output_burden_sc)[names(output_burden_sc) == 'mx'] <-
             paste('mx', DISEASE_SHORT_NAMES$sname[d], "sc", sep = "_")
           names(output_burden_sc)[names(output_burden_sc) == 'px'] <-
             paste('px', DISEASE_SHORT_NAMES$sname[d], "sc", sep = "_")
-         
-          ## Burden baseline rates per one
-          output_burden_bl <- disease_life_table_list_bl[[index]][,bl_cols]
+          output_burden_bl <- dplyr::select(disease_life_table_list_bl[[index]],
+                                            c('incidence_disease', 'mx', 'px'))
           names(output_burden_bl)[names(output_burden_bl) == 'incidence_disease'] <-
             paste('incidence_disease', DISEASE_SHORT_NAMES$sname[d], "bl", sep = "_")
           names(output_burden_bl)[names(output_burden_bl) == 'mx'] <-
@@ -541,12 +545,14 @@ for (iage in i_age_cohort){
           output_burden_change$inc_num_sc <- disease_life_table_list_sc[[index]]$incidence_disease *
             (1 - disease_life_table_list_sc[[index]]$px) * general_life_table_list_sc[[l_index]]$Lx
           output_burden_change$inc_num_diff <- (disease_life_table_list_sc[[index]]$incidence_disease *
-                                                  (1 - disease_life_table_list_sc[[index]]$px) * general_life_table_list_sc[[l_index]]$Lx) - (disease_life_table_list_bl[[index]]$incidence_disease * (1 - disease_life_table_list_bl[[index]]$px)
-                                                                                                                                              * general_life_table_list_bl[[l_index]]$Lx)
+                                                  (1 - disease_life_table_list_sc[[index]]$px) * general_life_table_list_sc[[l_index]]$Lx) - 
+            (disease_life_table_list_bl[[index]]$incidence_disease * (1 - disease_life_table_list_bl[[index]]$px) * 
+               general_life_table_list_bl[[l_index]]$Lx)
           
           output_burden_change$mx_num_bl <- disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx
           output_burden_change$mx_num_sc <- disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx
-          output_burden_change$mx_num_diff <- (disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx) - (disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx)
+          output_burden_change$mx_num_diff <- (disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx) - 
+            (disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx)
           
           names(output_burden_change)[names(output_burden_change) == 'inc_num_bl'] <-
             paste('inc_num_bl', DISEASE_SHORT_NAMES$sname[d], sep = "_")
@@ -572,8 +578,8 @@ for (iage in i_age_cohort){
           
         }else{
           
-         
-          td3 <- disease_life_table_list_sc[[index]][,colnames(disease_life_table_list_sc[[index]])%in%c('incidence_disease', 'mx', 'px')]
+          td3 <- dplyr::select(disease_life_table_list_sc[[index]],
+                               c('incidence_disease', 'mx', 'px'))
           names(td3)[names(td3) == 'incidence_disease'] <-
             paste('incidence_disease', DISEASE_SHORT_NAMES$sname[d], "sc", sep = "_")
           names(td3)[names(td3) == 'mx'] <-
@@ -581,8 +587,8 @@ for (iage in i_age_cohort){
           names(td3)[names(td3) == 'px'] <-
             paste('px', DISEASE_SHORT_NAMES$sname[d], "sc", sep = "_")
           
-          
-          td4 <- disease_life_table_list_bl[[index]][,colnames(disease_life_table_list_bl[[index]])%in%c('incidence_disease', 'mx', 'px')]
+          td4 <- dplyr::select(disease_life_table_list_bl[[index]],
+                               c('incidence_disease', 'mx', 'px'))
           names(td4)[names(td4) == 'incidence_disease'] <-
             paste('incidence_disease', DISEASE_SHORT_NAMES$sname[d], "bl", sep = "_")
           names(td4)[names(td4) == 'mx'] <-
@@ -592,13 +598,18 @@ for (iage in i_age_cohort){
           
           output_burden_change2 <- list()
           
-          output_burden_change2$inc_num_bl <- disease_life_table_list_bl[[index]]$incidence_disease * (1 - disease_life_table_list_bl[[index]]$px) * general_life_table_list_bl[[l_index]]$Lx
-          output_burden_change2$inc_num_sc <- disease_life_table_list_sc[[index]]$incidence_disease * (1 - disease_life_table_list_sc[[index]]$px) * general_life_table_list_sc[[l_index]]$Lx
-          output_burden_change2$inc_num_diff <- (disease_life_table_list_sc[[index]]$incidence_disease * (1 - disease_life_table_list_sc[[index]]$px) * general_life_table_list_sc[[l_index]]$Lx) - (disease_life_table_list_bl[[index]]$incidence_disease * (1 - disease_life_table_list_bl[[index]]$px) * general_life_table_list_bl[[l_index]]$Lx)
+          output_burden_change2$inc_num_bl <- disease_life_table_list_bl[[index]]$incidence_disease * (1 - disease_life_table_list_bl[[index]]$px) * 
+            general_life_table_list_bl[[l_index]]$Lx
+          output_burden_change2$inc_num_sc <- disease_life_table_list_sc[[index]]$incidence_disease * (1 - disease_life_table_list_sc[[index]]$px) * 
+            general_life_table_list_sc[[l_index]]$Lx
+          output_burden_change2$inc_num_diff <- (disease_life_table_list_sc[[index]]$incidence_disease * (1 - disease_life_table_list_sc[[index]]$px) * 
+                                                   general_life_table_list_sc[[l_index]]$Lx) - (disease_life_table_list_bl[[index]]$incidence_disease * 
+                                                                                                  (1 - disease_life_table_list_bl[[index]]$px) * general_life_table_list_bl[[l_index]]$Lx)
           
           output_burden_change2$mx_num_bl <- disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx
           output_burden_change2$mx_num_sc <- disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx
-          output_burden_change2$mx_num_diff <- (disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx) - (disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx)
+          output_burden_change2$mx_num_diff <- (disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx) - 
+            (disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx)
           
           names(output_burden_change2)[names(output_burden_change2) == 'inc_num_bl'] <-
             paste('inc_num_bl', DISEASE_SHORT_NAMES$sname[d], sep = "_")
@@ -626,8 +637,8 @@ for (iage in i_age_cohort){
         # cat(iage, " - ", isex," - ",  disease," - ",  index, " - ", l_index,  "\n")
         index <- index + 1
       }
-      
     }
+    
     
     #### Add non_diseases (injuires and lwri)
     
@@ -656,9 +667,9 @@ for (iage in i_age_cohort){
           
           ## Change names numbers to match non_disease
           
-          names(td5)[names(td5) == "mx_num_diff"] <- paste("mx_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
+          names(td5)[names(td5) == "mx_num_diff"] <- paste("ylds_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
           
-          names(td5)[names(td5) == "ylds_num_diff"] <- paste("ylds_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
+          names(td5)[names(td5) == "ylds_num_diff"] <- paste("mx_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
           
           
           create_new <- F
@@ -684,9 +695,9 @@ for (iage in i_age_cohort){
           
           ## Change names numbers to match non_disease
           
-          names(td6)[names(td6) == "mx_num_diff"] <- paste("mx_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
+          names(td6)[names(td6) == "mx_num_diff"] <- paste("ylds_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
           
-          names(td6)[names(td6) == "ylds_num_diff"] <- paste("ylds_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
+          names(td6)[names(td6) == "ylds_num_diff"] <- paste("mx_num_diff_", DISEASE_SHORT_NAMES$acronym[d], sep = "_")
           
           
           ## Bind all lists
@@ -728,42 +739,44 @@ for (iage in i_age_cohort){
     
   }
 }
+# ---- chunk-11 ---- 
 
-# ---- chunk-11 ----
-
-
-
-# ---- chunk-13 ---- 
-
-## Generate a data frame for all results and create function to get outcomes.
+## Generate a data frame for all results
 
 output_df <- plyr::ldply(output_burden, rbind)
 
-
-# ---- chunk- 14 ----  
-
 output_dir = "output/"
 
-## Graphs for diseases by age and sex, disease incidence and mortality numbers diseases. 
 
-## Generate number of plots diseases males and females (non-diseases do separetly)
+
+# ---- chunk- 12 ----  
+
+### Females and males have different numbers of graphs: use if all graphs for for each male and female cohort will be placed in the same page. 
 
 nplots_males <- filter(DISEASE_SHORT_NAMES, males == 1 &(!acronym %in% c('no_pif' , 'other') & is_not_dis == 0)) %>% nrow()
 
 nplots_females <- filter(DISEASE_SHORT_NAMES, females == 1 &(!acronym %in% c('no_pif' , 'other') & is_not_dis == 0)) %>% nrow()
 
+### Define variables names
+bl <- "num_bl"
+sc <- "num_sc"
+diff <- "num_diff"
 
-iage <- 17
-isex <- "male"
+#### DISEASE DEATHS AND INCIDENCE: graphs by age and sex cohort, over the life course of cohort. 
 
+# iage <- 17
+# isex <- "male"
+##### Outcomes to graph
 i_outcome <- c("mx", "inc")
+#### IMPROVE NAME OUTPUT
+
 p_list_male <- list()
 p_list_female <- list()
 male_index <- 1
 female_index <- 1
 for (iage in i_age_cohort){
   for (isex in i_sex) {
-    for (outcome in i_outcome) {
+    for (ioutcome in i_outcome) {
       for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
         
         
@@ -772,89 +785,107 @@ for (iage in i_age_cohort){
         }
         else{
           
-          p_index  <- PlotOutput(in_data = output_df, in_age = iage, in_population = isex, in_outcomes = c("age", paste(outcome, "num", "bl", DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(outcome, "num", "sc", DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(outcome, "num", "diff", DISEASE_SHORT_NAMES$sname[d], sep = "_")), in_legend = "", in_disease = DISEASE_SHORT_NAMES$disease[d])
+          p_index  <- PlotOutput(in_data = output_df, in_age = iage, in_population = isex, in_outcomes = c("age", paste(ioutcome, bl, DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(ioutcome, sc, DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(ioutcome, diff, DISEASE_SHORT_NAMES$sname[d], sep = "_")), in_legend = ioutcome, in_disease = DISEASE_SHORT_NAMES$disease[d])
           
-          if (isex == "male"){
-            
-            p_list_male[[male_index]] <- p_index
-            
-            
-            if (male_index %% nplots_males == 0 && male_index > 0){
-              
-              for (np in 1:nplots_males){
-                if (np != nplots_males)
-                  assign(paste0("local_plot_object", np), p_list_male[[male_index - (nplots_males - np)]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
-                else
-                  assign(paste0("local_plot_object", np), p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
-                  
-              
-
-            # jpeg(filename = paste0(output_dir, paste(iage, isex, outcome, sep="_"), ".jpeg"))
-            jpeg("test.jpeg")
-              # 
-            
-            
-            GridArrangSharedLegend (local_plot_object, ncol = 3, nrow = 2, mainTitle = paste(ifelse(outcome == 'mx', 'Deaths', 'Incidence'), isex, iage),
-            mainLeft = 'Cases', mainBottom = 'Age')
-            dev.off()
-
-            }
-            
-            ## This saves plots for each disease by age and sex
-              
-              
-           # ggsave(p_index, file=paste(output_dir, DISEASE_SHORT_NAMES$sname[d], "_", isex, iage, ".tiff", sep=""), width = 14, height = 10, units = "cm")
-           #  
-            
-            ## Add plot by age and sex and all diseases
-            
-            
-            
-            male_index <- male_index + 1
-            
-            }
-          }
+          # jpeg(filename = paste0(output_dir, paste(iage, isex, outcome, sep="_"), ".jpeg"))
           
-          if (isex == "female"){
-
-            p_list_female[[female_index]] <- p_index
-            
-            if (female_index %% nplots_females == 0 && female_index > 0){
-              
-              for (np in 1:nplots_females){
-                if (np != nplots_females)
-                  assign(paste0("local_plot_object", np), p_list_female[[female_index - (nplots_females - np)]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
-                else
-                  assign(paste0("local_plot_object", np), p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
+          ggsave(p_index, file=paste(output_dir, DISEASE_SHORT_NAMES$sname[d], isex, iage, ioutcome, ".jpeg", sep="_"), width = 14, height = 10, units = "cm")
           
-              }
-            }
-          }
+          
         }
       }
     }
   }
 }
 
-
-
-
-
-## Loop to include graphs in the document(CHECK WHAT IS THE USE OF THIS CODE)
-
-# graphs_doc <- list()
-# index <- 1
-# for (age in i.age.cohort) {
-#   for (sex in i.sex)  {
-#     for (outcome in i_outcome) {
+###### DELETE COMMENTED OUT BELOW
+#           if (isex == "male"){
+#             
+#             p_list_male[[male_index]] <- p_index
+#             
+#             
+#             if (male_index %% nplots_males == 0 && male_index > 0){
+#               
+#               for (np in 1:nplots_males){
+#                 if (np != nplots_males)
+#                   assign(paste0("local_plot_object", np), p_list_male[[male_index - (nplots_males - np)]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
+#                 else
+#                   assign(paste0("local_plot_object", np), p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
+#                   
+#               
 # 
-#       graphs_doc [[index]] <- c(paste(output_dir, "/",age,"_",sex,"_", outcome,".jpeg", sep = ""))
-#       knitr::include_graphics(graphs_doc [[index]])
+#            jpeg(filename = paste0(output_dir, paste(iage, isex, outcome, sep="_"), ".jpeg"))
+#            
+#           
+#            
+#            
+#            
+#            
+#             # jpeg("test.jpeg")
+#               # 
+#             
+#             # 
+#             # GridArrangSharedLegend (local_plot_object, ncol = 3, nrow = 2, mainTitle = paste(ifelse(outcome == 'mx', 'Deaths', 'Incidence'), isex, iage),
+#             # mainLeft = 'Cases', mainBottom = 'Age')
+#             # dev.off()
 # 
-#       index <- index + 1
+#             }
+#             
+#             ## This saves plots for each disease by age and sex
+#               
+#               
+#          ggsave(p_index, file=paste(output_dir, DISEASE_SHORT_NAMES$sname[d], "_", isex, iage, ".tiff", sep=""), width = 14, height = 10, units = "cm")
+#            #  
+#             
+#             ## Add plot by age and sex and all diseases
+#             
+#             
+#             
+#             male_index <- male_index + 1
+#             
+#             }
+#           }
+#           
+#           if (isex == "female"){
+# 
+#             p_list_female[[female_index]] <- p_index
+#             
+#             if (female_index %% nplots_females == 0 && female_index > 0){
+#               
+#               for (np in 1:nplots_females){
+#                 if (np != nplots_females)
+#                   assign(paste0("local_plot_object", np), p_list_female[[female_index - (nplots_females - np)]] + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
+#                 else
+#                   assign(paste0("local_plot_object", np), p_index + theme(legend.position="none", axis.title.x = element_blank(),  axis.title.y = element_blank()))
+#           
+#               }
+#             }
+#           }
+#         }
+#       }
 #     }
 #   }
 # }
+# 
+# 
+# 
+# 
+# 
+# ## Loop to include graphs in the document(CHECK WHAT IS THE USE OF THIS CODE)
+# 
+# # graphs_doc <- list()
+# # index <- 1
+# # for (age in i.age.cohort) {
+# #   for (sex in i.sex)  {
+# #     for (outcome in i_outcome) {
+# # 
+# #       graphs_doc [[index]] <- c(paste(output_dir, "/",age,"_",sex,"_", outcome,".jpeg", sep = ""))
+# #       knitr::include_graphics(graphs_doc [[index]])
+# # 
+# #       index <- index + 1
+# #     }
+# #   }
+# # }
 
 
 
