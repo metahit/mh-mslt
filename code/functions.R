@@ -342,6 +342,16 @@ RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
   
 {
   df <- in_idata[,colnames(in_idata) %in% c('sex', 'age',  paste0("deaths_rate_", in_non_disease), paste0("ylds_rate_", in_non_disease))]
+  
+  ## Delete names disease from columns to simplify calculations
+  
+  names(df)[names(df) == paste0("deaths_rate_", in_non_disease)] <-
+    paste("deaths_rate_bl")
+  
+  names(df)[names(df) == paste0("ylds_rate_", in_non_disease)] <-
+    paste("ylds_rate_bl")
+  
+  
   return(df)
 }
 
