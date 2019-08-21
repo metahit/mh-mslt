@@ -801,6 +801,7 @@ for (iage in i_age_cohort){
     
   }
 }
+
 # ---- chunk-11 ---- 
 
 ## Generate a data frame for all results
@@ -813,18 +814,20 @@ output_dir = "output/"
 
 # ---- chunk- 12 ----  
 
-#### DISEASE DEATHS AND INCIDENCE NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
+## These graphs are for each cohort disease and non-disease over the life course of the cohort (simulaiton year)
 
-### Define variables names
+### DISEASE DEATHS AND INCIDENCE NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
+
+#### Define variables names
 bl <- "num_bl"
 sc <- "num_sc"
 diff <- "num_diff"
-i_outcome <- c("mx", "inc")
+i_outcome_d <- c("mx", "inc")
 
 
 for (iage in i_age_cohort){
   for (isex in i_sex) {
-    for (ioutcome in i_outcome) {
+    for (ioutcome in i_outcome_d) {
       for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
         
         
@@ -844,20 +847,19 @@ for (iage in i_age_cohort){
   }
 }
 
-# ---- chunk- 13 ----  
 
-#### NON-DISEASE DEATHS AND YLDS NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
+### NON-DISEASE DEATHS AND YLDS NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
 
-### Define variables names
+#### Define variables names
 bl <- "num_bl"
 sc <- "num_sc"
 diff <- "num_diff"
-i_outcome <- c("mx", "ylds")
+i_outcome_nd <- c("mx", "ylds")
 
 
 for (iage in i_age_cohort){
   for (isex in i_sex) {
-    for (ioutcome in i_outcome) {
+    for (ioutcome in i_outcome_nd) {
       for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
         
        
@@ -880,27 +882,69 @@ for (iage in i_age_cohort){
 
 # ---- chunk-13 ----
 
-aggregate_frame_males <- list()
-aggregate_frame_females <- list()
+## The script below aggregates all outcomes per yer of simulation for all age and sex groups. 
+## For example, year one represents the totals for all cohorts in year one of the simulation. 
+
+### Diseases
+
+#### BZ: if condition not working for non-males diseases. 
+
+aggregate_frame_d_males <- list()
+aggregate_frame_d_females <- list()
 
 index <- 1
 
-for (outcome in i_outcome) {
-  for (disease in i_disease) {
+for (ioutcome in i_outcome_d) {
+  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+    if (isex == "male" && (DISEASE_SHORT_NAMES$disease[d] %in% c("breast cancer", "uterine cancer"))
+        || DISEASE_SHORT_NAMES$acronym[d] == "no_pif" || DISEASE_SHORT_NAMES$acronym[d] == "other" || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
+    }
+    else{
     
-    aggregate_frame_males[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 16, in_population = "male", in_outcomes = c(paste(outcome, "num", "bl", disease, sep = "_"), paste(outcome, "num", "sc", disease, sep = "_"), paste(outcome, "num", "diff", disease, sep = "_")))
+    aggregate_frame_d_males[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = "male", in_outcomes = c(paste(ioutcome, "num", "bl", DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(ioutcome, "num", "sc", DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(ioutcome, "num", "diff", DISEASE_SHORT_NAMES$sname[d], sep = "_")))
     
-    aggregate_frame_females[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 16, in_population = "female", in_outcomes = c(paste(outcome, "num", "bl", disease, sep = "_"), paste(outcome, "num", "sc", disease, sep = "_"), paste(outcome, "num", "diff", disease, sep = "_")))
+    aggregate_frame_d_females[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = "female", in_outcomes = c(paste(ioutcome, "num", "bl", DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(ioutcome, "num", "sc", DISEASE_SHORT_NAMES$sname[d], sep = "_"), paste(ioutcome, "num", "diff", DISEASE_SHORT_NAMES$sname[d], sep = "_")))
     
     # Remove non-numeric columns starting with age and sex
-    aggregate_frame_males[[index]] <- aggregate_frame_males[[index]] %>% dplyr::select(-starts_with("age"), -starts_with("sex"))
+    aggregate_frame_d_males[[index]] <- aggregate_frame_d_males[[index]] %>% dplyr::select(-starts_with("age"), -starts_with("sex"))
     
-    aggregate_frame_females[[index]] <- aggregate_frame_females[[index]] %>% dplyr::select(-starts_with("age"), -starts_with("sex"))
+    aggregate_frame_d_females[[index]] <- aggregate_frame_d_females[[index]] %>% dplyr::select(-starts_with("age"), -starts_with("sex"))
     
     index <- index + 1
+    }
   }
 }
 
+
+### non-Diseases
+
+#### BZ: if condition not working for non-males diseases. 
+
+aggregate_frame_nd_males <- list()
+aggregate_frame_nd_females <- list()
+
+index <- 1
+
+for (ioutcome in i_outcome_nd) {
+  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+    ## Exclude chronic disease and all-cause mortality and  pyld
+    if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == "other" || DISEASE_SHORT_NAMES$acronym[d] == "no_pif"){
+    }
+    else {
+      
+      aggregate_frame_nd_males[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = "male", in_outcomes = c(paste(ioutcome, "num", "bl", DISEASE_SHORT_NAMES$acronym[d], sep = "_"), paste(ioutcome, "num", "sc", DISEASE_SHORT_NAMES$acronym[d], sep = "_"), paste(ioutcome, "num", "diff", DISEASE_SHORT_NAMES$acronym[d], sep = "_")))
+      
+      aggregate_frame_nd_females[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = "female", in_outcomes = c(paste(ioutcome, "num", "bl", DISEASE_SHORT_NAMES$acronym[d], sep = "_"), paste(ioutcome, "num", "sc", DISEASE_SHORT_NAMES$acronym[d], sep = "_"), paste(ioutcome, "num", "diff", DISEASE_SHORT_NAMES$acronym[d], sep = "_")))
+      
+      # Remove non-numeric columns starting with age and sex
+      aggregate_frame_nd_males[[index]] <- aggregate_frame_nd_males[[index]] %>% dplyr::select(-starts_with("age"), -starts_with("sex"))
+      
+      aggregate_frame_nd_females[[index]] <- aggregate_frame_nd_females[[index]] %>% dplyr::select(-starts_with("age"), -starts_with("sex"))
+      
+      index <- index + 1
+    }
+  }
+}
 
 ## Loop for life years (Lx) and health adjusted life years (Lwx) to then add to total aggregated data.
 
