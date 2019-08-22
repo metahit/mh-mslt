@@ -197,4 +197,69 @@ pif_expanded_1$age <- outage
 pif_expanded <- rbind(pif_expanded, pif_expanded_1)
 
 
+### Test parallel to run graphs and save time (carl Higgs)
+
+require(data.table) # For creating a table of permutations feeding into a plotting function
+require(parallel) # For parallel processing
+
+# Create a data table containing scenario permutations
+
+i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
+i_sex <- c("male", "female")
+ioutcome = i_outcome_d
+
+# do whatever to define the variables used for iteration  / disease filtering
+
+bl <- "num_bl"
+sc <- "num_sc"
+diff <- "num_diff"
+i_outcome_d <- c("mx", "inc")
+
+# construct simulation data table from parameter combinations
+dt <- as.data.table(expand.grid(iage = i_age_cohort,
+                                isex = i_sex,
+                                ioutcome = i))
+                        
+# create other variables as funtions of these, or reorder  / take subset of permutations, eg NOT SURE WHAT IS THIS
+setcolorder(dt,c("iage","isex","ioutcome"))
+dt <- dt[,c("iage","isex","ioutcome")]
+
+# Prepare for parallel processing using all available cores
+cores <- detectCores(logical = FALSE)
+cl <- makeCluster(cores)
+# Export required functions and data to cluster workers
+clusterExport(cl, c( "dt","output_df","PlotOutput","ggsave"))
+
+# Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
+system.time(
+  parLapply(cl, 1:nrow(dt), function(x) { 
+    with(dt, ggsave(PlotOutput(in_data = output_df, 
+                               in_age = iage, 
+                               in_population = isex, 
+                               in_outcomes = c("age", paste(ioutcome, bl, DISEASE_SHORT_NAMES$sname[d], sep = "_"), 
+                                               paste(ioutcome, sc, DISEASE_SHORT_NAMES$sname[d], sep = "_"), 
+                                               paste(ioutcome, diff, DISEASE_SHORT_NAMES$sname[d], sep = "_")), 
+                               in_legend = ifelse(ioutcome == "inc", "Incidence", "Deaths"), 
+                               in_disease = DISEASE_SHORT_NAMES$disease[d]),
+                    file=paste0("output_dir/", 
+                                DISEASE_SHORT_NAMES$sname[d],
+                                "_", 
+                                isex, 
+                                "_", 
+                                iage, 
+                                "_", 
+                                ioutcome, 
+                                ".jpeg"), 
+                    width = 14, 
+                    height = 10,
+                    units = "cm")
+    )
+  }
+  )
+)
+
+# Conclude parallel processing and free cores
+stopCluster(cl)
+
+
 

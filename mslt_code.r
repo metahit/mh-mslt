@@ -882,7 +882,7 @@ for (iage in i_age_cohort){
 
 # ---- chunk-13 ----
 
-## The script below aggregates all outcomes per yer of simulation for all age and sex groups. 
+## The script below aggregates all outcomes per year of simulation for all age and sex groups. 
 ## For example, year one represents the totals for all cohorts in year one of the simulation. 
 
 ### Diseases
