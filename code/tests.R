@@ -206,14 +206,14 @@ require(parallel) # For parallel processing
 
 i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
 i_sex <- c("male", "female")
-ioutcome = i_outcome_d
+ioutcome = c("mx", "inc")
 
 # do whatever to define the variables used for iteration  / disease filtering
 
 bl <- "num_bl"
 sc <- "num_sc"
 diff <- "num_diff"
-i_outcome_d <- c("mx", "inc")
+
 
 # construct simulation data table from parameter combinations
 dt <- as.data.table(expand.grid(iage = i_age_cohort,
@@ -231,6 +231,12 @@ cl <- makeCluster(cores)
 clusterExport(cl, c( "dt","output_df","PlotOutput","ggsave"))
 
 # Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
+for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+
+if (isex == "male" && (DISEASE_SHORT_NAMES$disease[d] %in% c("breast cancer", "uterine cancer"))
+    || DISEASE_SHORT_NAMES$acronym[d] == "no_pif" || DISEASE_SHORT_NAMES$acronym[d] == "other" || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
+}else {
+
 system.time(
   parLapply(cl, 1:nrow(dt), function(x) { 
     with(dt, ggsave(PlotOutput(in_data = output_df, 
@@ -257,7 +263,8 @@ system.time(
   }
   )
 )
-
+}
+}
 # Conclude parallel processing and free cores
 stopCluster(cl)
 
