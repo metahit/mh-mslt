@@ -414,7 +414,13 @@ PlotOutput <- function(in_data, in_age, in_population, in_outcomes, in_legend = 
   
   
 }
+install.packages("compiler")
+require(compiler)   # for byte code compilation
+PlotOutput_compiled <- cmpfun(PlotOutput)
+ggsave_compiled <- cmpfun(ggsave)
 
+# system.time(PlotOutput_compiled())
+# system.time(PlotOutput())
 
 # ---- GenAggregate ----
 # Function to aggreate outcomes by age an sex
