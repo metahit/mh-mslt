@@ -39,16 +39,25 @@ i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92
 
 i_sex <- c("male", "female")
 
-## Look up table to match local authority areas to city regions (USE REALTIVE PATH TO READ FROM EXECUTE-MH DIRECTORY)
+## Relative paths
+relative_path_execute <- '../mh-execute/'
+relative_path_mslt <- '../mh-mslt/'
 
-look_up_table <- read_csv("C:/Users/Bele/Dropbox/Collaborations/James Woodcock/mh-execute/inputs/mh_regions_lad_lookup.csv")
+## Get look up table from mh-execute
 
-city_regions <- data.frame(unique(look_up_table$cityregion))
-city_regions <- city_regions[2:10,]
+look_up_table <- read_csv(paste0(relative_path_execute, 'inputs/mh_regions_lad_lookup.csv'))
+
+##NEED THESE?
+# city_regions <- data.frame(unique(look_up_table$cityregion))
+# city_regions <- city_regions[2:10,]
 
 ## Dataframe with local goverment areas within each city region
 
 local_goverment_areas <-  look_up_table %>% filter(look_up_table$cityregion != "")
+
+## Generate a list of vectors of each city region and localities. Use [[]] to see each city region. 
+
+city_regions <- split(local_goverment_areas$lad11nm, f = local_goverment_areas$cityregion)
 
 
 ## Here we should have a loop to do all the processing in a loop for each of the localities (CHECK WITH ALI)
@@ -71,16 +80,22 @@ localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somer
 ## by first extracting zip-files, then reading csv file, adding required data to combined dataframe
 ## and finally deleiting extracted files. Resulting dataframe is then saved as csv-file.
 
-## Defining folder where the data is stored (stored externally in my dropbox as the GBD files are large)
+## Defining folder where the data is stored (stored externally in my box as the GBD files are large)
 ## CHANGE TO v-DRIVE
 
-data_folder <- "C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017"
+"C:\Users\e95517\Dropbox\Collaborations\James Woodcock\Metahit\Data\GBD2017\IHME-GBD_2017_DATA-0a504496-1.zip"
+
+data_folder <- "C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/"
 temp_folder <- paste0(data_folder,"/temp") 
 result_folder <- paste0(data_folder,"/final")
-gbdfile_name <- "/IHME-GBD_2017_DATA-0a504496-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
+gbdfile_name <- "IHME-GBD_2017_DATA-0a504496-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
 
 ## Next two lines defines locations that will be extracted. 
-LGAs <- unlist(read_csv("data/gbd/LGAs to be extracted.csv")[,2]) # CREATE FILE FOR YOUR LOCATIONS OF INTEREST, HERE LOCALITIES IN CITY OF BRISTOL REGION
+## NEED THIS ONCE WE HAVE TH ELOOP?
+
+#LGAs <- unlist(read_csv("data/gbd/LGAs to be extracted.csv")[,2]) # CREATE FILE FOR YOUR LOCATIONS OF INTEREST, HERE LOCALITIES IN CITY OF BRISTOL REGION
+
+## LOOP TO EXTRACT DATA FOR EACH CITY REGION
 
 data_extracted <- NULL
 
@@ -93,7 +108,7 @@ for (i in 1:40) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT 
   
   data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name, i, ".csv")))
   file.remove(paste0(temp_folder,"/", gbdfile_name, i, ".csv"))
-  data_read <- subset(data_read, location_name %in% LGAs) # location name is easier to identify
+  # data_read <- subset(data_read, location_name %in% local_goverment_areas$lad11nm) # location name is easier to identify
   
   data_extracted <- rbind(data_extracted,data_read)
 }
@@ -125,7 +140,8 @@ disease_short_names[disease_short_names$sname == "lwri", "is_not_dis"] <- 1
 
 ## Get execute-mh diseases (CHECK WITH ALI TO USE RELATIVE PATH TO READ DIRECLTY FROM MH-EXECUTE DIRECTORY, DATA PREP??)
 
-disease_names_execute <- read_csv("C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
+disease_names_execute <- read_csv(paste0(relative_path_execute, 'inputs/dose_response/disease_outcomes_lookup.csv'))
+
 
 disease_names_execute <- disease_names_execute[1:2]
 disease_names_execute$disease <- tolower(disease_names_execute$GBD_name)
@@ -171,12 +187,12 @@ names(gbd_input) = gsub(pattern = "_name", replacement = "", x = names(gbd_input
 
 gbd_input <- select(gbd_input,-contains("id"))
 
-gbd_input <- filter(gbd_input, location %in% localities) %>% mutate_if(is.factor, as.character)
+# gbd_input <- filter(gbd_input, location %in% localities) %>% mutate_if(is.factor, as.character) Delete, already done from by using read_csv
 
 gbd_input$cause <- tolower(gbd_input$cause) 
 
 
-# ---- chunk-2.2: Sort data per local goverment area ----
+# ---- chunk-2.2: Sort data per local goverment area ----## Loop to generate inputs starts here
 
 ## We first derive populaiton and cases numbers (e.g. all cause mortality) for each locality and then aggregate at the City Region level. 
 ## Loop to create a raw data set for 2017 for each of the localities to then process to get requiered data for disbayes/dismod. 
