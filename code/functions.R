@@ -52,11 +52,12 @@ SortGbdInput <- function(in_data, in_year, in_locality) {
 ## Organises GBD data per locality to tidy format with columns for variable names (e.g. age, sex, disease-cause, disease-metrics) and calculates population numbers.
 ## Also generates rates for localities, which we may use in the future when modelling per localities. 
 
+
 RunLocDf <- function(i_data) {
   
   gbd_df <- NULL 
   
-  for (ag in 1:length(unique(i_data$age))){
+  for (ag in 1:length(unique(i_data['age']))){
     for (gender in c("Male", "Female")){
       age_sex_df <- NULL
       for (dm in 1:length(disease_measures_list)){
@@ -64,10 +65,10 @@ RunLocDf <- function(i_data) {
           dn <- disease_short_names$disease[d]
           dmeasure <- disease_measures_list[dm] %>% as.character()
           
-          agroup <- unique(i_data$age)[ag]
+          agroup <- unique(i_data['age'])[ag]
           
           idf <- filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn) 
-        
+          
           if (nrow(idf) > 0){
             
             population_numbers <- filter(idf, metric == "Number") %>% select("val")
@@ -105,7 +106,7 @@ RunLocDf <- function(i_data) {
                 idf$population_number <- (100000 * population_numbers$val) / idf_rate$val
               
             }
-
+            
             
             idf$rate_per_1 <- round(current_idf_rate$val / 100000, 6)
             
@@ -117,19 +118,19 @@ RunLocDf <- function(i_data) {
             idf <- filter(idf, metric == "Number")
             
             if (is.null(age_sex_df)){
-
+              
               age_sex_df <- select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
             }
             else{
               
               age_sex_df <- cbind(age_sex_df, select(idf, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
-              }
             }
           }
         }
-
+      }
+      
       if (is.null(gbd_df)){
-
+        
         gbd_df <- age_sex_df
       }
       else{

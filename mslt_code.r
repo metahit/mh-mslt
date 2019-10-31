@@ -16,7 +16,8 @@ require(devtools)
 require(janitor)
 
 
-# rm (list = ls())
+
+rm (list = ls())
 options(scipen=999)
 
 # ---- chunk-1 ----

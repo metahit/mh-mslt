@@ -53,11 +53,14 @@ look_up_table <- read_csv(paste0(relative_path_execute, 'inputs/mh_regions_lad_l
 
 ## Dataframe with local goverment areas within each city region
 
-local_goverment_areas <-  look_up_table %>% filter(look_up_table$cityregion != "")
+local_goverment_areas <-  look_up_table %>% filter(look_up_table$cityregion != "") 
+names(local_goverment_areas)[names(local_goverment_areas) == "lad11nm"] <- "location"
 
-## Generate a list of vectors of each city region and localities. Use [[]] to see each city region. 
 
-city_regions <- split(local_goverment_areas$lad11nm, f = local_goverment_areas$cityregion)
+### NO NEED FOR this
+# ## Generate a list of vectors of each city region and localities. Use [[]] to see each city region. 
+# 
+# city_regions <- split(local_goverment_areas$lad11nm, f = local_goverment_areas$cityregion)
 
 
 ## Here we should have a loop to do all the processing in a loop for each of the localities (CHECK WITH ALI)
@@ -192,26 +195,42 @@ gbd_input <- select(gbd_input,-contains("id"))
 gbd_input$cause <- tolower(gbd_input$cause) 
 
 
-# ---- chunk-2.2: Sort data per local goverment area ----## Loop to generate inputs starts here
+# ---- chunk-2.2: Sort data for all local goverment area in the 9 city regions ----##
 
-## We first derive populaiton and cases numbers (e.g. all cause mortality) for each locality and then aggregate at the City Region level. 
-## Loop to create a raw data set for 2017 for each of the localities to then process to get requiered data for disbayes/dismod. 
+## GBD data has less localities than those in the local_goverment_areas list (Nottinham missing)
+localities <- unique(gbd_input$location)
 
-gbd_data_localities_raw <- list()
+gbd_data_localities_raw <- SortGbdInput(in_data = gbd_input, in_year = year, in_locality = localities)
+
+## Add city regions variable
+
+gbd_data_localities_raw <- left_join(gbd_data_localities_raw, local_goverment_areas, by = "location")
+
+## Create separate data frames from gbd_data_localities_raw for each city region.
+
+gbd_data_loc_raw_city_regions<- split(gbd_data_localities_raw, gbd_data_localities_raw$cityregion)
+
+
+## Prepare data set per locality to calculate population numbers (here should be for each separate city region, otherwise,)
+
+## test one city regions
+
+test_cr <- write_csv(gbd_data_loc_raw_city_regions[[1]]
+
+
+test <- lapply(test_cr, RunLocDf)
+
+
+## code for loop
 index <- 1
 
-for (l in localities){
-  for (y in year){
-    
-    gbd_data_localities_raw[[index]] <- SortGbdInput(in_data = gbd_input, in_year = y, in_locality = l)
-    
-    index <- index + 1
-  }
+for (i in 1:length(gbd_data_loc_raw_city_regions)){
+
+gbd_city_regions_processed[[index]] <- lapply(gbd_data_loc_raw_city_regions[[i]], RunLocDf)
+
+index <- index + 1
+
 }
-
-## Prepare data set per locality to calculate population numbers (I used lapply, may change for loop)
-
-gbd_loc_data_processed <- lapply(gbd_data_localities_raw, RunLocDf)
 
 # ---- chunk-2.3: Create data frame for city region ----
 
