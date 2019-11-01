@@ -70,7 +70,7 @@ names(local_goverment_areas)[names(local_goverment_areas) == "lad11nm"] <- "loca
 ## BELOW IS NOT CONNECTED TO ABOVE CODE
 ## The localities should be within the city region defined in the loop
 
-localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somerset', 'South Gloucestershire')
+# localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somerset', 'South Gloucestershire')
 
 # ---- chunk-1.1: Get Global Buden of Disease data ----
 
@@ -215,11 +215,12 @@ gbd_data_loc_raw_city_regions<- split(gbd_data_localities_raw, gbd_data_localiti
 
 ## test one city regions
 
-test_cr <- gbd_data_loc_raw_city_regions[[1]]
 
 write_csv(test_cr, "data/test_cr.csv")
 
 test <- lapply(test_cr, RunLocDf)
+
+test <- RunLocDf(test_cr)
 
 
 ## code for loop

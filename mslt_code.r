@@ -2,8 +2,7 @@
 
 # ---- chunk-intro ----
 
-require(dplyr)
-require(tidyverse)
+
 require(knitr)
 require(kableExtra)
 require(citr)
@@ -14,9 +13,12 @@ require(ggplot2)
 require(pillar)
 require(devtools)
 require(janitor)
-
-
-
+require(tidyverse)
+require(dplyr)
+require(conflicted)
+if (interactive()) {
+  require(conflicted)
+}
 
 rm (list = ls())
 options(scipen=999)

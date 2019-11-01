@@ -53,11 +53,12 @@ SortGbdInput <- function(in_data, in_year, in_locality) {
 ## Also generates rates for localities, which we may use in the future when modelling per localities. 
 
 
+
 RunLocDf <- function(i_data) {
   
   gbd_df <- NULL 
   
-  for (ag in 1:length(unique(i_data['age']))){
+  for (ag in 1:length(unique(i_data["age"]))){
     for (gender in c("Male", "Female")){
       age_sex_df <- NULL
       for (dm in 1:length(disease_measures_list)){
@@ -67,13 +68,17 @@ RunLocDf <- function(i_data) {
           
           agroup <- unique(i_data['age'])[ag]
           
-          idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn) 
+          idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn)
+          
+          ## this works, so the issue in not filter
+          # idf <- dplyr::filter(i_data, sex == "Female" & age == "55 to 59" & measure == "YLDs (Years Lived with Disability)" & cause == "all causes") 
+          
           
           if (nrow(idf) > 0){
             
             population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
             
-            idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
+            idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val")
             
             current_idf_rate <- idf_rate
             
@@ -90,7 +95,7 @@ RunLocDf <- function(i_data) {
               
               current_population_numbers <- population_numbers
               
-              idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & val > 0) 
+              idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & val > 0)
               
               idf <- dplyr::filter(idf, cause == unique(idf$cause)[1])
               
@@ -98,7 +103,7 @@ RunLocDf <- function(i_data) {
               
               population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
               
-              idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
+              idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val")
               
               idf$population_number <- 0
               
@@ -119,11 +124,11 @@ RunLocDf <- function(i_data) {
             
             if (is.null(age_sex_df)){
               
-              age_sex_df <- select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
+              age_sex_df <- dplyr::select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
             }
             else{
               
-              age_sex_df <- cbind(age_sex_df, select(idf, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
+              age_sex_df <- cbind(age_sex_df, dplyr::select(idf, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
             }
           }
         }
