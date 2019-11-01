@@ -215,8 +215,9 @@ gbd_data_loc_raw_city_regions<- split(gbd_data_localities_raw, gbd_data_localiti
 
 ## test one city regions
 
-test_cr <- write_csv(gbd_data_loc_raw_city_regions[[1]]
+test_cr <- gbd_data_loc_raw_city_regions[[1]]
 
+write_csv(test_cr, "data/test_cr.csv")
 
 test <- lapply(test_cr, RunLocDf)
 

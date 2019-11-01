@@ -67,13 +67,13 @@ RunLocDf <- function(i_data) {
           
           agroup <- unique(i_data['age'])[ag]
           
-          idf <- filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn) 
+          idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn) 
           
           if (nrow(idf) > 0){
             
-            population_numbers <- filter(idf, metric == "Number") %>% select("val")
+            population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
             
-            idf_rate <- filter(idf, metric == "Rate") %>% select("val") 
+            idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
             
             current_idf_rate <- idf_rate
             
@@ -90,15 +90,15 @@ RunLocDf <- function(i_data) {
               
               current_population_numbers <- population_numbers
               
-              idf <- filter(i_data, sex == gender & age == agroup & measure == dmeasure & val > 0) 
+              idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & val > 0) 
               
-              idf <- filter(idf, cause == unique(idf$cause)[1])
+              idf <- dplyr::filter(idf, cause == unique(idf$cause)[1])
               
               idf$cause <- dn
               
-              population_numbers <- filter(idf, metric == "Number") %>% select("val")
+              population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
               
-              idf_rate <- filter(idf, metric == "Rate") %>% select("val") 
+              idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
               
               idf$population_number <- 0
               
@@ -115,7 +115,7 @@ RunLocDf <- function(i_data) {
             
             idf[[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$val
             
-            idf <- filter(idf, metric == "Number")
+            idf <- dplyr::filter(idf, metric == "Number")
             
             if (is.null(age_sex_df)){
               
@@ -257,7 +257,7 @@ RunDisease <- function(in_idata, in_mid_age, in_sex, in_disease)
   # Select columns for lifetable calculations
   
   ##BZ: back yo using filtering, otherwise the life tables are not run by cohort (age and sex)
-  dlt_df <- filter(in_idata, age >= in_mid_age & sex == in_sex) %>% 
+  dlt_df <- dplyr::filter(in_idata, age >= in_mid_age & sex == in_sex) %>% 
     select(sex, age, dw_disease, incidence_disease, case_fatality_disease)
   
   ##BZ: Rob, line 264 does not filter by age and sex, each disease life table starts at firt age cohort (e.g. 17) and by gender. 
@@ -375,9 +375,9 @@ PlotOutput <- function(in_data, in_age, in_population, in_outcomes, in_legend = 
   data <- in_data
   
   if (in_population != "total")
-    data <- filter(data, sex == in_population)
+    data <- dplyr::filter(data, sex == in_population)
   if (length(in_age) > 0)
-    data <- filter(data, age_cohort == in_age)
+    data <- dplyr::filter(data, age_cohort == in_age)
   if (length(in_outcomes) > 0)
     data <- select(data, in_outcomes)
   
@@ -444,7 +444,7 @@ GenAggregate <- function(in_data, in_cohorts, in_population, in_outcomes){
       ld <- dplyr::filter(td, age_cohort == l_age)
       
       if (in_population != "total")
-        ld <- filter(ld, sex == in_population)
+        ld <- dplyr::filter(ld, sex == in_population)
       if (length(in_outcomes) > 0)
         ld <- select(ld, age, sex, in_outcomes)
       if (i == 1){
@@ -540,9 +540,9 @@ PlotGBD <- function(in_data1, in_data2, in_sex, in_cause, in_measure) {
   # in_measure <- "deaths"
   
   
-  data1 <- filter(in_data1, sex == in_sex, cause == in_cause & measure == in_measure) %>% select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
+  data1 <- dplyr::filter(in_data1, sex == in_sex, cause == in_cause & measure == in_measure) %>% select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
   
-  data2 <- filter(in_data2, sex == in_sex, cause == in_cause & measure == in_measure) %>% select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
+  data2 <- dplyr::filter(in_data2, sex == in_sex, cause == in_cause & measure == in_measure) %>% select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
   
   
   p <- ggplot(data = data1, aes(age_cat,one_rate)) +
