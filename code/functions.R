@@ -40,8 +40,11 @@ require(citr)
 ## To run alernative calculations
 
 # ---- SortGbdInput ----
-
+## Not used, but, can be used if we want to get the data for one specific location only. 
 ## Selects year and localities from GBD data frame dowloaded from: http://ghdx.healthdata.org/gbd-results-tool
+
+### ADD LIST to do the city regions, and then localities within them
+
 SortGbdInput <- function(in_data, in_year, in_locality) {
   data <- in_data[which(in_data$year== in_year & in_data$location == in_locality),]
 
@@ -52,13 +55,11 @@ SortGbdInput <- function(in_data, in_year, in_locality) {
 ## Organises GBD data per locality to tidy format with columns for variable names (e.g. age, sex, disease-cause, disease-metrics) and calculates population numbers.
 ## Also generates rates for localities, which we may use in the future when modelling per localities. 
 
-
-
 RunLocDf <- function(i_data) {
   
   gbd_df <- NULL 
   
-  for (ag in 1:length(unique(i_data["age"]))){
+  for (ag in 1:length(unique(i_data[["age"]]))){
     for (gender in c("Male", "Female")){
       age_sex_df <- NULL
       for (dm in 1:length(disease_measures_list)){
@@ -66,19 +67,15 @@ RunLocDf <- function(i_data) {
           dn <- disease_short_names$disease[d]
           dmeasure <- disease_measures_list[dm] %>% as.character()
           
-          agroup <- unique(i_data['age'])[ag]
+          agroup <- unique(i_data[["age"]])[ag]
           
-          idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn)
-          
-          ## this works, so the issue in not filter
-          # idf <- dplyr::filter(i_data, sex == "Female" & age == "55 to 59" & measure == "YLDs (Years Lived with Disability)" & cause == "all causes") 
-          
+          idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & cause == dn) 
           
           if (nrow(idf) > 0){
             
             population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
             
-            idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val")
+            idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
             
             current_idf_rate <- idf_rate
             
@@ -95,7 +92,7 @@ RunLocDf <- function(i_data) {
               
               current_population_numbers <- population_numbers
               
-              idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & val > 0)
+              idf <- dplyr::filter(i_data, sex == gender & age == agroup & measure == dmeasure & val > 0) 
               
               idf <- dplyr::filter(idf, cause == unique(idf$cause)[1])
               
@@ -103,7 +100,7 @@ RunLocDf <- function(i_data) {
               
               population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
               
-              idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val")
+              idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
               
               idf$population_number <- 0
               
@@ -124,11 +121,11 @@ RunLocDf <- function(i_data) {
             
             if (is.null(age_sex_df)){
               
-              age_sex_df <- dplyr::select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
+              age_sex_df <- select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
             }
             else{
               
-              age_sex_df <- cbind(age_sex_df, dplyr::select(idf, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
+              age_sex_df <- cbind(age_sex_df, select(idf, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
             }
           }
         }
@@ -150,6 +147,7 @@ RunLocDf <- function(i_data) {
   }
   return(gbd_df)
 }
+
 
 # --- IsNanDataFrame ---
 ## For interpolation generation, input data frame for interpolation has nan values that we replace with 0. 

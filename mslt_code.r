@@ -19,6 +19,7 @@ require(conflicted)
 if (interactive()) {
   require(conflicted)
 }
+conflict_prefer("filter", "dplyr")
 
 rm (list = ls())
 options(scipen=999)
