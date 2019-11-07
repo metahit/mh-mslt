@@ -148,6 +148,131 @@ RunLocDf <- function(i_data) {
   return(gbd_df)
 }
 
+# --- GenInpDisbayes ----
+
+GenInpDisbayes <- function(i_data) {
+
+disbayes_input_list <- list()
+index <- 1
+
+for (d in 1:nrow(disease_short_names)){
+  for (sex_index in i_sex){
+    
+    if (disease_short_names$is_not_dis[d] == 0){
+      
+      var_name <- paste0("rate_", disease_short_names$sname[d])
+      
+      disbayes_input_list[[index]] <- dplyr::filter(i_data, sex == sex_index) %>% select(age, sex, ends_with(var_name), population_number)
+      
+      ## Add column to show disease
+      
+      disbayes_input_list[[index]]$disease <- disease_short_names$sname[d]
+      
+      ## Change column names to match disbayes code
+      
+      colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_rate_", disease_short_names$sname[d]))] <- "inc"
+      colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_rate_", disease_short_names$sname[d]))] <- "mort"
+      colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("prevalence_rate_", disease_short_names$sname[d]))] <- "prev"
+      colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== paste0("population_number")] <- "pop"
+      
+      ## We assume remission is 0
+      
+      disbayes_input_list[[index]]$rem <- as.integer(0)
+      
+      ## create denominator for disbayes code
+      
+      disbayes_input_list[[index]]$prevdenom <- c(100,100,500,500,500,500,500,500,500,500,500,500,500,500,500,500,200,200,100,100) / 10 # total sample size 3910, generous for London (from CJ)
+      
+      ## Added agegroups to derive age groups by 1
+      
+      disbayes_input_list[[index]]$agegrp <- as.integer(seq(0,95, by=5))
+      
+      ## Replace 0 with small numbers for incidence, otherwise, disbayes does not work.
+      
+      disbayes_input_list[[index]]$inc <- ifelse(disbayes_input_list[[index]]$inc  == 0, 1e-08, disbayes_input_list[[index]]$inc)
+      
+      
+      ## Convert 5 year data file to 100 year age intervals
+      
+      
+      outage <- 0:100  # assume inc/prev/mort same in each year within a five-year age group
+      
+      ind <- findInterval(outage, disbayes_input_list[[index]]$agegrp)
+      disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
+      disbayes_input_list[[index]]$age <- outage
+      
+      disbayes_input_list[[index]] <- within(disbayes_input_list[[index]], {
+        ningrp <- rep(table(agegrp), table(agegrp))
+        # popmale <- round(popmale/ningrp) ## assume population uniform between years within age group.
+        pop <- round(pop/ningrp) ## assume population uniform between years within age group.
+        # ndieddismale <- round(popmale * (1 - exp(-mortmale)))
+        ndieddis <- round(pop * (1 - exp(-mort)))
+        # prevnmale <- round(prevdenom * prevmale)
+        prevn <- round(prevdenom * prev)
+      }
+      )
+      
+      ## add sex and disease variable to match with output data frame
+      
+      disbayes_input_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
+      
+      index <-  index +1
+      }
+    }
+  }
+  return(disbayes_input_list)
+}
+
+
+# --- GenOutDisbayes ----
+
+GenOutDisbayes <- function(i_data) {
+
+
+disbayes_output_list <- list()
+index <- 1
+
+for (d in 1:nrow(disease_short_names)){
+  for (sex_index in i_sex){
+    
+    data <- i_data
+    
+    # disbayes_input_list[[index]]
+    
+    if (disease_short_names$is_not_dis[d] == 0){
+      
+      datstan <- c(as.list(data), nage=nrow(data))
+      inits <- list(
+        list(cf=rep(0.0101, datstan$nage)),
+        list(cf=rep(0.0201, datstan$nage)),
+        list(cf=rep(0.0056, datstan$nage)),
+        list(cf=rep(0.0071, datstan$nage))
+      )
+      gbdcf <- stan("disbayes-master/gbdcf-unsmoothed.stan", data=datstan, init=inits)
+      
+      ## Extract Summary statistics
+      
+      ## Add directly to dibayes input list, first 100 observations? Check with Chris
+      disbayes_output_list[[index]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
+      
+      
+      ## add disease names
+      disbayes_output_list[[index]]$disease <- disease_short_names$sname[d]
+      
+      ## add sex
+      disbayes_output_list[[index]]$sex <- sex_index
+      
+      ## create sex and disease category to then join to input for disease life table dataset
+      
+      disbayes_output_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
+      
+      index <- index + 1
+      }
+    }
+  }
+  return(disbayes_output_list)
+}
+
 
 # --- IsNanDataFrame ---
 ## For interpolation generation, input data frame for interpolation has nan values that we replace with 0. 

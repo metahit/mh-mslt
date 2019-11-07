@@ -3,7 +3,7 @@
 
 # ---- chunk-intro ----
 
-## City regions, prepare a dataset for each of them (THIS SHOULD LOOK UP IN ANNA'S LOOK UP TABLE, IN DIFFERENT REPOSITORY, HOW DO WE CONNECT?)
+## City regions, prepare a dataset for each of them
 
 # Sheffield City Region Combined Authority: Barnsley, Doncaster, Rotherham, Sheffield.
 # 
@@ -17,7 +17,7 @@
 # 
 # Bristol: Bath and North East Somerset, City of Bristol, North Somerset, South Gloucestershire.
 # 
-# Nottingham: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Nottingham, Newark and Sherwood, Rushcliffe.
+# Nottingham: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Nottingham, Newark and Sherwood, Rushcliffe. (NO GBD DATA AVAILABLE)
 # 
 # West Midlands Combined Authority: Birmingham, Coventry, Dudley, Sandwell, Solihull, Walsall, Wolverhampton.
 
@@ -31,15 +31,14 @@ source("code/functions.R")
 
 ## Define parameters
 
-year <- 2017
-
-year_trend <- 2007
+year <- 2017 # Only downloaded data for 2017
 
 i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
 
 i_sex <- c("male", "female")
 
 ## Relative paths
+
 relative_path_execute <- '../mh-execute/'
 relative_path_mslt <- '../mh-mslt/'
 
@@ -47,29 +46,23 @@ relative_path_mslt <- '../mh-mslt/'
 
 look_up_table <- read_csv(paste0(relative_path_execute, 'inputs/mh_regions_lad_lookup.csv'))
 
-##NEED THESE?
-# city_regions <- data.frame(unique(look_up_table$cityregion))
-# city_regions <- city_regions[2:10,]
 
 ## Dataframe with local goverment areas within each city region
 
 local_goverment_areas <-  look_up_table %>% dplyr::filter(cityregion != "") 
 names(local_goverment_areas)[names(local_goverment_areas) == "lad11nm"] <- "location"
 
+## Add rows with England, England regions and greater London
 
-### NO NEED FOR this
-### Generate a list of vectors of each city region and localities. Use [[]] to see each city region. 
-#
+local_goverment_areas <- rbind(local_goverment_areas, c("", "England", "", "England", "England"), c("", "Greater London", "", "Greater London", "Greater London"),
+                               c("", "South West England", "", "South West England", "South West England"), c("", "East Midlands", "", "East Midlands", "East Midlands"),
+                               c("", "West Midlands", "", "West Midlands", "West Midlands"), c("", "East of England", "", "East of England", "East of England"),
+                               c("", "South East England", "", "South East England", "South East England"),
+                               c("", "North East England", "", "North East England", "North East England"),
+                               c("", "North West England", "", "North West England", "North West England"))
+
+
 city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$cityregion)
-
-
-## Here we should have a loop to do all the processing in a loop for each of the localities (CHECK WITH ALI)
-## There will be one input data frame for processing in mslt_code for each of the city regions.
-
-
-## BELOW IS NOT CONNECTED TO ABOVE CODE
-## The localities should be within the city region defined in the loop
-##localities <- c('Bristol, City of', 'Bath and North East Somerset', 'North Somerset', 'South Gloucestershire')
 
 # ---- chunk-1.1: Get Global Buden of Disease data ----
 
@@ -85,23 +78,18 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 ## Defining folder where the data is stored (stored externally in my box as the GBD files are large)
 ## CHANGE TO v-DRIVE
 
-"C:\Users\e95517\Dropbox\Collaborations\James Woodcock\Metahit\Data\GBD2017\IHME-GBD_2017_DATA-0a504496-1.zip"
 
 data_folder <- "C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/"
-temp_folder <- paste0(data_folder,"/temp") 
-result_folder <- paste0(data_folder,"/final")
-gbdfile_name <- "IHME-GBD_2017_DATA-0a504496-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
+temp_folder <- paste0(data_folder,"temp") 
+result_folder <- paste0(data_folder,"final")
+gbdfile_name <- "IHME-GBD_2017_DATA-c9f807db-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
 
-## Next two lines defines locations that will be extracted. 
-## NEED THIS ONCE WE HAVE TH ELOOP?
 
-#LGAs <- unlist(read_csv("data/gbd/LGAs to be extracted.csv")[,2]) # CREATE FILE FOR YOUR LOCATIONS OF INTEREST, HERE LOCALITIES IN CITY OF BRISTOL REGION
-
-## LOOP TO EXTRACT DATA FOR EACH CITY REGION
+## Loop to extract zip file data
 
 data_extracted <- NULL
 
-for (i in 1:40) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
+for (i in 1:2) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
   file_number <- i
   
   file_select <- paste0(data_folder,gbdfile_name, i,".zip")
@@ -142,7 +130,7 @@ disease_short_names[disease_short_names$sname == "lwri", "is_not_dis"] <- 1
 
 ## Get execute-mh diseases (CHECK WITH ALI TO USE RELATIVE PATH TO READ DIRECLTY FROM MH-EXECUTE DIRECTORY, DATA PREP??)
 
-disease_names_execute <- read_csv("C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
+disease_names_execute <- read_csv(paste0('../mh-execute/', "inputs/dose_response/disease_outcomes_lookup.csv"))
 
 disease_names_execute <- disease_names_execute[1:2]
 disease_names_execute$disease <- tolower(disease_names_execute$GBD_name)
@@ -188,15 +176,12 @@ names(gbd_input) = gsub(pattern = "_name", replacement = "", x = names(gbd_input
 
 gbd_input <- select(gbd_input,-contains("id"))
 
-gbd_input <- filter(gbd_input, location %in% localities) %>% mutate_if(is.factor, as.character)
+# gbd_input <- filter(gbd_input, location %in% localities) %>% mutate_if(is.factor, as.character)
 
 gbd_input$cause <- tolower(gbd_input$cause) 
 
 gbd_input <- left_join(local_goverment_areas, gbd_input, by = "location")
 
-## Keep 2017 only
-
-gbd_input <- gbd_input[which(gbd_input$year== 2017),]
 
 # ---- chunk-2.2: Sort data per local goverment area ----
 
@@ -211,7 +196,7 @@ for (i in 1:length(city_regions_list)){
   
 }
 
-### This code takes about 1 hour to run 
+### This code takes about 0.5 hour to run CHECK WITH ROB AND ALAN HOW TO MAKE FASTER
 
 index <- 1
 gbd_loc_data_processed <- list()
@@ -223,12 +208,10 @@ gbd_loc_data_processed[[index]] <- lapply(city_regions_list_loc[[i]], RunLocDf)
 index <- index + 1
 }
 
-# ---- chunk-2.3: Create data frame for city region with all localities ----
+# ---- chunk-2.3: Create data frame for city region with all localities ---- 
 
 index <- 1
 gbd_city_region_data <- list()
-
-
 
 for (i in 1:length(gbd_loc_data_processed)){
   
@@ -237,7 +220,7 @@ for (i in 1:length(gbd_loc_data_processed)){
   
   ## Drop number columns
   
-  gbd_city_region_data[[index]] <- gbd_city_region_data[[index]][ -c(1:2) ]
+  gbd_city_region_data[[index]] <- gbd_city_region_data[[index]][ -c(1) ]
   
   ## Clean dataframes per city regions
   
@@ -316,45 +299,14 @@ for (i in 1:length(gbd_city_region_data)) {
            }
            
   suppressWarnings(names(gbd_city_region_data_agg)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
+  
+  ## Save as csv (path)
+  
+   write_csv(gbd_city_region_data_agg[[index]], paste0(relative_path_mslt, "data/city regions/GBD sorted/", unique(city_regions_list_loc[[i]][[1]]$cityregion), ".csv"))
+  
+
   index <- index + 1
 }
-
-# View(gbd_city_region_data_agg[[1]])
-
-# labels(gbd_city_region_data_agg[[1]])
-# ---- chunk-2.4: Create data frame for dismod and disbayes processing ---- HERE generate one for each of the city regions?
-
-gbd_df <- gbd_city_region_data_agg[[1]]
-
-
-## Write csv file to process in Dismod
-
-write_csv(gbd_df, "data/city regions/bristol/dismod/input_data.csv")
-
-
-# ---- chunk-2.5: Disability weights ---- CHANGE THIS FURTHER DOWN, DOES NOT MAKE MUCH SENSE HERE (BELONGS TO MSLT, NOT DISBAYES/DISMOD)
-
-all_ylds_df <- dplyr::select(gbd_df, starts_with("ylds (years lived with disability)_number"))
-
-
-## Adjust all cause ylds for included diseases and injuries (exclude all cause )
-
-gbd_df[["allc_ylds_adj_rate_1"]] <- (gbd_df$`ylds (years lived with disability)_number_allc`  - rowSums(select(all_ylds_df, -`ylds (years lived with disability)_number_allc`))) / 
-  gbd_df$population_number
-
-# ------------------- DWs ---------------------------#
-
-disease_short_names <- mutate_all(disease_short_names, funs(tolower))
-
-for (d in 1:nrow(disease_short_names)){
-  gbd_df[[paste0("dw_adj_", disease_short_names$sname[d])]] <- 
-    (gbd_df[[paste0("ylds (years lived with disability)_number_", disease_short_names$sname[d])]] /
-       gbd_df[[paste0("prevalence_number_", disease_short_names$sname[d])]]) /
-    ( 1 - gbd_df[["allc_ylds_adj_rate_1"]])
-}
-
-gbd_df[mapply(is.infinite, gbd_df)] <- 0
-gbd_df <- replace(gbd_df, is.na(gbd_df), 0)
 
 
 # ---- chunk-3: Disbayes ----
@@ -366,97 +318,41 @@ library(devtools)
 ## The code below generates age, sex and disease specific data frames to process with disbayes. 
 ## Chris Jackson generated the code for one dataset and I added a loop to do all diseases by age an sex. 
 
-disbayes_input_list <- list()
 index <- 1
 
-for (d in 1:nrow(disease_short_names)){
-  for (sex_index in i_sex){
-    
-    if (disease_short_names$is_not_dis[d] == 0){
-    
-    var_name <- paste0("rate_", disease_short_names$sname[d])
+disbayes_input_list_city_regions <- list()
 
-    disbayes_input_list[[index]] <- dplyr::filter(gbd_df, sex == sex_index) %>% select(age, sex, ends_with(var_name), population_number)
+for (i in 1:length(gbd_city_region_data_agg)) {
   
-    ## Add column to show disease
-    
-    disbayes_input_list[[index]]$disease <- disease_short_names$sname[d]
-
-    ## Change column names to match disbayes code
-    
-    colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_rate_", disease_short_names$sname[d]))] <- "inc"
-    colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_rate_", disease_short_names$sname[d]))] <- "mort"
-    colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("prevalence_rate_", disease_short_names$sname[d]))] <- "prev"
-    colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== paste0("population_number")] <- "pop"
-    
-    ## We assume remission is 0
-
-    disbayes_input_list[[index]]$rem <- as.integer(0)
-
-    ## create denominator for disbayes code
-
-    disbayes_input_list[[index]]$prevdenom <- c(100,100,500,500,500,500,500,500,500,500,500,500,500,500,500,500,200,200,100,100) / 10 # total sample size 3910, generous for London (from CJ)
-
-    ## Added agegroups to derive age groups by 1
-
-    disbayes_input_list[[index]]$agegrp <- as.integer(seq(0,95, by=5))
-
-    ## Replace 0 with small numbers for incidence, otherwise, disbayes does not work.
-
-    disbayes_input_list[[index]]$inc <- ifelse(disbayes_input_list[[index]]$inc  == 0, 1e-08, disbayes_input_list[[index]]$inc)
-
-
-    ## Convert 5 year data file to 100 year age intervals
-
-
-    outage <- 0:100  # assume inc/prev/mort same in each year within a five-year age group
-    
-    ind <- findInterval(outage, disbayes_input_list[[index]]$agegrp)
-    disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
-    disbayes_input_list[[index]]$age <- outage
-
-    disbayes_input_list[[index]] <- within(disbayes_input_list[[index]], {
-      ningrp <- rep(table(agegrp), table(agegrp))
-      # popmale <- round(popmale/ningrp) ## assume population uniform between years within age group.
-      pop <- round(pop/ningrp) ## assume population uniform between years within age group.
-      # ndieddismale <- round(popmale * (1 - exp(-mortmale)))
-      ndieddis <- round(pop * (1 - exp(-mort)))
-      # prevnmale <- round(prevdenom * prevmale)
-      prevn <- round(prevdenom * prev)
-    }
-    )
-    
-    ## add sex and disease variable to match with output data frame
-    
-    disbayes_input_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
-    
-      index <-  index +1
-      
-    }
-  }
+  disbayes_input_list_city_regions[[index]] <- GenInpDisbayes(gbd_city_region_data_agg[[i]])
+  
+  names(disbayes_input_list_city_regions)[index] <- paste0(names(gbd_city_region_data_agg[i]))
+  
+  index <- index + 1
+  
 }
 
-# View(disbayes_input_list[[1]])
+## Save as csv for sharing
 
-## Loop to save each data frame within disbayes_list (to check data inputs, but disbayes is run with list above)
-
-index <- 1 
-
-for (d in 1:nrow(disease_short_names)){
-    for (sex_index in i_sex){
-      
-      ## replace with function for disease/injuries that we do not need to model
-      
-      if (disease_short_names$is_not_dis[d] == 0){
-      
-      ##Save to csv
-      write_csv(disbayes_input_list[[index]], paste0(relative_path_mslt, "data/city regions/bristol/6 nov/", disease_short_names$sname[d], "_", sex_index, ".csv"))
-      
-      index <- index +1
-      
-     }
-  }
+for (i in 1:length(disbayes_input_list_city_regions)) {
+  city_name <- names(disbayes_input_list_city_regions[i])
+ for (j in 1:length(disbayes_input_list_city_regions[[i]])) {
+   
+   ## Add variable name to each of the diseases
+   
+   disbayes_input_list_city_regions[[i]][[j]]$city_region <- city_name
+   
+   
+   temp_disease_name <- disbayes_input_list_city_regions[[i]][[j]][1,15]
+   print(paste0(city_name, "_",temp_disease_name))
+   write_csv(disbayes_input_list_city_regions[[i]][[j]],
+             paste0(relative_path_mslt, "data/city regions/Input disbayes/",city_name, "_",temp_disease_name,".csv"))
+ }
 }
+
+
+
+test <- disbayes_input_list_city_regions[[1]][[1]]
 
 ## Run Disbayes
 
@@ -464,13 +360,39 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
+
+
+## Create a function and then use loop
+
+index <- 1
+
+disbayes_output_list_city_regions <- list()
+
+for (i in 1:length(disbayes_input_list_city_regions)){
+  for (j in 1:length(disbayes_input_list_city_regions[[i]])){
+  
+    disbayes_input_list_city_regions[[index]] <- GenInpDisbayes(disbayes_input_list_city_regions[[i]][[j]])
+    
+    names(disbayes_input_list_city_regions)[index] <- paste0(names(disbayes_input_list_city_regions[i]))
+    
+    index <- index + 1
+    
+  }
+}
+
+
+### Original code
+
+
 disbayes_output_list <- list()
 index <- 1
 
 for (d in 1:nrow(disease_short_names)){
   for (sex_index in i_sex){
     
-    data <- disbayes_input_list[[index]]
+    data <- disbayes_input_list_city_regions[[1]][[1]]
+      
+      # disbayes_input_list[[index]]
       
       if (disease_short_names$is_not_dis[d] == 0){
     
@@ -624,6 +546,32 @@ synthetic_pop <- read_csv("data/population/pop_england_2017.csv")
 mslt_df <- left_join(mslt_df, gbd_popn_df, by = "sex_age_cat")
 
 # ---- chunk-6.1: Interpolate rates ----
+
+# ---- chunk-2.5: Disability weights ---- CHANGE THIS FURTHER DOWN, DOES NOT MAKE MUCH SENSE HERE (BELONGS TO MSLT, NOT DISBAYES/DISMOD)
+
+all_ylds_df <- dplyr::select(gbd_df, starts_with("ylds (years lived with disability)_number"))
+
+
+## Adjust all cause ylds for included diseases and injuries (exclude all cause )
+
+gbd_df[["allc_ylds_adj_rate_1"]] <- (gbd_df$`ylds (years lived with disability)_number_allc`  - rowSums(select(all_ylds_df, -`ylds (years lived with disability)_number_allc`))) / 
+  gbd_df$population_number
+
+# ------------------- DWs ---------------------------#
+
+disease_short_names <- mutate_all(disease_short_names, funs(tolower))
+
+for (d in 1:nrow(disease_short_names)){
+  gbd_df[[paste0("dw_adj_", disease_short_names$sname[d])]] <- 
+    (gbd_df[[paste0("ylds (years lived with disability)_number_", disease_short_names$sname[d])]] /
+       gbd_df[[paste0("prevalence_number_", disease_short_names$sname[d])]]) /
+    ( 1 - gbd_df[["allc_ylds_adj_rate_1"]])
+}
+
+gbd_df[mapply(is.infinite, gbd_df)] <- 0
+gbd_df <- replace(gbd_df, is.na(gbd_df), 0)
+
+
 
 ## Data has to be interpolated from 5-year age groups to 1-year age groups.
 
