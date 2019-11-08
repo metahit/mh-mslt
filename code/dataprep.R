@@ -49,20 +49,23 @@ look_up_table <- read_csv(paste0(relative_path_execute, 'inputs/mh_regions_lad_l
 
 ## Dataframe with local goverment areas within each city region
 
-local_goverment_areas <-  look_up_table %>% dplyr::filter(cityregion != "") 
+
+local_goverment_areas <- look_up_table 
+
+## Add non city regions names
+names_non_cr <- c("United Kingdom", "England", "East Midlands", "East of England", "Greater London", "North East England", 
+                  'North West England', "South East England", "South West England", "West Midlands", "Yorkshire and the Humber", 
+                  "Northern Ireland", "Scotland", "Wales")
+for (i in names_non_cr){
+  local_goverment_areas <- rbind(local_goverment_areas, c(i, i, i, i, i))
+}
+local_goverment_areas <-  local_goverment_areas %>% dplyr::filter(cityregion != "") 
 names(local_goverment_areas)[names(local_goverment_areas) == "lad11nm"] <- "location"
 
-## Add rows with England, England regions and greater London
-
-local_goverment_areas <- rbind(local_goverment_areas, c("", "England", "", "England", "England"), c("", "Greater London", "", "Greater London", "Greater London"),
-                               c("", "South West England", "", "South West England", "South West England"), c("", "East Midlands", "", "East Midlands", "East Midlands"),
-                               c("", "West Midlands", "", "West Midlands", "West Midlands"), c("", "East of England", "", "East of England", "East of England"),
-                               c("", "South East England", "", "South East England", "South East England"),
-                               c("", "North East England", "", "North East England", "North East England"),
-                               c("", "North West England", "", "North West England", "North West England"))
-
+local_goverment_areas$location <- gsub('St. Helens', 'St Helens', local_goverment_areas$location)
 
 city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$cityregion)
+
 
 # ---- chunk-1.1: Get Global Buden of Disease data ----
 
@@ -82,14 +85,13 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 data_folder <- "C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/"
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
-gbdfile_name <- "IHME-GBD_2017_DATA-c9f807db-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED
-
+gbdfile_name <- "IHME-GBD_2017_DATA-ac95a757-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
 
 ## Loop to extract zip file data
 
 data_extracted <- NULL
 
-for (i in 1:2) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
+for (i in 1:4) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
   file_number <- i
   
   file_select <- paste0(data_folder,gbdfile_name, i,".zip")
@@ -98,7 +100,7 @@ for (i in 1:2) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT D
   
   data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name, i, ".csv")))
   file.remove(paste0(temp_folder,"/", gbdfile_name, i, ".csv"))
-  # data_read <- subset(data_read, location_name %in% local_goverment_areas$lad11nm) # location name is easier to identify
+  data_read <- subset(data_read, location_name %in% local_goverment_areas$location) # location name is easier to identify
   
   data_extracted <- rbind(data_extracted,data_read)
 }
@@ -208,6 +210,10 @@ gbd_loc_data_processed[[index]] <- lapply(city_regions_list_loc[[i]], RunLocDf)
 index <- index + 1
 }
 
+### Delete null data frames within lists
+
+gbd_loc_data_processed <-  list.clean(gbd_loc_data_processed, fun = is.null, recursive = TRUE)
+    
 # ---- chunk-2.3: Create data frame for city region with all localities ---- 
 
 index <- 1
@@ -300,14 +306,65 @@ for (i in 1:length(gbd_city_region_data)) {
            
   suppressWarnings(names(gbd_city_region_data_agg)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
   
-  ## Save as csv (path)
+  ## Save as rds (path)
   
-   write_csv(gbd_city_region_data_agg[[index]], paste0(relative_path_mslt, "data/city regions/GBD sorted/", unique(city_regions_list_loc[[i]][[1]]$cityregion), ".csv"))
+   write_rds(gbd_city_region_data_agg[[index]], paste0(relative_path_mslt, "data/city regions/GBD sorted/", unique(city_regions_list_loc[[i]][[1]]$cityregion), ".rds"))
   
 
   index <- index + 1
 }
 
+
+### Check that numbers for regions () add up to England total
+
+#### Population
+
+##### UK
+UK_population_total<- sum(gbd_city_region_data_agg[["United Kingdom"]]$population_number)
+print(UK_population_total)
+
+##### Countries
+
+England_population_total <- sum(gbd_city_region_data_agg[["England"]]$population_number)
+print(England_population_total)
+
+Wales_population_total <- sum(gbd_city_region_data_agg[["Wales"]]$population_number)
+print(Wales_population_total)
+
+Scotland_population_total <- sum(gbd_city_region_data_agg[["Scotland"]]$population_number)
+print(Scotland_population_total)
+
+Northern_Ireland_population_total <- sum(gbd_city_region_data_agg[["Northern Ireland"]]$population_number)
+print(Northern_Ireland_population_total)
+
+total_countries <- sum(England_population_total, Wales_population_total, Scotland_population_total, Northern_Ireland_population_total)
+print(total_countries)
+
+###### Regions of England test sum
+
+regions_England <- c("East Midlands", "East of England", "Greater London", "North East England", "North West England", "South East England", "South West England", "West Midlands", "Yorkshire and the Humber")
+
+England_ihd_deaths <- sum(gbd_city_region_data_agg[["England"]]$deaths_number_ishd)
+print(England_ihd_deaths)
+
+
+total_regions_england_ihd_deaths <- list()
+
+index <- 1
+
+for (i in regions_England) {
+  
+  total_regions_england_ihd_deaths[[index]] <- sum(gbd_city_region_data_agg[[paste0(i)]]$deaths_number_ishd)
+  
+  index <- index + 1
+}
+
+
+sum_total_regions_ihd_deaths <- sum(total_regions_england_ihd_deaths[[1]], total_regions_england_ihd_deaths[[2]], total_regions_england_ihd_deaths[[3]], 
+                                    total_regions_england_ihd_deaths[[4]], total_regions_england_ihd_deaths[[5]], total_regions_england_ihd_deaths[[6]],
+                                    total_regions_england_ihd_deaths[[7]], total_regions_england_ihd_deaths[[8]], total_regions_england_ihd_deaths[[9]])
+
+print(sum_total_regions_ihd_deaths)
 
 # ---- chunk-3: Disbayes ----
 
@@ -332,7 +389,7 @@ for (i in 1:length(gbd_city_region_data_agg)) {
   
 }
 
-## Save as csv for sharing
+## Save as rds for sharing
 
 for (i in 1:length(disbayes_input_list_city_regions)) {
   city_name <- names(disbayes_input_list_city_regions[i])
@@ -345,8 +402,8 @@ for (i in 1:length(disbayes_input_list_city_regions)) {
    
    temp_disease_name <- disbayes_input_list_city_regions[[i]][[j]][1,15]
    print(paste0(city_name, "_",temp_disease_name))
-   write_csv(disbayes_input_list_city_regions[[i]][[j]],
-             paste0(relative_path_mslt, "data/city regions/Input disbayes/",city_name, "_",temp_disease_name,".csv"))
+   write_rds(disbayes_input_list_city_regions[[i]][[j]],
+             paste0(relative_path_mslt, "data/city regions/Input disbayes/",city_name, "_",temp_disease_name,".rds"))
  }
 }
 
@@ -354,7 +411,7 @@ for (i in 1:length(disbayes_input_list_city_regions)) {
 
 test <- disbayes_input_list_city_regions[[1]][[1]]
 
-## Run Disbayes
+## Run Disbayes (CHECK NOT WORKING)
 
 library(rstan)
 options(mc.cores = parallel::detectCores())
@@ -371,7 +428,7 @@ disbayes_output_list_city_regions <- list()
 for (i in 1:length(disbayes_input_list_city_regions)){
   for (j in 1:length(disbayes_input_list_city_regions[[i]])){
   
-    disbayes_input_list_city_regions[[index]] <- GenInpDisbayes(disbayes_input_list_city_regions[[i]][[j]])
+    disbayes_input_list_city_regions[[index]] <- GenOutDisbayes(disbayes_input_list_city_regions[[i]][[j]])
     
     names(disbayes_input_list_city_regions)[index] <- paste0(names(disbayes_input_list_city_regions[i]))
     

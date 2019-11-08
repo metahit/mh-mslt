@@ -16,6 +16,7 @@ require(janitor)
 require(tidyverse)
 require(dplyr)
 require(conflicted)
+require(rlist)
 if (interactive()) {
   require(conflicted)
 }
