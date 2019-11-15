@@ -1,16 +1,20 @@
 
 
 # ---- chunk-intro ----
+myPaths <- .libPaths()
 
+myPaths <- c(myPaths, "C:/scratch/R")
 
-require(knitr)
-require(kableExtra)
-require(citr)
-require(gridExtra)
-require(ggpubr)
-require(grid)
+.libPaths(myPaths)  # add new path
+
+# require(knitr)
+# require(kableExtra)
+# require(citr)
+# require(gridExtra)
+# require(ggpubr)
+# require(grid)
 require(ggplot2)
-require(pillar)
+# require(pillar)
 require(devtools)
 require(janitor)
 require(tidyverse)

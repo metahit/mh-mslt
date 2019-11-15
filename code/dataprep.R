@@ -66,7 +66,6 @@ local_goverment_areas$location <- gsub('St. Helens', 'St Helens', local_govermen
 
 city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$cityregion)
 
-
 # ---- chunk-1.1: Get Global Buden of Disease data ----
 
 ## GBD MISSING DATA FOR NOTTINGHAM: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Newark and Sherwood, Rushcliffe and City of London. 
@@ -417,9 +416,7 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-
-
-## Create a function and then use loop
+## Created a function to run all geographies simultaneously. 
 
 index <- 1
 
@@ -427,16 +424,20 @@ disbayes_output_list_city_regions <- list()
 
 for (i in 1:length(disbayes_input_list_city_regions)){
   for (j in 1:length(disbayes_input_list_city_regions[[i]])){
-  
-    disbayes_input_list_city_regions[[index]] <- GenOutDisbayes(disbayes_input_list_city_regions[[i]][[j]])
     
-    names(disbayes_input_list_city_regions)[index] <- paste0(names(disbayes_input_list_city_regions[i]))
+    
+    
+    disbayes_output_list_city_regions[[index]] <- GenOutDisbayes(disbayes_input_list_city_regions[[1]][[1]])
+    
+    # names(disbayes_output_list_city_regions)[index] <- paste0(names(disbayes_input_list_city_regions[i]))
     
     index <- index + 1
     
   }
 }
 
+
+###
 
 ### Original code
 

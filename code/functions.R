@@ -226,11 +226,31 @@ for (d in 1:nrow(disease_short_names)){
 
 # --- GenOutDisbayes ----
 
+### All these came up as conflicts, check with Chris. 
+
+conflict_prefer("chisq.test", "stats")
+conflict_prefer("combine", "dplyr")
+conflict_prefer("dim_desc", "dplyr")
+conflict_prefer("extract", "rstan")
+conflict_prefer("fisher.test", "stats")
+conflict_prefer("group_rows", "dplyr")
+conflict_prefer("lag", "stats")
+conflict_prefer("Position", "ggplot2")
+
+### test data
+
+# test_path <-  paste0(relative_path_mslt, "disbayes-master/gbdcf-unsmoothed.stan")
+# 
+# data <- disbayes_input_list_city_regions[[1]][[1]]
+# # 
+# test_list_output <- GenOutDisbayes(data)
+
+
 GenOutDisbayes <- function(i_data) {
 
 
 disbayes_output_list <- list()
-index <- 1
+index_f <- 1
 
 for (d in 1:nrow(disease_short_names)){
   for (sex_index in i_sex){
@@ -253,20 +273,20 @@ for (d in 1:nrow(disease_short_names)){
       ## Extract Summary statistics
       
       ## Add directly to dibayes input list, first 100 observations? Check with Chris
-      disbayes_output_list[[index]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
+      disbayes_output_list[[index_f]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
       
       
       ## add disease names
-      disbayes_output_list[[index]]$disease <- disease_short_names$sname[d]
+      disbayes_output_list[[index_f]]$disease <- disease_short_names$sname[d]
       
       ## add sex
-      disbayes_output_list[[index]]$sex <- sex_index
+      disbayes_output_list[[index_f]]$sex <- sex_index
       
       ## create sex and disease category to then join to input for disease life table dataset
       
-      disbayes_output_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
+      disbayes_output_list[[index_f]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
       
-      index <- index + 1
+      index_f <- index_f + 1
       }
     }
   }
@@ -489,64 +509,64 @@ RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
 # ---- PlotOutput ----
 
 # Function to generate graphs by age and sex, per outcome of interest. 
-
-
-PlotOutput <- function(in_data, in_age, in_population, in_outcomes, in_legend = "", in_disease = ""){
-  
-  # in_data <- output_df
-  # in_population <- "male"
-  # in_age <- 22
-  # in_outcomes <- c('age', 'inc_num_bl_ihd', 'inc_num_sc_ihd')
-  # in_legend <- "none"
-  # in_cols <- c('alpha', 'beta')
-  
-  data <- in_data
-  
-  if (in_population != "total")
-    data <- dplyr::filter(data, sex == in_population)
-  if (length(in_age) > 0)
-    data <- dplyr::filter(data, age_cohort == in_age)
-  if (length(in_outcomes) > 0)
-    data <- select(data, in_outcomes)
-  
-  td <- data
-  p <- ggplot(data = td, aes (x = td[[in_outcomes[[1]]]]))
-  
-  # loop
-  for (i in 2:length(in_outcomes)) {
-    # use aes_string with names of the data.frame
-    p <- p + geom_line(aes_string(y = td[[in_outcomes[i]]], color = as.factor(in_outcomes[i])), size = 0.8) +
-      
-      theme_classic() 
-    
-    
-  }
-  
-  p <- p + scale_color_discrete(name = paste(in_legend), labels = c("Baseline", "Difference", "Scenario")) +
-    theme(legend.title = element_text(size = 9))
-  
-  p <- p + xlab ('Simulation year') + ylab ('Cases') + labs (title = ifelse(length(in_disease) > 0, paste(in_age, in_population, in_disease, sep = " "), "")) +
-                                                                
-                                                                
-                                                                
-                                                                # in_disease, paste('Cohort', in_age, "years old", in_population, sep = " "))) +
-    theme(plot.title = element_text(hjust = 0.5, size = 9)) +
-    theme(legend.text = element_text(size = 9)) +
-    # theme(axis.title.x = element_text(size = 7)) +
-    xlim(in_age, 100) +
-    geom_hline(yintercept=0, linetype="dashed", color = "black")
-  
-  
-  return(p)
-  
-  last_plot()
-  
-  
-}
-install.packages("compiler")
-require(compiler)   # for byte code compilation
-PlotOutput_compiled <- cmpfun(PlotOutput)
-ggsave_compiled <- cmpfun(ggsave)
+# 
+# 
+# PlotOutput <- function(in_data, in_age, in_population, in_outcomes, in_legend = "", in_disease = ""){
+#   
+#   # in_data <- output_df
+#   # in_population <- "male"
+#   # in_age <- 22
+#   # in_outcomes <- c('age', 'inc_num_bl_ihd', 'inc_num_sc_ihd')
+#   # in_legend <- "none"
+#   # in_cols <- c('alpha', 'beta')
+#   
+#   data <- in_data
+#   
+#   if (in_population != "total")
+#     data <- dplyr::filter(data, sex == in_population)
+#   if (length(in_age) > 0)
+#     data <- dplyr::filter(data, age_cohort == in_age)
+#   if (length(in_outcomes) > 0)
+#     data <- select(data, in_outcomes)
+#   
+#   td <- data
+#   p <- ggplot(data = td, aes (x = td[[in_outcomes[[1]]]]))
+#   
+#   # loop
+#   for (i in 2:length(in_outcomes)) {
+#     # use aes_string with names of the data.frame
+#     p <- p + geom_line(aes_string(y = td[[in_outcomes[i]]], color = as.factor(in_outcomes[i])), size = 0.8) +
+#       
+#       theme_classic() 
+#     
+#     
+#   }
+#   
+#   p <- p + scale_color_discrete(name = paste(in_legend), labels = c("Baseline", "Difference", "Scenario")) +
+#     theme(legend.title = element_text(size = 9))
+#   
+#   p <- p + xlab ('Simulation year') + ylab ('Cases') + labs (title = ifelse(length(in_disease) > 0, paste(in_age, in_population, in_disease, sep = " "), "")) +
+#                                                                 
+#                                                                 
+#                                                                 
+#                                                                 # in_disease, paste('Cohort', in_age, "years old", in_population, sep = " "))) +
+#     theme(plot.title = element_text(hjust = 0.5, size = 9)) +
+#     theme(legend.text = element_text(size = 9)) +
+#     # theme(axis.title.x = element_text(size = 7)) +
+#     xlim(in_age, 100) +
+#     geom_hline(yintercept=0, linetype="dashed", color = "black")
+#   
+#   
+#   return(p)
+#   
+#   last_plot()
+#   
+#   
+# }
+# install.packages("compiler")
+# require(compiler)   # for byte code compilation
+# PlotOutput_compiled <- cmpfun(PlotOutput)
+# ggsave_compiled <- cmpfun(ggsave)
 
 # system.time(PlotOutput_compiled())
 # system.time(PlotOutput())
