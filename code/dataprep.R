@@ -80,8 +80,12 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 ## Defining folder where the data is stored (stored externally in my box as the GBD files are large)
 ## CHANGE TO v-DRIVE
 
+work_folder <- "C:/Users/e95517/"
+home_folder <- "C:/Users/Bele/"
 
-data_folder <- "C:/Users/e95517/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/"
+
+
+data_folder <- paste0(home_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
 gbdfile_name <- "IHME-GBD_2017_DATA-ac95a757-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
