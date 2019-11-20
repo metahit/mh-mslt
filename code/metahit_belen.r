@@ -1,11 +1,10 @@
 library(devtools)
-pkgbuild::has_build_tools(debug = TRUE)
-options(buildtools.check = NULL)
+
 
 ## BZ: added this as otherwise does not dowload from the github
-
-devtools::install_github("r-lib/remotes")
-.rs.restartR()
+# 
+# devtools::install_github("r-lib/remotes")
+# .rs.restartR()
 
 CXX14 = "C:/Rtools/mingw_64/bin/g++.exe"
 Sys.getenv("R_MAKEVARS_USER")
