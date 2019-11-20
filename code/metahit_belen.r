@@ -7,9 +7,24 @@ options(buildtools.check = NULL)
 devtools::install_github("r-lib/remotes")
 .rs.restartR()
 
+CXX14 = "C:/Rtools/mingw_64/bin/g++.exe"
+Sys.getenv("R_MAKEVARS_USER")
+
+
+dotR <- file.path(Sys.getenv("HOME"), ".R")
+if (!file.exists(dotR)) 
+  dir.create(dotR)
+M <- file.path(dotR, "Makevars.win")
+if (!file.exists(M)) 
+  file.create(M)
+cat("\nCXX14FLAGS=-O3 -Wno-unused-variable -Wno-unused-function",
+    "CXX14 = $(BINPREF)g++ -m$(WIN) -std=c++1y",
+    "CXX11FLAGS=-O3 -Wno-unused-variable -Wno-unused-function",
+    file = M, sep = "\n", append = TRUE)
+
 ##
 
-devtools::install_github("chjackson/disbayes")
+install_github("chjackson/disbayes")
 options(mc.cores = parallel::detectCores()) # set if you have multi-core computer. enables Stan to run faster 
 
 datadir <- "/scratch/chris/chronic/mh-mslt/data/city regions/Input disbayes"
