@@ -201,6 +201,7 @@ for (i in 1:length(city_regions_list)){
   
 }
 
+
 ### This code takes about 0.5 hour to run CHECK WITH ROB AND ALAN HOW TO MAKE FASTER
 
 index <- 1
@@ -412,11 +413,11 @@ for (i in 1:length(disbayes_input_list_city_regions)) {
 
 
 
-test <- disbayes_input_list_city_regions[[1]][[1]]
+# test <- disbayes_input_list_city_regions[[1]][[1]]
 
-## Run Disbayes (CHECK NOT WORKING)
+## Run Disbayes (replaced with new code)
 
-library(rstan)
+library(disbayes)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 

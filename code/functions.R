@@ -241,10 +241,52 @@ conflict_prefer("Position", "ggplot2")
 
 # test_path <-  paste0(relative_path_mslt, "disbayes-master/gbdcf-unsmoothed.stan")
 # 
-# data <- disbayes_input_list_city_regions[[1]][[1]]
-# # 
-# test_list_output <- GenOutDisbayes(data)
+data <- disbayes_input_list_city_regions[[1]][[1]]
+ 
+test_list_output <- GenOutDisbayes(data)
 
+
+#### CODE for packaged disbayes
+
+GenOutDisbayes <- function(i_data) {
+  
+    disbayes_output_list <- list()
+    index_f <- 1
+    
+    for (d in 1:nrow(disease_short_names)){
+      for (sex_index in i_sex){
+        
+        data <- i_data
+        if (disease_short_names$is_not_dis[d] == 0){
+resu <- disbayes(dat = dat,
+                 
+                 ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
+                 inc = "inc", 
+                 inc_denom = "pop", 
+                 prev_num = "prevn", 
+                 prev_denom = "prevdenom",
+                 mort = "mort",
+                 mort_denom = "pop",
+                 
+                 ## You'll need to change this for different diseases:
+                 ## the age below which all case fatalities are
+                 ## assumed equal in the smoothed model 
+                 eqage = 30, 
+                 smooth = TRUE  # or FALSE if don't want smoothed estimates
+)
+
+## Posterior medians and 95% credible intervals for all unknowns in the model
+disbayes_output_list[[index_f]] <- summary(resu) 
+
+index_f <- index_f + 1
+        }
+      }
+    }
+    return(disbayes_output_list)
+}
+
+
+#### OLD CODE
 
 GenOutDisbayes <- function(i_data) {
 

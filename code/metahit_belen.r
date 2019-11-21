@@ -26,9 +26,10 @@ cat("\nCXX14FLAGS=-O3 -Wno-unused-variable -Wno-unused-function",
 install_github("chjackson/disbayes")
 options(mc.cores = parallel::detectCores()) # set if you have multi-core computer. enables Stan to run faster 
 
-datadir <- "/scratch/chris/chronic/mh-mslt/data/city regions/Input disbayes"
-fp <- file.path(datadir,"bristol_male_ishd.rds")
+datadir <- paste0(relative_path_mslt, "data/city regions/Input disbayes")
+fp <- file.path(datadir,"bristol_female_ishd.rds")
 dat <- readRDS(fp)
+
 
 ## One example disbayes run - to show how it works
 ## Bristol, male, IHD
@@ -59,10 +60,12 @@ resu <- disbayes(dat = dat,
 summ <- summary(resu) 
 
 ## Handy tool to extract specific variables from this 
-summary(resu, vars=c("cf","inc")) 
+test_output <- as.data.frame(summary(resu, vars=c("cf","inc")))
 
 ## Plot smoothed and unsmoothed estimates 
 plot(resu)
+
+warnings()
 
 ## Plot just smoothed estimates
 plot(summ, variable="cf")
