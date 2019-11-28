@@ -15,7 +15,7 @@ myPaths <- c(myPaths, "C:/scratch/R")
 # require(grid)
 require(ggplot2)
 # require(pillar)
-require(devtools)
+
 require(janitor)
 require(tidyverse)
 require(dplyr)
@@ -24,10 +24,23 @@ require(rlist)
 require(reshape)
 require(reshape2)
 require(zoo)
+
 if (interactive()) {
   require(conflicted)
 }
 conflict_prefer("filter", "dplyr")
+
+## Packages for generation of epi inputs
+require(devtools)
+require(rstan)
+require(rcpp)
+
+##Additional code to make disbayes work
+
+
+
+install_github("chjackson/disbayes")
+require(disbayes)
 
 rm (list = ls())
 options(scipen=999)

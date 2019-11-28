@@ -3,10 +3,12 @@ library(devtools)
 
 ## BZ: added this as otherwise does not dowload from the github
 # 
-# devtools::install_github("r-lib/remotes")
+devtools::install_github("r-lib/remotes")
 # .rs.restartR()
 
 CXX14 = "C:/Rtools/mingw_64/bin/g++.exe"
+
+##Ali's path
 Sys.getenv("R_MAKEVARS_USER")
 
 
