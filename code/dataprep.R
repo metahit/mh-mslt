@@ -421,7 +421,7 @@ library(disbayes)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-## Created a function to run all geographies simultaneously. 
+## Created a function to run all geographies simultaneously. (ADD TO SAVE IT IN A DATAFRAME TO AVOIND LOOPING OVER LIST)
 
 index <- 1
 
@@ -432,9 +432,23 @@ for (i in 1:length(disbayes_input_list_city_regions)){
     
     
     
-    disbayes_output_list_city_regions[[index]] <- GenOutDisbayes(disbayes_input_list_city_regions[[1]][[1]])
+    disbayes_output_list_city_regions[[index]] <- GenOutDisbayes(disbayes_input_list_city_regions[[i]][[j]])
     
     # names(disbayes_output_list_city_regions)[index] <- paste0(names(disbayes_input_list_city_regions[i]))
+    
+    ## Add directly to dibayes input list, first 100 observations? Check with Chris
+    disbayes_output_list[[index]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
+    
+    
+    ## add disease names
+    disbayes_output_list[[index]]$disease <- disease_short_names$sname[d]
+    
+    ## add sex
+    disbayes_output_list[[index]]$sex <- sex_index
+    
+    ## create sex and disease category to then join to input for disease life table dataset
+    
+    disbayes_output_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
     
     index <- index + 1
     
@@ -444,7 +458,7 @@ for (i in 1:length(disbayes_input_list_city_regions)){
 
 ###
 
-### Original code
+### Original code (DELETE)
 
 
 disbayes_output_list <- list()
@@ -491,9 +505,131 @@ for (d in 1:nrow(disease_short_names)){
 
 # View(disbayes_output_list[[14]])
 
-## Create list with data needs for multistate life table processing (case fatality and incidence)
+## Create list with data needs for multistate life table processing (case fatality and incidence) (OLD Code, delete)
+### NEW Code using Chris outcomes for disbayes in a table
+
+
+## add name to column outputs (column 0)
+
+cityregions_smoothed_res <- cbind(outcomes=rownames(cityregions_smoothed_res), cityregions_smoothed_res) 
+
+
+cityregions_smoothed_res <- cbind(cityregions_smoothed_res, (str_split_fixed(cityregions_smoothed_res$outcomes, fixed('['), 2)))
+cityregions_smoothed_res <- cityregions_smoothed_res[ (cityregions_smoothed_res$`1` %in% c("inc", "cf", "prev")), ]
+cityregions_smoothed_res$`1` <- as.character(cityregions_smoothed_res$`1`)
+cityregions_smoothed_res$`2` <- as.character(cityregions_smoothed_res$`2`)
+cityregions_smoothed_res$`2` <- gsub("].*", "",cityregions_smoothed_res$`2`)
+
+
+## Rename 1 adn 2
+names(cityregions_smoothed_res)[names(cityregions_smoothed_res) == "1"] <- "rates"
+names(cityregions_smoothed_res)[names(cityregions_smoothed_res) == "2"] <- "year"
+## Keep incidence, case fatality, prevalence and mortality
+
+#Extract unique values to create disease life table inputs per city regions
+area <- as.character(unique(cityregions_smoothed_res$area))
+disease <- as.character(unique(cityregions_smoothed_res$disease))
+rates <- as.character(unique(cityregions_smoothed_res$rates))
+gender <- as.character(unique(cityregions_smoothed_res$gender))
+
+
+## Test here creating data set per area (first filter, otherwise another layer with the areas)
+
+bristol_test <- dplyr::filter(cityregions_smoothed_res, area == "bristol")
+
+## NOT SURE THAT THIS IS OF ANY USE
+
+bristol_test$disease_rate <- paste(bristol_test$disease, bristol_test$rates)
+bristol_test$gender_year <- paste(bristol_test$gender, bristol_test$year)
+
+unique(bristol_test$rates)
+
+test <- spread(bristol_test, key=disease_rate,value=med)
+test_2 <- test[14:52]
+Subs1 <- na.omit(DATA[2:3])
+
+for (i in 13:ncol(test)) {
+Subs1<-subset(test, (!is.na(test[,i])))
+}
+
+              # & (!is.na(DATA[,3]))) 
+test_1 <- na.locf(test) 
+
+for (i in 13:ncol(test)) {
+  test_1 <- na.lomf(i)
+  
+}
+
+## Function, move to functions if it works
+na.lomf <- function(x) {
+  
+  na.lomf.0 <- function(x) {
+    non.na.idx <- which(!is.na(x))
+    if (is.na(x[1L])) {
+      non.na.idx <- c(1L, non.na.idx)
+    }
+    rep.int(x[non.na.idx], diff(c(non.na.idx, length(x) + 1L)))
+  }
+  
+  dim.len <- length(dim(x))
+  
+  if (dim.len == 0L) {
+    na.lomf.0(x)
+  } else {
+    apply(x, dim.len, na.lomf.0)
+  }
+}
+
+
+
+
+##Input data should be for each area, test with Bristo
+
+input_data <- unique(bristol_test$gender_year)
+
+
+# create disease variable for the disease life table function 
+prevalence <- paste("prevalence", disease, sep = "_")
+incidence <- paste("incidence", disease, sep = "_")
+case_fatality <- paste("case_fatality", disease, sep = "_")
+
+
+for (d in disease) {
+  
+  input_data[[paste("prevalence", d, sep = "_")]] <- dplyr::filter(bristol_test, rates == 'prev' & disease == d) %>% 
+    dplyr::select(med)
+  
+}
+
+input_data$prevalence <- bristol_test[["prev",]]
+input_data$incidence <- in_idata[[incidence]]
+input_data$case_fatality <- in_idata[[case_fatality]]
+
+# Select columns for lifetable calculations
+
+##BZ: back yo using filtering, otherwise the life tables are not run by cohort (age and sex)
+dlt_df <- dplyr::filter(in_idata, age >= in_mid_age & sex == in_sex) %>% 
+  select(sex, age, dw_disease, incidence_disease, case_fatality_disease)
+
+disease_measures <- NULL
+col_names <- colnames(bristol_test[[9]])
+for (j in 1:length(disease_lifetable_inputs_list)){
+  current_table <- disease_lifetable_inputs_list[[j]]
+  colnames(current_table) <- col_names
+  disease_measures <- rbind(disease_measures,
+                            current_table)
+}
 
 disease_lifetable_inputs_list <-  list()
+
+
+for (a in area){
+  for (d in disease){
+    
+    
+    disease_lifetable_inputs_list[[index]] <- dplyr::filter(i_data, sex == sex_index)
+    
+    disbayes_output_list_city_regions[[index]] <- select(disbayes_input_list_city_regions[[i]][[j]])
 
 for (i in 1:length(disbayes_output_list)){
    for (d in 1:nrow(disease_short_names)){
@@ -512,6 +648,9 @@ for (i in 1:length(disbayes_output_list)){
    
   }
 }
+
+
+
 
 
 ## Create a data frame with all diseases case fatality and incidence to process in mslt_code disease code

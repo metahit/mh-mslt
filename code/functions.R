@@ -241,9 +241,9 @@ conflict_prefer("Position", "ggplot2")
 
 # test_path <-  paste0(relative_path_mslt, "disbayes-master/gbdcf-unsmoothed.stan")
 # 
-data <- disbayes_input_list_city_regions[[1]][[1]]
+data_test <- disbayes_input_list_city_regions[[1]][[1]]
  
-test_list_output <- GenOutDisbayes(data)
+test_list_output <- GenOutDisbayes(data_test)
 
 
 #### CODE for packaged disbayes
@@ -258,7 +258,7 @@ GenOutDisbayes <- function(i_data) {
         
         data <- i_data
         if (disease_short_names$is_not_dis[d] == 0){
-resu <- disbayes(dat = dat,
+resu <- disbayes(dat = data,
                  
                  ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
                  inc = "inc", 
@@ -276,7 +276,12 @@ resu <- disbayes(dat = dat,
 )
 
 ## Posterior medians and 95% credible intervals for all unknowns in the model
-disbayes_output_list[[index_f]] <- summary(resu) 
+disbayes_output_list[[index_f]] <- summary(resu)
+
+disbayes_output_list[[index_f]]$area <- i_data$city_region
+disbayes_output_list[[index_f]]$sex <- i_data$sex
+disbayes_output_list[[index_f]]$disease <- i_data$disease
+
 
 index_f <- index_f + 1
         }

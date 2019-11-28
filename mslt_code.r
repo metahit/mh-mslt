@@ -21,6 +21,9 @@ require(tidyverse)
 require(dplyr)
 require(conflicted)
 require(rlist)
+require(reshape)
+require(reshape2)
+require(zoo)
 if (interactive()) {
   require(conflicted)
 }
