@@ -537,6 +537,11 @@ gender <- as.character(unique(cityregions_smoothed_res$gender))
 
 bristol_test <- dplyr::filter(cityregions_smoothed_res, area == "bristol")
 
+## Create columns for rate and age
+
+bristol_test$disease_rate <- paste(bristol_test$disease, bristol_test$rates)
+bristol_test_1 <- spread(bristol_test, key = disease_rate, value = med)
+
 ## Create list with data needs for multistate life table processing (case fatality and incidence) (OLD Code, delete)
 
 disease_lifetable_inputs_list <-  list()
