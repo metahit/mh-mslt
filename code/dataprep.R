@@ -537,117 +537,28 @@ gender <- as.character(unique(cityregions_smoothed_res$gender))
 
 bristol_test <- dplyr::filter(cityregions_smoothed_res, area == "bristol")
 
-## NOT SURE THAT THIS IS OF ANY USE
-
-bristol_test$disease_rate <- paste(bristol_test$disease, bristol_test$rates)
-bristol_test$gender_year <- paste(bristol_test$gender, bristol_test$year)
-
-unique(bristol_test$rates)
-
-test <- spread(bristol_test, key=disease_rate,value=med)
-test_2 <- test[14:52]
-Subs1 <- na.omit(DATA[2:3])
-
-for (i in 13:ncol(test)) {
-Subs1<-subset(test, (!is.na(test[,i])))
-}
-
-              # & (!is.na(DATA[,3]))) 
-test_1 <- na.locf(test) 
-
-for (i in 13:ncol(test)) {
-  test_1 <- na.lomf(i)
-  
-}
-
-## Function, move to functions if it works
-na.lomf <- function(x) {
-  
-  na.lomf.0 <- function(x) {
-    non.na.idx <- which(!is.na(x))
-    if (is.na(x[1L])) {
-      non.na.idx <- c(1L, non.na.idx)
-    }
-    rep.int(x[non.na.idx], diff(c(non.na.idx, length(x) + 1L)))
-  }
-  
-  dim.len <- length(dim(x))
-  
-  if (dim.len == 0L) {
-    na.lomf.0(x)
-  } else {
-    apply(x, dim.len, na.lomf.0)
-  }
-}
-
-
-
-
-##Input data should be for each area, test with Bristo
-
-input_data <- unique(bristol_test$gender_year)
-
-
-# create disease variable for the disease life table function 
-prevalence <- paste("prevalence", disease, sep = "_")
-incidence <- paste("incidence", disease, sep = "_")
-case_fatality <- paste("case_fatality", disease, sep = "_")
-
-
-for (d in disease) {
-  
-  input_data[[paste("prevalence", d, sep = "_")]] <- dplyr::filter(bristol_test, rates == 'prev' & disease == d) %>% 
-    dplyr::select(med)
-  
-}
-
-input_data$prevalence <- bristol_test[["prev",]]
-input_data$incidence <- in_idata[[incidence]]
-input_data$case_fatality <- in_idata[[case_fatality]]
-
-# Select columns for lifetable calculations
-
-##BZ: back yo using filtering, otherwise the life tables are not run by cohort (age and sex)
-dlt_df <- dplyr::filter(in_idata, age >= in_mid_age & sex == in_sex) %>% 
-  select(sex, age, dw_disease, incidence_disease, case_fatality_disease)
-
-disease_measures <- NULL
-col_names <- colnames(bristol_test[[9]])
-for (j in 1:length(disease_lifetable_inputs_list)){
-  current_table <- disease_lifetable_inputs_list[[j]]
-  colnames(current_table) <- col_names
-  disease_measures <- rbind(disease_measures,
-                            current_table)
-}
+## Create list with data needs for multistate life table processing (case fatality and incidence) (OLD Code, delete)
 
 disease_lifetable_inputs_list <-  list()
 
-
-for (a in area){
-  for (d in disease){
-    
-    
-    disease_lifetable_inputs_list[[index]] <- dplyr::filter(i_data, sex == sex_index)
-    
-    disbayes_output_list_city_regions[[index]] <- select(disbayes_input_list_city_regions[[i]][[j]])
-
 for (i in 1:length(disbayes_output_list)){
-   for (d in 1:nrow(disease_short_names)){
-  
-  ## Create list same lenght as outputs   
-   disease_lifetable_inputs_list[[i]] <- disbayes_input_list[[i]]
-  ## Add column names for incidence and case fatality disease
-   disease_lifetable_inputs_list[[i]]$case_fatality  <- disbayes_output_list[[i]][1:101, 1]
-   disease_lifetable_inputs_list[[i]]$prevalence  <- disbayes_output_list[[i]][102:202, 1]
-   disease_lifetable_inputs_list[[i]]$incidence <- disbayes_input_list[[i]]$inc
-   
-   
-   disease_lifetable_inputs_list[[i]][[paste("sex_age_cat", sep = "")]] <- paste(disease_lifetable_inputs_list[[i]]$sex,disease_lifetable_inputs_list[[i]]$age, sep = "_"  )
-   
-   # disease_lifetable_inputs_list[[i]]$disease_sex_match <- disbayes_output_list[[i]]$sex_disease
-   
+  for (d in 1:nrow(disease_short_names)){
+    
+    ## Create list same lenght as outputs   
+    disease_lifetable_inputs_list[[i]] <- disbayes_input_list[[i]]
+    ## Add column names for incidence and case fatality disease
+    disease_lifetable_inputs_list[[i]]$case_fatality  <- disbayes_output_list[[i]][1:101, 1]
+    disease_lifetable_inputs_list[[i]]$prevalence  <- disbayes_output_list[[i]][102:202, 1]
+    disease_lifetable_inputs_list[[i]]$incidence <- disbayes_input_list[[i]]$inc
+    
+    
+    disease_lifetable_inputs_list[[i]][[paste("sex_age_cat", sep = "")]] <- paste(disease_lifetable_inputs_list[[i]]$sex,disease_lifetable_inputs_list[[i]]$age, sep = "_"  )
+    
+    # disease_lifetable_inputs_list[[i]]$disease_sex_match <- disbayes_output_list[[i]]$sex_disease
+    
   }
 }
+
 
 
 
