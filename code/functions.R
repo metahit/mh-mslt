@@ -55,6 +55,8 @@ SortGbdInput <- function(in_data, in_year, in_locality) {
 ## Organises GBD data per locality to tidy format with columns for variable names (e.g. age, sex, disease-cause, disease-metrics) and calculates population numbers.
 ## Also generates rates for localities, which we may use in the future when modelling per localities. 
 
+
+## RunLocDF
 RunLocDf <- function(i_data) {
   
   gbd_df <- NULL 
@@ -73,7 +75,7 @@ RunLocDf <- function(i_data) {
           
           if (nrow(idf) > 0){
             
-            population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
+            population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val", "lower", "upper")
             
             idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
             
@@ -98,7 +100,8 @@ RunLocDf <- function(i_data) {
               
               idf$cause <- dn
               
-              population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val")
+              population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val", "lower", "upper")
+              #, "lower", "upper")
               
               idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
               
@@ -116,16 +119,27 @@ RunLocDf <- function(i_data) {
             idf[[tolower(paste(dmeasure, "rate", disease_short_names$sname[d], sep = "_"))]] <- idf$rate_per_1
             
             idf[[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$val
+            idf[[tolower(paste(dmeasure, "number_l", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$lower
+            idf[[tolower(paste(dmeasure, "number_u", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$upper
+
+            # browser()
+            
             
             idf <- dplyr::filter(idf, metric == "Number")
             
             if (is.null(age_sex_df)){
               
-              age_sex_df <- select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
+              age_sex_df <- select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
+              
+              
+              names(idf)[ncol(idf)]
+              names(idf)[ncol(idf) - 1]
             }
             else{
               
-              age_sex_df <- cbind(age_sex_df, select(idf, names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
+              age_sex_df <- cbind(age_sex_df, select(idf, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
+              
+              # browser()
             }
           }
         }

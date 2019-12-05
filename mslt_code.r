@@ -33,13 +33,13 @@ conflict_prefer("filter", "dplyr")
 ## Packages for generation of epi inputs
 require(devtools)
 require(rstan)
-require(rcpp)
+require(Rcpp)
+require(codetools)
 
 ##Additional code to make disbayes work
 
 
-
-install_github("chjackson/disbayes")
+# install_github("chjackson/disbayes")
 require(disbayes)
 
 rm (list = ls())

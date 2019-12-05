@@ -83,9 +83,9 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 work_folder <- "C:/Users/e95517/"
 home_folder <- "C:/Users/Bele/"
 
+## Change folder to work or home
 
-
-data_folder <- paste0(home_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
+data_folder <- paste0(work_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
 gbdfile_name <- "IHME-GBD_2017_DATA-ac95a757-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
@@ -192,6 +192,10 @@ gbd_input <- left_join(local_goverment_areas, gbd_input, by = "location")
 
 ## We first derive populaiton and cases numbers (e.g. all cause mortality) for each locality and then aggregate at the City Region level. 
 
+city_regions_list_loc <- split(gbd_input , f = gbd_input$cityregion)
+
+##NO NEED FOR COMMENTED (DELETE ONCE TESTED)
+
 city_regions_list <- split(gbd_input , f = gbd_input$cityregion)
 
 city_regions_list_loc <- list()
@@ -203,6 +207,10 @@ for (i in 1:length(city_regions_list)){
 
 
 ### This code takes about 0.5 hour to run CHECK WITH ROB AND ALAN HOW TO MAKE FASTER
+
+## Test to include lower and upper credible intervals
+
+
 
 index <- 1
 gbd_loc_data_processed <- list()
@@ -220,6 +228,8 @@ gbd_loc_data_processed <-  list.clean(gbd_loc_data_processed, fun = is.null, rec
     
 # ---- chunk-2.3: Create data frame for city region with all localities ---- 
 
+## USE ci2num to create credible intervals for all inputs for processing. 
+
 index <- 1
 gbd_city_region_data <- list()
 
@@ -228,9 +238,9 @@ for (i in 1:length(gbd_loc_data_processed)){
 
   gbd_city_region_data[[index]] <- bind_rows(gbd_loc_data_processed[[i]], .id = 'number')
   
-  ## Drop number columns
-  
-  gbd_city_region_data[[index]] <- gbd_city_region_data[[index]][ -c(1) ]
+  ## Drop number columns (CHECK WHAT THIS IS DOING)
+
+   gbd_city_region_data[[index]] <- gbd_city_region_data[[index]][ -c(1) ]
   
   ## Clean dataframes per city regions
   
@@ -412,98 +422,21 @@ for (i in 1:length(disbayes_input_list_city_regions)) {
 }
 
 
-
-# test <- disbayes_input_list_city_regions[[1]][[1]]
-
-## Run Disbayes (replaced with new code)
-
-library(disbayes)
-options(mc.cores = parallel::detectCores())
-rstan_options(auto_write = TRUE)
-
-## Created a function to run all geographies simultaneously. (ADD TO SAVE IT IN A DATAFRAME TO AVOIND LOOPING OVER LIST)
+## Convert list into a data frame with all diseases and areas
 
 index <- 1
+inputs_disbayes_list <- list()
 
-disbayes_output_list_city_regions <- list()
+for (i in 1:length(disbayes_input_list_city_regions)) {
 
-for (i in 1:length(disbayes_input_list_city_regions)){
-  for (j in 1:length(disbayes_input_list_city_regions[[i]])){
-    
-    
-    
-    disbayes_output_list_city_regions[[index]] <- GenOutDisbayes(disbayes_input_list_city_regions[[i]][[j]])
-    
-    # names(disbayes_output_list_city_regions)[index] <- paste0(names(disbayes_input_list_city_regions[i]))
-    
-    ## Add directly to dibayes input list, first 100 observations? Check with Chris
-    disbayes_output_list[[index]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
-    
-    
-    ## add disease names
-    disbayes_output_list[[index]]$disease <- disease_short_names$sname[d]
-    
-    ## add sex
-    disbayes_output_list[[index]]$sex <- sex_index
-    
-    ## create sex and disease category to then join to input for disease life table dataset
-    
-    disbayes_output_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
-    
-    index <- index + 1
-    
-  }
+  inputs_disbayes_list[[index]] <- plyr::ldply(disbayes_input_list_city_regions[[i]], rbind)
+
+index <- index + 1
 }
 
-
-###
-
-### Original code (DELETE)
+inputs_disbayes <- plyr::ldply(inputs_disbayes_list, rbind)
 
 
-disbayes_output_list <- list()
-index <- 1
-
-for (d in 1:nrow(disease_short_names)){
-  for (sex_index in i_sex){
-    
-    data <- disbayes_input_list_city_regions[[1]][[1]]
-      
-      # disbayes_input_list[[index]]
-      
-      if (disease_short_names$is_not_dis[d] == 0){
-    
-    datstan <- c(as.list(data), nage=nrow(data))
-    inits <- list(
-      list(cf=rep(0.0101, datstan$nage)),
-      list(cf=rep(0.0201, datstan$nage)),
-      list(cf=rep(0.0056, datstan$nage)),
-      list(cf=rep(0.0071, datstan$nage))
-    )
-    gbdcf <- stan("disbayes-master/gbdcf-unsmoothed.stan", data=datstan, init=inits)
-    
-    ## Extract Summary statistics
-    
-    ## Add directly to dibayes input list, first 100 observations? Check with Chris
-    disbayes_output_list[[index]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
-    
-    
-    ## add disease names
-    disbayes_output_list[[index]]$disease <- disease_short_names$sname[d]
-    
-    ## add sex
-    disbayes_output_list[[index]]$sex <- sex_index
-    
-    ## create sex and disease category to then join to input for disease life table dataset
-     
-    disbayes_output_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
-
-    index <- index + 1
-    }
-  }
-}
-
-# View(disbayes_output_list[[14]])
 
 ## Create list with data needs for multistate life table processing (case fatality and incidence) (OLD Code, delete)
 ### NEW Code using Chris outcomes for disbayes in a table
@@ -539,7 +472,12 @@ bristol_test <- dplyr::filter(cityregions_smoothed_res, area == "bristol")
 
 ## Create columns for rate and age
 
+
+ 
 bristol_test$disease_rate <- paste(bristol_test$disease, bristol_test$rates)
+
+bristol_test_2 <- bristol_test %>% pivot_wider(id_cols = c(area, gender, year), names_from = disease_rate, values_from = c(med, lower95, upper95))
+
 bristol_test_1 <- spread(bristol_test, key = disease_rate, value = med)
 
 ## Create list with data needs for multistate life table processing (case fatality and incidence) (OLD Code, delete)
