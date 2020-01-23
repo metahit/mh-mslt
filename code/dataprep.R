@@ -280,8 +280,7 @@ ci2numDF <- function(in_data, in_measure, in_disease) {
       mutate(num=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[1]])) %>%
       mutate(denom=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[2]])) %>%
       select(num,denom) %>%
-      as.data.frame() 
-#       names(dataframe)[names(dataframe) == 'num'] <- paste(in_measure, "num", in_disease)
+      as.data.frame()
 }
 
 ## Do a loop here to do all diseases and measures
@@ -289,7 +288,7 @@ ci2numDF <- function(in_data, in_measure, in_disease) {
 test_bristol <- ci2numDF(gbd_city_region_data[[1]], 'prevalence', "ishd")
 
 test_bristol2 <- ci2numDF(gbd_city_region_data[[1]], 'ylds (years lived with disability)', "crdd")
-  names(test_bristol2)[names(test_bristol2) == 'num'] <- 'new.var.name'
+test_bristol2<- rename(test_bristol2, test_name = num)
 
 
 
