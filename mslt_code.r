@@ -1,11 +1,6 @@
 
 
 # ---- chunk-intro ----
-myPaths <- .libPaths()
-
-myPaths <- c(myPaths, "C:/scratch/R")
-
-.libPaths(myPaths)  # add new path
 
 # require(knitr)
 # require(kableExtra)
@@ -36,11 +31,10 @@ require(rstan)
 require(Rcpp)
 require(codetools)
 
-##Additional code to make disbayes work
-
-
+##Additional code to make disbayes work (includes ci2num to create Credible Intervals?)
 # install_github("chjackson/disbayes")
 require(disbayes)
+
 
 rm (list = ls())
 options(scipen=999)

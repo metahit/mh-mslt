@@ -28,12 +28,7 @@
 
 source("code/functions.R")
 
-
 ## Define parameters
-
-year <- 2017 # Only downloaded data for 2017
-
-i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
 
 i_sex <- c("male", "female")
 
@@ -46,13 +41,12 @@ relative_path_mslt <- '../mh-mslt/'
 
 look_up_table <- read_csv(paste0(relative_path_execute, 'inputs/mh_regions_lad_lookup.csv'))
 
-
 ## Dataframe with local goverment areas within each city region
-
 
 local_goverment_areas <- look_up_table 
 
-## Add non city regions names
+## Add non city regions names (useful for checking totals)
+
 names_non_cr <- c("United Kingdom", "England", "East Midlands", "East of England", "Greater London", "North East England", 
                   'North West England', "South East England", "South West England", "West Midlands", "Yorkshire and the Humber", 
                   "Northern Ireland", "Scotland", "Wales")
@@ -70,7 +64,7 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 
 ## GBD MISSING DATA FOR NOTTINGHAM: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Newark and Sherwood, Rushcliffe and City of London. 
 
-## Get data from GBD dowloaded data for England (all localities)
+## Get data from GBD dowloaded data for UK (all localities)
 ## Use code developed by Marko Tainio to extract zip files
 ## Created in February-March 2019 by Marko Tainio (modified by Belen Zapata June 2019 for Metahit project)
 ## This script extracts required Global Burden of Disease data from the zip files dowloaded from http://ghdx.healthdata.org/gbd-results-tool
@@ -82,9 +76,10 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 
 work_folder <- "C:/Users/e95517/"
 home_folder <- "C:/Users/Bele/"
+#v_folder <- TO COMPLETE AND CHANGE BELOW. 
 
 ## Change folder to work or home
-
+# CHANGE DATA FOLDER
 data_folder <- paste0(work_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
@@ -221,19 +216,14 @@ gbd_loc_data_processed[[index]] <- lapply(city_regions_list_loc[[i]], RunLocDf)
 index <- index + 1
 }
 
-
-
-
-
-
+# View(gbd_loc_data_processed[[1]][[1]])
 
 ### Delete null data frames within lists
 
 gbd_loc_data_processed <-  list.clean(gbd_loc_data_processed, fun = is.null, recursive = TRUE)
-    
+
+
 # ---- chunk-2.3: Create data frame for city region with all localities ---- 
-
-
 
 index <- 1
 gbd_city_region_data <- list()
@@ -257,16 +247,170 @@ for (i in 1:length(gbd_loc_data_processed)){
   
   suppressWarnings(names(gbd_city_region_data)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
   
+  
+  ### Add numerator and denominator for ci2num function to generate uncertain parameters for disbayes
+  
+  # for (dm in 1:length(disease_measures_list)){
+  #   for (d in 1:nrow(disease_short_names)){
+  #     dn <- disease_short_names$disease[d]
+  #     dmeasure <- disease_measures_list[dm] %>% as.character()
+  #     
+  #     gbd_city_region_data[[index]][[tolower(paste(dmeasure, "num", disease_short_names$sname[d], sep = "_"))]] <- gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]]/
+  #   }
+  # } 
+  
+  
   index <- index + 1
   
 }
 
-# View(gbd_city_region_data[[1]])
+View(gbd_city_region_data[[1]])
 
+## Move to functions
+
+### This works by picking up names 
+
+ci2numDF <- function(in_data, in_measure, in_disease) {
+  
+    dataframe <- in_data[,colnames(in_data) %in% c('population_number', paste0(in_measure, "_med_", in_disease), 
+                                                   paste0(in_measure, "_lower95_", in_disease),
+                                                   paste0(in_measure, "_upper95_", in_disease))]  %>%
+    select(a=1,b=2,c=3,d=4) %>%
+      rowwise() %>%
+      mutate(num=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[1]])) %>%
+      mutate(denom=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[2]])) %>%
+      select(num,denom) %>%
+      as.data.frame() 
+#       names(dataframe)[names(dataframe) == 'num'] <- paste(in_measure, "num", in_disease)
+}
+
+## Do a loop here to do all diseases and measures
+
+test_bristol <- ci2numDF(gbd_city_region_data[[1]], 'prevalence', "ishd")
+
+test_bristol2 <- ci2numDF(gbd_city_region_data[[1]], 'ylds (years lived with disability)', "crdd")
+  names(test_bristol2)[names(test_bristol2) == 'num'] <- 'new.var.name'
+
+
+
+## Replace index with list of data for each of the city regions
+
+ci2numBristollist <- list()
+
+index <- 1
+
+for (dm in 1:length(disease_measures_list)){
+  for (d in 1:nrow(disease_short_names)){
+       dn <- disease_short_names$disease[d]
+        dmeasure <- disease_measures_list[dm] %>% as.character()
+
+        data <- gbd_city_region_data[[1]]
+        
+        ci2numBristollist[[index]] <- ci2numDF(data, dmeasure,dn)
+        
+        index <- index + 1 
+                          
+  }
+}
+
+names(idf)[ncol(idf)]s
+
+test <- ci2numDF(data,2,3,4)
+
+test2 <- ci2numDF(data, data$prevalence_med_crdd, data$prevalence_lower95_crdd, data$prevalence_upper95_crdd)
+
+gbd_city_region_data[[index]][[tolower(paste(dmeasure, "num", disease_short_names$sname[d], sep = "_"))]]
+
+  #   
+  #     
+  #     <- gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]]/
+  #   }
+  # } 
+  
+tmp2 <- ci2numDF(tmp,2,3,4)
+tmp3 <- ci2numDF(tmp,5,6,7)
+tmp4 <- ci2numDF(tmp,8,9,10)
+
+
+tmp <- gbd_city_region_data[[1]] %>%
+  mutate(num=ci2num((`ylds (years lived with disability)_med_crdd`/population_number),
+                    (`ylds (years lived with disability)_lower95_crdd`/population_number),
+                    (`ylds (years lived with disability)_upper95_crdd`/population_number))[1])
+
+
+tmp2 <- mapply(ci2num, (tmp$`ylds (years lived with disability)_med_crdd`/tmp$population_number),
+       (tmp$`ylds (years lived with disability)_lower95_crdd`/tmp$population_number),
+       (tmp$`ylds (years lived with disability)_upper95_crdd`/tmp$population_number)) %>%
+  unlist() %>%
+  matrix(ncol=2,byrow=TRUE) %>%
+  as.data.frame()
+
+tmp2 <- mapply(ci2num, (tmp$`ylds (years lived with disability)_med_crdd`/tmp$population_number),
+               (tmp$`ylds (years lived with disability)_lower95_crdd`/tmp$population_number),
+               (tmp$`ylds (years lived with disability)_upper95_crdd`/tmp$population_number)) %>%
+  unlist() %>%
+  matrix(ncol=2,byrow=TRUE) %>%
+  as.data.frame()
+
+colTmp <- data.frame(colnames(tmp)) %>%
+  mutate(col=row_number())
+# tmp2 <- ci2numDF(tmp,2,3,4)
+# tmp3 <- tmp[,c(1,5,6,7)]
+# tmp3 <- tmp[,c(1,2,3,4)]
+
+# 
+# tmp4 <- tmp3 %>%
+#   select(a=1,b=2,c=3,d=4) %>%
+#   rowwise() %>%
+#   mutate(e=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[1]])) %>%
+#   mutate(f=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[2]]))
+
+
+
+# ci2numDF <- function(dataframe,col1,col2,col3) {
+#   dataframe <- dataframe[,c(1,col1,col2,col3)] %>%
+#     mutate(id=row_number())
+#   dataframe2 <- filter
+#   mapply(ci2num, dataframe[,col1]/dataframe[,1],
+#          dataframe[,col2]/dataframe[,1],
+#          dataframe[,col3]/dataframe[,1]) %>%
+#     unlist() %>%
+#     matrix(ncol=2,byrow=TRUE) %>%
+#     as.data.frame()
+# }
+
+  pivot_longer(cols = )
+
+library(tidyr)
+
+  ci2num(c(0.2,0.2), c(0.1,0.1), c(0.5,0.5))
+  
+save <- ci2num(0.2, 0.1, 0.5)
+num <- save[[1]]
+denom <- save[[2]]
+
+
+### Test for one measure and disease combinations
+
+test_ci_df <- gbd_city_region_data[[1]][,1:4]
+
+for (i in 1:nrow(test_ci_df)) {
+  
+}
+  
+
+#### Calculate numerator and denominator usin ci2num (Chris' comment:So if you call ci2num() to create a numerator and denominator for each of the sub-areas, you could just add up the results to get a numerator and denominator for the larger area.   Those can be supplied directly to the disbayes() function)
+
+#### Create two new columns for each disease and measure combination for num and demon (e.g. ylds_num_crdd)
+
+
+                       
+  
+  
+  
 ## Create aggregated data frame (sums all numbers from localities within a city region)
 
 
-## USE ci2num to create credible intervals for all inputs for processing. 
 
 gbd_city_region_data_agg <- list()
 index <- 1
@@ -344,17 +488,24 @@ gbd_data$area <- gbd_data$.id
 ## Test ci_i_num
 
 test_ci <- gbd_city_region_data_agg[['bristol']]
+# 
+# save <- ci2num(est[1], lower[1], upper[1])
+#   
+# 
+# beta(save$num, save$denom - save$num)
 
-save <- ci2num(est[1], lower[1], upper[1])
-  
-
-beta(save$num, save$denom - save$num)
+## I saved numbers in gbd_city_region_data_agg
   
 est <- test_ci$`ylds (years lived with disability)_med_crdd`/test_ci$population_number
 
 lower <- test_ci$`ylds (years lived with disability)_lower95_crdd`/test_ci$population_number
 
 upper <- test_ci$`ylds (years lived with disability)_upper95_crdd`/test_ci$population_number
+
+ci2num(est[1], lower[1], upper[1])
+
+
+
 
 ### Check that numbers for regions () add up to England total
 

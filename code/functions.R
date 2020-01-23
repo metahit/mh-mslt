@@ -118,11 +118,10 @@ RunLocDf <- function(i_data) {
             
             idf[[tolower(paste(dmeasure, "rate", disease_short_names$sname[d], sep = "_"))]] <- idf$rate_per_1
             
-            idf[[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$val
-            idf[[tolower(paste(dmeasure, "number_l", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$lower
-            idf[[tolower(paste(dmeasure, "number_u", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$upper
+            idf[[tolower(paste(dmeasure, "med", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$val
+            idf[[tolower(paste(dmeasure, "lower95", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$lower
+            idf[[tolower(paste(dmeasure, "upper95", disease_short_names$sname[d], sep = "_"))]] <- current_population_numbers$upper
 
-            # browser()
             
             
             idf <- dplyr::filter(idf, metric == "Number")
@@ -182,7 +181,7 @@ for (d in 1:nrow(disease_short_names)){
       
       disbayes_input_list[[index]]$disease <- disease_short_names$sname[d]
       
-      ## Change column names to match disbayes code
+      ## Change column names to match disbayes code (THIS WILL CHANGE AS WE CAN USE NUMBERS DIRECTLY, WITH POPULATION DATA)
       
       colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_rate_", disease_short_names$sname[d]))] <- "inc"
       colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_rate_", disease_short_names$sname[d]))] <- "mort"
@@ -255,9 +254,9 @@ conflict_prefer("Position", "ggplot2")
 
 # test_path <-  paste0(relative_path_mslt, "disbayes-master/gbdcf-unsmoothed.stan")
 # 
-data_test <- disbayes_input_list_city_regions[[1]][[1]]
- 
-test_list_output <- GenOutDisbayes(data_test)
+# data_test <- disbayes_input_list_city_regions[[1]][[1]]
+#  
+# test_list_output <- GenOutDisbayes(data_test)
 
 
 #### CODE for packaged disbayes

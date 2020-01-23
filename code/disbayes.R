@@ -14,7 +14,6 @@ dat <-dplyr::select(inputs_disbayes, age, sex, inc, pop, prevn, prevdenom, mort,
 
 ## Create credible intervals using numbers for numerators and denominators. ADD TO DISBAYES INPUT DATA
 
-ci2num()
 
 library(disbayes)
 options(mc.cores = parallel::detectCores())
