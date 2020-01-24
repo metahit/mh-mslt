@@ -284,35 +284,79 @@ ci2numDF <- function(in_data, in_measure, in_disease) {
 }
 
 ## Do a loop here to do all diseases and measures
+### First loop of each city region
+
+ci2numLIST <- list()
+index <- 1
+
+
+
+
 
 test_bristol <- ci2numDF(gbd_city_region_data[[1]], 'prevalence', "ishd")
+
+test_bristol <- test_bristol %>% rename(prevalence_num_ishd = num)
+test_bristol <- test_bristol %>% rename(prevalence_denom_ishd = denom)
+
+
+
+### The code below works
+test_bristol <- ci2numDF(gbd_city_region_data[[1]], 'prevalence', "ishd")
+
+test_bristol <- test_bristol %>% rename(prevalence_num_ishd = num)
+test_bristol <- test_bristol %>% rename(prevalence_denom_ishd = denom)
 
 test_bristol2 <- ci2numDF(gbd_city_region_data[[1]], 'ylds (years lived with disability)', "crdd")
 test_bristol2<- rename(test_bristol2, test_name = num)
 
 
 
-## Replace index with list of data for each of the city regions
+## Replace index with list of data for each of the city regions (DISEASE SHORT NAMES DATAFRAME WITH CAPITAL LETTERS IN MSLT CODE)
+idf[[tolower(paste(dmeasure, "med", disease_short_names$sname[d], sep = "_"))]]
 
+
+## Just doing ylds
+
+disbayes_process <- c("prevalence", "incidence", "deaths")
 ci2numBristollist <- list()
 
 index <- 1
 
 for (dm in 1:length(disease_measures_list)){
   for (d in 1:nrow(disease_short_names)){
-       dn <- disease_short_names$disease[d]
-        dmeasure <- disease_measures_list[dm] %>% as.character()
+
+        dmeasure <- disease_measures_list[dm] %>% as.character() %>% tolower()
+        
+        # if (disease_short_names$is_not_dis[d] != 0) {
+        # }
+        # else {
+        
+        # num_name <- paste(dmeasure, "_num_" ,disease_short_names$sname[d], sep = "_")
+        # denom_name <- paste(dmeasure, "_denom_" ,disease_short_names$sname[d], sep = "_")
 
         data <- gbd_city_region_data[[1]]
         
-        ci2numBristollist[[index]] <- ci2numDF(data, dmeasure,dn)
+        # browser()
         
+        ci2numBristollist[[index]] <- ci2numDF(data, dmeasure, disease_short_names$sname[d])
+        
+        # Names num and denom
+        
+        names(ci2numBristollist)[index] <- paste(dmeasure, disease_short_names$sname[d], sep = '_')
+        
+        # Names dataframe
+       
+        # names(ci2numBristollist)[index] <- paste(dmeasure, disease_short_names$sname[d], sep = '_')
+        
+
+                
         index <- index + 1 
-                          
+  
+                       
   }
 }
 
-names(idf)[ncol(idf)]s
+ci2numBristollist[[1]]
 
 test <- ci2numDF(data,2,3,4)
 
