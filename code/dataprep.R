@@ -247,19 +247,6 @@ for (i in 1:length(gbd_loc_data_processed)){
   
   suppressWarnings(names(gbd_city_region_data)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
   
-  
-  ### Add numerator and denominator for ci2num function to generate uncertain parameters for disbayes
-  
-  # for (dm in 1:length(disease_measures_list)){
-  #   for (d in 1:nrow(disease_short_names)){
-  #     dn <- disease_short_names$disease[d]
-  #     dmeasure <- disease_measures_list[dm] %>% as.character()
-  #     
-  #     gbd_city_region_data[[index]][[tolower(paste(dmeasure, "num", disease_short_names$sname[d], sep = "_"))]] <- gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]]/
-  #   }
-  # } 
-  
-  
   index <- index + 1
   
 }
@@ -270,190 +257,72 @@ View(gbd_city_region_data[[1]])
 
 ### This works by picking up names 
 
-ci2numDF <- function(in_data, in_measure, in_disease) {
+ci2numDF <- function(in_data, in_measure, in_disease) { {
   
-    dataframe <- in_data[,colnames(in_data) %in% c('population_number', paste0(in_measure, "_med_", in_disease), 
+  # dplyr::filter(i_data, sex == sex_index) %>% select(age, sex, ends_with(var_name), population_number)  
+  
+    dataframe <- dplyr::select(in_data, population_number, paste0(in_measure, "_med_", in_disease), 
                                                    paste0(in_measure, "_lower95_", in_disease),
-                                                   paste0(in_measure, "_upper95_", in_disease))]  %>%
+                                                   paste0(in_measure, "_upper95_", in_disease))  %>%
     select(a=1,b=2,c=3,d=4) %>%
       rowwise() %>%
       mutate(num=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[1]])) %>%
       mutate(denom=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[2]])) %>%
       select(num,denom) %>%
       as.data.frame()
+  }
+return(dataframe)
 }
 
-## Do a loop here to do all diseases and measures
-### First loop of each city region
-
-ci2numLIST <- list()
-index <- 1
+test_bristol <- ci2numDF(gbd_city_region_data[[1]], 'prevalence', "mvri")
 
 
+## Generate a list to process each of the dataframes in list called gbd_city_region_data
+## I tried the code below, just testing the first data frame in the list and it does not work. 
 
-
-
-test_bristol <- ci2numDF(gbd_city_region_data[[1]], 'prevalence', "ishd")
-
-test_bristol <- test_bristol %>% rename(prevalence_num_ishd = num)
-test_bristol <- test_bristol %>% rename(prevalence_denom_ishd = denom)
-
-
-
-### The code below works
-test_bristol <- ci2numDF(gbd_city_region_data[[1]], 'prevalence', "ishd")
-
-test_bristol <- test_bristol %>% rename(prevalence_num_ishd = num)
-test_bristol <- test_bristol %>% rename(prevalence_denom_ishd = denom)
-
-test_bristol2 <- ci2numDF(gbd_city_region_data[[1]], 'ylds (years lived with disability)', "crdd")
-test_bristol2<- rename(test_bristol2, test_name = num)
-
-
-
-## Replace index with list of data for each of the city regions (DISEASE SHORT NAMES DATAFRAME WITH CAPITAL LETTERS IN MSLT CODE)
-idf[[tolower(paste(dmeasure, "med", disease_short_names$sname[d], sep = "_"))]]
-
-
-## Just doing ylds
-
-##
-###
-
-disbayes_process <- c("prevalence", "incidence", "deaths")
 ci2numBristollist <- list()
 
 index <- 1
 
 for (dm in 1:length(disease_measures_list)){
   for (d in 1:nrow(disease_short_names)){
+     
+    create_new <- T
+     
+    if (disease_short_names$is_not_dis[d] != 0 || disease_short_names$acronym[d] == 'no_pif' || disease_short_names$acronym[d] == 'other'){
+    }
+    else {
+     
+      if (create_new){
 
         dmeasure <- disease_measures_list[dm] %>% as.character() %>% tolower()
-        
-        # if (disease_short_names$is_not_dis[d] != 0) {
-        # }
-        # else {
-        
-        # num_name <- paste(dmeasure, "_num_" ,disease_short_names$sname[d], sep = "_")
-        # denom_name <- paste(dmeasure, "_denom_" ,disease_short_names$sname[d], sep = "_")
+      
 
-        data <- gbd_city_region_data[[1]]
+        data <- gbd_city_region_data[[1]] 
+       
+        ci2numBristollist[[index]] <- ci2numDF(data, dmeasure, disease_short_names$sname[d])
+       
         
-        # browser()
+        
+        create_new <- F
+        
+        ## Here the calculations above are repeated, here is where the F is telling to move into the next disease
+        
+      }else{
+       
         
         ci2numBristollist[[index]] <- ci2numDF(data, dmeasure, disease_short_names$sname[d])
         
-        # Names num and denom
         
-        names(ci2numBristollist)[index] <- paste(dmeasure, disease_short_names$sname[d], sep = '_')
-        
-        # Names dataframe
-       
-        # names(ci2numBristollist)[index] <- paste(dmeasure, disease_short_names$sname[d], sep = '_')
-        
-
-                
-        index <- index + 1 
+      }
+      names(ci2numBristollist)[index] <- paste(dmeasure, disease_short_names$sname[d], sep = '_')
+      index <- index + 1 
   
-                       
+    }                  
   }
 }
 
-ci2numBristollist[[1]]
 
-test <- ci2numDF(data,2,3,4)
-
-test2 <- ci2numDF(data, data$prevalence_med_crdd, data$prevalence_lower95_crdd, data$prevalence_upper95_crdd)
-
-gbd_city_region_data[[index]][[tolower(paste(dmeasure, "num", disease_short_names$sname[d], sep = "_"))]]
-
-  #   
-  #     
-  #     <- gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "number", disease_short_names$sname[d], sep = "_"))]]/
-  #   }
-  # } 
-  
-tmp2 <- ci2numDF(tmp,2,3,4)
-tmp3 <- ci2numDF(tmp,5,6,7)
-tmp4 <- ci2numDF(tmp,8,9,10)
-
-
-tmp <- gbd_city_region_data[[1]] %>%
-  mutate(num=ci2num((`ylds (years lived with disability)_med_crdd`/population_number),
-                    (`ylds (years lived with disability)_lower95_crdd`/population_number),
-                    (`ylds (years lived with disability)_upper95_crdd`/population_number))[1])
-
-
-tmp2 <- mapply(ci2num, (tmp$`ylds (years lived with disability)_med_crdd`/tmp$population_number),
-       (tmp$`ylds (years lived with disability)_lower95_crdd`/tmp$population_number),
-       (tmp$`ylds (years lived with disability)_upper95_crdd`/tmp$population_number)) %>%
-  unlist() %>%
-  matrix(ncol=2,byrow=TRUE) %>%
-  as.data.frame()
-
-tmp2 <- mapply(ci2num, (tmp$`ylds (years lived with disability)_med_crdd`/tmp$population_number),
-               (tmp$`ylds (years lived with disability)_lower95_crdd`/tmp$population_number),
-               (tmp$`ylds (years lived with disability)_upper95_crdd`/tmp$population_number)) %>%
-  unlist() %>%
-  matrix(ncol=2,byrow=TRUE) %>%
-  as.data.frame()
-
-colTmp <- data.frame(colnames(tmp)) %>%
-  mutate(col=row_number())
-# tmp2 <- ci2numDF(tmp,2,3,4)
-# tmp3 <- tmp[,c(1,5,6,7)]
-# tmp3 <- tmp[,c(1,2,3,4)]
-
-# 
-# tmp4 <- tmp3 %>%
-#   select(a=1,b=2,c=3,d=4) %>%
-#   rowwise() %>%
-#   mutate(e=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[1]])) %>%
-#   mutate(f=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[2]]))
-
-
-
-# ci2numDF <- function(dataframe,col1,col2,col3) {
-#   dataframe <- dataframe[,c(1,col1,col2,col3)] %>%
-#     mutate(id=row_number())
-#   dataframe2 <- filter
-#   mapply(ci2num, dataframe[,col1]/dataframe[,1],
-#          dataframe[,col2]/dataframe[,1],
-#          dataframe[,col3]/dataframe[,1]) %>%
-#     unlist() %>%
-#     matrix(ncol=2,byrow=TRUE) %>%
-#     as.data.frame()
-# }
-
-  pivot_longer(cols = )
-
-library(tidyr)
-
-  ci2num(c(0.2,0.2), c(0.1,0.1), c(0.5,0.5))
-  
-save <- ci2num(0.2, 0.1, 0.5)
-num <- save[[1]]
-denom <- save[[2]]
-
-
-### Test for one measure and disease combinations
-
-test_ci_df <- gbd_city_region_data[[1]][,1:4]
-
-for (i in 1:nrow(test_ci_df)) {
-  
-}
-  
-
-#### Calculate numerator and denominator usin ci2num (Chris' comment:So if you call ci2num() to create a numerator and denominator for each of the sub-areas, you could just add up the results to get a numerator and denominator for the larger area.   Those can be supplied directly to the disbayes() function)
-
-#### Create two new columns for each disease and measure combination for num and demon (e.g. ylds_num_crdd)
-
-
-                       
-  
-  
-  
 ## Create aggregated data frame (sums all numbers from localities within a city region)
 
 
