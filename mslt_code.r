@@ -6,7 +6,7 @@
 # require(kableExtra)
 # require(citr)
 # require(gridExtra)
-# require(ggpubr)
+require(ggpubr)
 # require(grid)
 require(ggplot2)
 # require(pillar)
@@ -19,6 +19,7 @@ require(rlist)
 require(reshape)
 require(reshape2)
 require(zoo)
+require(stringi)
 
 if (interactive()) {
   require(conflicted)
