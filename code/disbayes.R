@@ -20,17 +20,58 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 
+### Data prep to run code with num and denom
+## Test code with prev and denom for one locality using disbayes_input_beta data
+
+data <- filter(disbayes_input_beta_agg, cityregion == "bristol", disease == "adaod", sex == "Female")
+
+## Create column for combination disease and rate type (inc, prev, cf)
+
+data$names <- paste(data$measure, data$disease, sep = "_")
+
+data <- data %>% pivot_wider(id_cols = c(cityregion, sex, agegr, population_number), names_from = names, values_from = c(num, denom))
+
+data <-data[order(data$agegr),]
+
+data$rem <- as.integer(0)
+data$prevdenom <- c(100,100,500,500,500,500,500,500,500,500,500,500,500,500,500,500,200,200,100,100) / 10 # total sample size 3910, generous for London (from CJ)
+
+## Added agegroups to derive age groups by 1
+
+data$agegrp <- as.integer(seq(0,95, by=5))
+
+outage <- 0:100  # assume inc/prev/mort same in each year within a five-year age group
+
+ind <- findInterval(outage, data$agegrp)
+data <- data[ind,]
+data$age <- c(0:100)
+
+data <- within(data, {
+  ningrp <- rep(table(agegrp), table(agegrp))
+  # popmale <- round(popmale/ningrp) ## assume population uniform between years within age group.
+  pop <- round(population_number/ningrp) ## assume population uniform between years within age group.
+  # ndieddismale <- round(popmale * (1 - exp(-mortmale)))
+  # ndieddis <- round(pop * (1 - exp(-mort)))
+  # prevnmale <- round(prevdenom * prevmale)
+  prevn <- round(prevdenom * 1)
+}
+)
 ## Test code without function (add loop and summary of outcomes as in methahit_belen.r)
 
-resu <- disbayes(dat = dat,
+### Ask Chris for specific data needs if only including num and denom for incidence and prevalence
+
+resu <- disbayes(dat = data,
                  
                  ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
-                 inc = "inc", 
-                 inc_denom = "pop", 
-                 prev_num = "prevn", 
-                 prev_denom = "prevdenom",
-                 mort = "mort",
-                 mort_denom = "pop",
+                 # inc = "inc", 
+                 inc_num = "num_incidence_adaod",
+                 inc_denom = "denom_incidence_adaod", 
+                 # prev_num = "prevn", 
+                 #  prev_denom = "prevdenom",
+                 # mort = "mort",
+                 mort_num = "num_deaths_adaod",
+                 mort_denom = "denom_deaths_adaod",
+                 
                  
                  ## You'll need to change this for different diseases:
                  ## the age below which all case fatalities are
