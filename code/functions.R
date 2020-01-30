@@ -128,7 +128,7 @@ RunLocDf <- function(i_data) {
             
             if (is.null(age_sex_df)){
               
-              age_sex_df <- select(idf, age, sex, population_number, location, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
+              age_sex_df <- select(idf, age, sex, population_number, location, cityregion, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
               
               
               names(idf)[ncol(idf)]
