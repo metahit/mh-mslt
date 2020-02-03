@@ -31,7 +31,9 @@ options(mc.cores = parallel::detectCores()) # set if you have multi-core compute
 datadir <- paste0(relative_path_mslt, "data/city regions/Input disbayes")
 fp <- file.path(datadir,"bristol_female_ishd.rds")
 dat <- readRDS(fp)
-
+## Add incidence and mortality numerator and denominator to originally genereted dataset for disbayes inputs. 
+### IF IT WORKS, CREATE A DATA SET FOR DISBAYES THAT INCLUDES ALL INPUTS (NEED TO MODIFY GENERATE INPUTS DATAFRAME)
+### WE HAVE TO DO THIS DUE TO THE AGGREGATION OF LOCALITIES. 
 
 ## One example disbayes run - to show how it works
 ## Bristol, male, IHD
@@ -44,11 +46,13 @@ library(disbayes)
 resu <- disbayes(dat = dat,
                  
                  ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
-                 inc = "inc", 
+                 inc = "inc",
+                 # inc_num = "num_incidence_ishd",
                  inc_denom = "pop", 
                  prev_num = "prevn", 
                  prev_denom = "prevdenom",
                  mort = "mort",
+                 # mort_num = "num_deaths_ishd",
                  mort_denom = "pop",
 
                  ## You'll need to change this for different diseases:

@@ -23,7 +23,7 @@ rstan_options(auto_write = TRUE)
 ### Data prep to run code with num and denom
 ## Test code with prev and denom for one locality using disbayes_input_beta data
 
-data <- filter(disbayes_input_beta_agg, cityregion == "bristol", disease == "adaod", sex == "Female")
+data <- filter(disbayes_input_beta_agg, cityregion == "bristol", disease == "ishd", sex == "Female")
 
 ## Create column for combination disease and rate type (inc, prev, cf)
 
@@ -46,6 +46,8 @@ ind <- findInterval(outage, data$agegrp)
 data <- data[ind,]
 data$age <- c(0:100)
 
+
+### Something wrong with pop calculations
 data <- within(data, {
   ningrp <- rep(table(agegrp), table(agegrp))
   # popmale <- round(popmale/ningrp) ## assume population uniform between years within age group.
@@ -63,12 +65,12 @@ data <- within(data, {
 resu <- disbayes(dat = data,
                  
                  ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
-                 # inc = "inc", 
+                 inc = "inc",
                  inc_num = "num_incidence_adaod",
                  inc_denom = "denom_incidence_adaod", 
                  # prev_num = "prevn", 
                  #  prev_denom = "prevdenom",
-                 # mort = "mort",
+                 mort = "mort",
                  mort_num = "num_deaths_adaod",
                  mort_denom = "denom_deaths_adaod",
                  
