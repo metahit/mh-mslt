@@ -227,6 +227,11 @@ for (d in 1:nrow(disease_short_names)){
       # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_med_", disease_short_names$sname[d]))] <- "inc"
       # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_med_", disease_short_names$sname[d]))] <- "mort"
       # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("prevalence_med_", disease_short_names$sname[d]))] <- "prev"
+      
+      ## Drop columns with measures disease names combinations
+      
+      disbayes_input_list[[index]] <- disbayes_input_list[[index]][ -c(3:6) ] 
+      
       colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== paste0("population_number")] <- "pop"
       
       ## We assume remission is 0
@@ -269,6 +274,7 @@ for (d in 1:nrow(disease_short_names)){
       ## add sex and disease variable to match with output data frame
       
       disbayes_input_list[[index]]$sex_disease <- paste(sex_index, disease_short_names$sname[d], sep = "_")
+      
       
       index <-  index +1
       }

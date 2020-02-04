@@ -248,10 +248,13 @@ for (i in 1:length(gbd_loc_data_processed)){
   
 }
 
+
+
+
+
 ## Create aggregated data frame (sums all numbers from localities within a city region) SEE HOW THIS IS WORKING, best to continue 
 ### with dataframe above and then have a combined dataset with all possible inputs for disbayes
 #### Drop location and city region (sum cannot summ string variables)
-### CHANGE NAME OR ISSUES WITH DISBYAES DATA PREP
 
 for (i in 1:length(gbd_city_region_data)) {
   gbd_city_region_data[[i]] <- gbd_city_region_data[[i]][ -c(2,3) ] 
@@ -302,6 +305,9 @@ for (i in 1:length(gbd_city_region_data)) {
   ## Order data
            
            gbd_city_region_data_agg[[index]] <- gbd_city_region_data_agg[[index]][order(gbd_city_region_data_agg[[index]]$sex, gbd_city_region_data_agg[[index]]$age_cat),]
+  
+  ## Separate 
+           
            
   ## Calculate rates per one. Needed for mslt_code
 

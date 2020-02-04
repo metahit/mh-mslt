@@ -19,6 +19,8 @@ disbayes_input_list_city_regions <- list()
 for (i in 1:length(gbd_city_region_data_agg)) {
   
   disbayes_input_list_city_regions[[index]] <- GenInpDisbayes(gbd_city_region_data_agg[[i]])
+  # disbayes_input_list_city_regions[[index]]$cityregion <- paste(names(gbd_city_region_data_agg[i]))
+  # # disbayes_input_list_city_regions[[index]]$cityregion<- paste0(names(gbd_city_region_data_agg[i]))
   
   names(disbayes_input_list_city_regions)[index] <- paste0(names(gbd_city_region_data_agg[i]))
   
@@ -27,18 +29,29 @@ for (i in 1:length(gbd_city_region_data_agg)) {
 }
 
 
+
+
+### ADD MEASURE AND AGE GROUP TO BUILD INDEX TO MATCH DATA GENERATED FOR NUM AND DENOM which builts from gbd_city_region_data which is in 
+### 5 year age intervals
+
+for (i in 1:length(disbayes_input_list_city_regions)){
+  for (j in 1:length(disbayes_input_list_city_regions[[i]])) {
+disbayes_input_list_city_regions[[i]][[j]]$cityregion <- paste(names(disbayes_input_list_city_regions[i]))
+  }
+} 
+
+disbayes_inputs_df <- do.call(rbind, disbayes_input_list_city_regions)
+disbayes_inputs_df <- do.call(rbind, disbayes_inputs_df)
+disbayes_inputs_df$index <- paste(disbayes_inputs_df$disease, disbayes_inputs_df$sex, disbayes_inputs_df$age, disbayes_inputs_df$cityregion, sep = "_")
+
+
 ## I added results from ci2Num function (num and denom for incidence and mortality, there are issues with prevalence)
 
-## Save as rds for sharing
+## Save as rds for sharing (MOVE AT THE END ONCE num and denom area added ALSO SAVE COMPLETE DATA FRAME)
 
 for (i in 1:length(disbayes_input_list_city_regions)) {
   city_name <- names(disbayes_input_list_city_regions[i])
   for (j in 1:length(disbayes_input_list_city_regions[[i]])) {
-    
-    ## Add variable name to each of the diseases
-    
-    disbayes_input_list_city_regions[[i]][[j]]$city_region <- city_name
-    
     
     temp_disease_name <- disbayes_input_list_city_regions[[i]][[j]][1,15]
     print(paste0(city_name, "_",temp_disease_name))
@@ -68,7 +81,7 @@ for (i in 1:length(gbd_city_region_data)) {
         low <- paste0(in_measure, "_lower95_", disease_short_names$sname[d])
         upper <- paste0(in_measure, "_upper95_", disease_short_names$sname[d])
         
-        
+        ## These data is in 5-year age groups. 
         data <- gbd_city_region_data[[i]]
         
         disbayes_input_list_city_regions_2[[index]] <- dplyr::select(data, population_number, cityregion, sex_age_cat, med, low, upper)
@@ -110,31 +123,32 @@ disbayes_input_list_city_regions_4 <- plyr::ldply(disbayes_input_list_city_regio
 disbayes_input_list_city_regions_5 <- disbayes_input_list_city_regions_4[ -c(1) ] %>% summarise_all(funs(sum))
 
 disbayes_input_list_city_regions_6 <- disbayes_input_list_city_regions_5 %>%  mutate_if(is.character, RemoveAllWs)%>% 
+  mutate(index = indexagg) %>% 
   separate(indexagg, c("measure", "disease", "sex", "age", "cityregion"))
 
 ## Add new variable with mid-age group
 
 disbayes_input_list_city_regions_6$agegr <- 0
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="Under5"] <- 2
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="5to9"] <- 7
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="10to14"] <- 12
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="15to19"] <- 17
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="20to24"] <- 22
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="25to29"] <- 27
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="30to34"] <- 32
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="35to39"] <- 37
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="40to44"] <- 42
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="45to49"] <- 47
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="50to54"] <- 52
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="55to59"] <- 57
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="60to64"] <- 62
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="65to69"] <- 67
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="70to74"] <- 72
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="75to79"] <- 77
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="80to84"] <- 82
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="85to89"] <- 87
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="90to94"] <- 92
-disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="95plus"] <- 97
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="Under5"] <- 0
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="5to9"] <- 5
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="10to14"] <- 10
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="15to19"] <- 15
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="20to24"] <- 20
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="25to29"] <- 25
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="30to34"] <- 30
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="35to39"] <- 35
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="40to44"] <- 40
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="45to49"] <- 45
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="50to54"] <- 50
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="55to59"] <- 55
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="60to64"] <- 60
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="65to69"] <- 65
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="70to74"] <- 70
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="75to79"] <- 75
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="80to84"] <- 80
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="85to89"] <- 85
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="90to94"] <- 90
+disbayes_input_list_city_regions_6$agegr [ disbayes_input_list_city_regions_6$age =="95plus"] <- 95
 
 city_regions_names <- unique(disbayes_input_list_city_regions_6$cityregion)
 disease_disbayes <- unique(disbayes_input_list_city_regions_6$disease)
@@ -142,19 +156,61 @@ measure_disbayes <- unique(disbayes_input_list_city_regions_6$measure)
 sex_disbayes <- unique(disbayes_input_list_city_regions_6$sex)
 
 
-## Convert list into a data frame with all diseases and areas (SEE IF WE USE THIS)
-
+## Create list
 index <- 1
-inputs_disbayes_list <- list()
+disbayes_input_list <- list()
 
-for (i in 1:length(disbayes_input_list_city_regions)) {
-  
-  inputs_disbayes_list[[index]] <- plyr::ldply(disbayes_input_list_city_regions[[i]], rbind)
-  
-  index <- index + 1
+for (c in city_regions_names){
+  for (d in disease_disbayes){
+    for (m in measure_disbayes){
+      for (s in sex_disbayes){
+        
+     
+      disbayes_input_list[[index]] <- dplyr::filter(disbayes_input_list_city_regions_6, cityregion == c, disease == d, measure == m, sex == s)
+      
+      disbayes_input_list[[index]] <- disbayes_input_list[[index]][order(disbayes_input_list[[index]]$agegr),]
+      
+      outage <- 0:100  # assume num and denom are the same in each year within a five-year age group
+      
+      # 
+      ind <- findInterval(outage, disbayes_input_list[[index]]$agegr)
+      disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
+      disbayes_input_list[[index]]$age <- outage
+      
+      
+      ### It leaves NA values (I need to have all columns filled in)
+      disbayes_input_list[[index]] <- disbayes_input_list[[index]] %>% pivot_wider(id_cols = c(disease, sex, age, cityregion), names_from = measure, values_from = c(num, denom))
+       
+      disbayes_input_list[[index]]$index <- tolower(paste(disbayes_input_list[[index]]$disease, 
+                                                  disbayes_input_list[[index]]$sex, 
+                                                  disbayes_input_list[[index]]$age, 
+                                                  disbayes_input_list[[index]]$cityregion, sep = "_"))
+      
+        index <- index + 1
+          
+      }
+    }
+  }
 }
 
-inputs_disbayes <- plyr::ldply(inputs_disbayes_list, rbind)
+
+disbayes_inputs_df2 <- do.call(rbind, disbayes_input_list)
+disbayes_inputs_df2 <- plyr::ldply(disbayes_input_list, rbind)
+
+## NOT USING the commented code. 
+# ## Convert list into a data frame with all diseases and areas (SEE IF WE USE THIS)
+# 
+# index <- 1
+# inputs_disbayes_list <- list()
+# 
+# for (i in 1:length(disbayes_input_list_city_regions)) {
+#   
+#   inputs_disbayes_list[[index]] <- plyr::ldply(disbayes_input_list_city_regions[[i]], rbind)
+#   
+#   index <- index + 1
+# }
+# 
+# inputs_disbayes <- plyr::ldply(inputs_disbayes_list, rbind)
 
 
 
@@ -204,4 +260,7 @@ bristol_test$disease_rate <- paste(bristol_test$disease, bristol_test$rates, sep
 bristol_test_2 <- bristol_test %>% pivot_wider(id_cols = c(sex, cityregion, age_cat), names_from = disease_rate, values_from = c(med, lower95, upper95))
 
 
+### Problem here as not unique they repeat in the city regions
 
+cityregions_smoothed_res$disease_rate <- paste(cityregions_smoothed_res$disease, cityregions_smoothed_res$rates, sep = "_")
+cityregions_smoothed_res2 <- cityregions_smoothed_res$disease_rate %>% pivot_wider(id_cols = c(sex, cityregion, age_cat), names_from = disease_rate, values_from = c(med, lower95, upper95))
