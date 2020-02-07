@@ -2,7 +2,7 @@
 
 ## 1) gbd_city_region_data
 ## 2) disease_measure list 
-## 3) disease_short_names
+## 3) DISEASE_SHORT_NAMES
 
 
 # ---- chunk-1: Disbayes input generation ----
@@ -69,17 +69,17 @@ disbayes_input_list_city_regions_2 <- list()
 index <- 1
 for (i in 1:length(gbd_city_region_data)) {
   for (dm in 1:length(disease_measures_list)){
-    for (d in 1:nrow(disease_short_names)){
+    for (d in 1:nrow(DISEASE_SHORT_NAMES)){
       in_measure <- disease_measures_list[dm] %>% as.character() %>% tolower()
       
-      if (disease_short_names$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)" ||
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)" ||
           in_measure == "prevalence") {
       }
       else {
         
-        med <- paste0(in_measure, "_med_", disease_short_names$sname[d])
-        low <- paste0(in_measure, "_lower95_", disease_short_names$sname[d])
-        upper <- paste0(in_measure, "_upper95_", disease_short_names$sname[d])
+        med <- paste0(in_measure, "_med_", DISEASE_SHORT_NAMES$sname[d])
+        low <- paste0(in_measure, "_lower95_", DISEASE_SHORT_NAMES$sname[d])
+        upper <- paste0(in_measure, "_upper95_", DISEASE_SHORT_NAMES$sname[d])
         
         ## These data is in 5-year age groups. 
         data <- gbd_city_region_data[[i]]
@@ -89,11 +89,11 @@ for (i in 1:length(gbd_city_region_data)) {
         disbayes_input_list_city_regions_2[[index]]$est <- disbayes_input_list_city_regions_2[[index]][[med]]/disbayes_input_list_city_regions_2[[index]][[1]]
         disbayes_input_list_city_regions_2[[index]]$lower <- disbayes_input_list_city_regions_2[[index]][[low]]/disbayes_input_list_city_regions_2[[index]][[1]]
         disbayes_input_list_city_regions_2[[index]]$upper <- disbayes_input_list_city_regions_2[[index]][[upper]]/disbayes_input_list_city_regions_2[[index]][[1]]
-        disbayes_input_list_city_regions_2[[index]]$index <- paste(in_measure, disease_short_names$sname[d], sep = "_")
+        disbayes_input_list_city_regions_2[[index]]$index <- paste(in_measure, DISEASE_SHORT_NAMES$sname[d], sep = "_")
         disbayes_input_list_city_regions_2[[index]]$indexagg <- paste(disbayes_input_list_city_regions_2[[index]]$index, disbayes_input_list_city_regions_2[[index]]$sex_age_cat,
                                                   disbayes_input_list_city_regions_2[[index]]$cityregion, sep = "_")
         
-        suppressWarnings(names(disbayes_input_list_city_regions_2)[index] <- paste(gbd_city_region_data[[i]]$cityregion,in_measure, disease_short_names$sname[d], sep = '_'))
+        suppressWarnings(names(disbayes_input_list_city_regions_2)[index] <- paste(gbd_city_region_data[[i]]$cityregion,in_measure, DISEASE_SHORT_NAMES$sname[d], sep = '_'))
         
         index <- index + 1
         
@@ -155,112 +155,103 @@ disease_disbayes <- unique(disbayes_input_list_city_regions_6$disease)
 measure_disbayes <- unique(disbayes_input_list_city_regions_6$measure)
 sex_disbayes <- unique(disbayes_input_list_city_regions_6$sex)
 
+## To wider 
+
+
+disbayes_input_list_city_regions_7 <- disbayes_input_list_city_regions_6 %>% pivot_wider(id_cols = c(agegr, sex, population_number, cityregion, measure, disease), names_from = measure, values_from = c(num, denom))
 
 ## Create list
 index <- 1
-disbayes_input_list <- list()
+disbayes_input_list2 <- list()
 
 for (c in city_regions_names){
-  for (d in disease_disbayes){
-    for (m in measure_disbayes){
+    for (d in disease_disbayes){
       for (s in sex_disbayes){
         
      
-      disbayes_input_list[[index]] <- dplyr::filter(disbayes_input_list_city_regions_6, cityregion == c, disease == d, measure == m, sex == s)
+      disbayes_input_list2[[index]] <- dplyr::filter(disbayes_input_list_city_regions_7, cityregion == c, disease == d, sex == s)
       
-      disbayes_input_list[[index]] <- disbayes_input_list[[index]][order(disbayes_input_list[[index]]$agegr),]
+      disbayes_input_list2[[index]] <- disbayes_input_list2[[index]][order(disbayes_input_list2[[index]]$agegr),]
       
       outage <- 0:100  # assume num and denom are the same in each year within a five-year age group
       
       # 
-      ind <- findInterval(outage, disbayes_input_list[[index]]$agegr)
-      disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
-      disbayes_input_list[[index]]$age <- outage
+      ind <- findInterval(outage, disbayes_input_list2[[index]]$agegr)
+      disbayes_input_list2[[index]] <- disbayes_input_list2[[index]][ind,]
+      disbayes_input_list2[[index]]$age <- outage
       
       
       ### It leaves NA values (I need to have all columns filled in)
-      disbayes_input_list[[index]] <- disbayes_input_list[[index]] %>% pivot_wider(id_cols = c(disease, sex, age, cityregion), names_from = measure, values_from = c(num, denom))
+     
        
-      disbayes_input_list[[index]]$index <- tolower(paste(disbayes_input_list[[index]]$disease, 
-                                                  disbayes_input_list[[index]]$sex, 
-                                                  disbayes_input_list[[index]]$age, 
-                                                  disbayes_input_list[[index]]$cityregion, sep = "_"))
-      
+      disbayes_input_list2[[index]]$index <- tolower(paste(disbayes_input_list2[[index]]$disease, 
+                                                  disbayes_input_list2[[index]]$sex, 
+                                                  disbayes_input_list2[[index]]$age, 
+                                                  disbayes_input_list2[[index]]$cityregion, sep = "_"))
+       # disbayes_input_list2[[index]] <- disbayes_input_list2[[index]] %>% pivot_wider(id_cols = c(index), names_from = measure, values_from = c(num, denom))
         index <- index + 1
           
-      }
+      
     }
   }
 }
 
 
-disbayes_inputs_df2 <- do.call(rbind, disbayes_input_list)
-disbayes_inputs_df2 <- plyr::ldply(disbayes_input_list, rbind)
+disbayes_inputs_df2 <- do.call(rbind, disbayes_input_list2)
+disbayes_inputs_df2 <-   disbayes_inputs_df2[ -c(1:5,10) ]
 
-## NOT USING the commented code. 
-# ## Convert list into a data frame with all diseases and areas (SEE IF WE USE THIS)
-# 
-# index <- 1
-# inputs_disbayes_list <- list()
-# 
-# for (i in 1:length(disbayes_input_list_city_regions)) {
-#   
-#   inputs_disbayes_list[[index]] <- plyr::ldply(disbayes_input_list_city_regions[[i]], rbind)
-#   
-#   index <- index + 1
-# }
-# 
-# inputs_disbayes <- plyr::ldply(inputs_disbayes_list, rbind)
+
+### Final data set to process in disbayes. Filter data by city region, disease and sex. COMPARE with saved data in rds
+disbayes_inputs <- disbayes_inputs_df %>%
+  left_join(disbayes_inputs_df2)
+
+
+write_rds(disbayes_inputs, paste0(relative_path_mslt, "data/city regions/Input disbayes/disbayes_inputs", ".rds"))
 
 
 
-## Create list with data needs for multistate life table processing (case fatality and incidence) (OLD Code, delete)
-### NEW Code using Chris 
+# ---- chunk-2: Disbayes output organisation to link to mslt dataframe (generated by Chris based on above data) ----
 
-
-# ---- chunk-1: Disbayes output organisation to link to mslt dataframe (generated by Chris based on above data) ----
+## These data were generated by Chris and saved in /data/city regions/Outpu disbayes. Need to get teh data in the global environment first.
 
 ## add name to column outputs (column 0) NEED TO GENENERATE OUTPUTS LIKE CHRIS FROM THE DISBAYES SCRIPT
 
+### create column one with outcome and year
 cityregions_smoothed_res <- cbind(
-  mes=rownames(cityregions_smoothed_res), cityregions_smoothed_res) 
+  mes=rownames(cityregions_smoothed_res), cityregions_smoothed_res)
 
-
+### Separate avoce in outcome and year
 cityregions_smoothed_res <- cbind(cityregions_smoothed_res, (str_split_fixed(cityregions_smoothed_res$
                                                                                mes, fixed('['), 2)))
+
 cityregions_smoothed_res <- cityregions_smoothed_res[ (cityregions_smoothed_res$`1` %in% c("inc", "cf", "prev")), ]
 cityregions_smoothed_res$`1` <- as.character(cityregions_smoothed_res$`1`)
 cityregions_smoothed_res$`2` <- as.character(cityregions_smoothed_res$`2`)
 cityregions_smoothed_res$`2` <- gsub("].*", "",cityregions_smoothed_res$`2`)
 
 
-## Rename 1 adn 2
+## Rename columns
 names(cityregions_smoothed_res)[names(cityregions_smoothed_res) == "1"] <- "rates"
 names(cityregions_smoothed_res)[names(cityregions_smoothed_res) == "2"] <- "year"
-## Keep incidence, case fatality, prevalence and mortality
 
+## Rename string values inc to incidence, cf to case fatality and prev to prevalence
 
-## Test here creating data set per area (first filter, otherwise another layer with the areas)
+cityregions_smoothed_res <- cityregions_smoothed_res %>% 
+  mutate(rates = str_replace(rates, "inc", "incidence"))  %>%
+    mutate(rates = str_replace(rates, "cf", "case_fatality"))  %>%
+      mutate(rates = str_replace(rates, "prev", "prevalence"))
 
-#### Keep them in large data frame forrmat for data prep?
+## Move to columns for data for case_fatality, incidence and prevelence
 
-## LOOP to generate data per city regions and other areas (England, etc) should start here. replace bristol with data
-# 
-# for (a in c(unique(cityregions_smoothed_res$area))) {
+cityregions_smoothed_res$disease_rate <- paste(cityregions_smoothed_res$rates, cityregions_smoothed_res$disease, sep = "_")
+cityregions_smoothed_res2 <- cityregions_smoothed_res %>% pivot_wider(id_cols = c(area, gender, model, year), names_from = disease_rate, values_from = c(med, lower95, upper95))
+names(cityregions_smoothed_res2) = gsub(pattern = "med_", replacement = "", x = names(cityregions_smoothed_res2))
 
-## For GBD inputs
-bristol_test <- dplyr::filter(cityregions_smoothed_res, area == "bristol")
-## For all other data
-gbd_df <- dplyr::filter(gbd_data, area == "bristol")
+disbayes_output <- cityregions_smoothed_res2 %>%
+  dplyr::rename(sex = gender) %>% 
+  mutate_if(is.factor, as.character)
+disbayes_output$year <- disbayes_output$year %>% as.numeric(disbayes_output$year)
+## Change year to match mslt dataframe (0 to 100 years)
+disbayes_output$year[1:101] <- 0:100
 
-## Create column for combination disease and rate type (inc, prev, cf)
-
-bristol_test$disease_rate <- paste(bristol_test$disease, bristol_test$rates, sep = "_")
-
-bristol_test_2 <- bristol_test %>% pivot_wider(id_cols = c(sex, cityregion, age_cat), names_from = disease_rate, values_from = c(med, lower95, upper95))
-
-
-### Problem here as not unique they repeat in the city regions
-
-cityregions_smoothed_res$disease_rate <- paste(cityregions_smoothed_res$disease, cityregions_smoothed_res$rates, sep = "_")
-cityregions_smoothed_res2 <- cityregions_smoothed_res$disease_rate %>% pivot_wider(id_cols = c(sex, cityregion, age_cat), names_from = disease_rate, values_from = c(med, lower95, upper95))
+disbayes_output$sex_age_area_cat <- paste(disbayes_output$sex,disbayes_output$year, disbayes_output$area, sep = "_"  )

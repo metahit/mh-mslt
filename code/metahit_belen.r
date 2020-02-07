@@ -41,6 +41,12 @@ dat <- readRDS(fp)
 ## (1): unsmoothed: case fatalities for different ages estimated independently of each other 
 ## (2): smoothed: case fatality assumed to be a smooth spline function of age.   Should give more precise estimates, but won't work if the data are weak 
 
+
+## Filter disbayes_inputs for city region, disease and sex data
+
+dat <- dplyr::filter(disbayes_inputs, cityregion == "bristol", disease == "ishd", sex == "female")
+
+
 library(disbayes)
 
 resu <- disbayes(dat = dat,

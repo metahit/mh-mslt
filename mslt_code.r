@@ -65,6 +65,9 @@ i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92
 
 i_sex <- c('male', 'female')
 
+### test with one city region (CHECK WITH ALI best approach to link with the rest of the model)
+
+MSLT_DF <- mslt_df_list[[1]]
 
 # ---- chunk-2 ----
 
@@ -838,6 +841,9 @@ output_dir = 'output/'
 ## We can choose how many simulation years we want to show, for example, firts ten years. 
 
 ### Diseases totals generation of list with diseases totals
+
+i_outcome_d <- c('mx', 'inc')
+i_outcome_nd <- c('mx', 'ylds')
 
 aggregate_frame_d_males <- list()
 aggregate_frame_d_females <- list()
