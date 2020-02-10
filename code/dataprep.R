@@ -76,7 +76,7 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 
 work_folder <- "C:/Users/e95517/"
 home_folder <- "C:/Users/Bele/"
-#v_folder <- TO COMPLETE AND CHANGE BELOW. 
+v_folder <- "V:/Studies/MOVED/HealthImpact/Data/Global_Burden_Disease_Metahit/"
 
 ## Change folder to work or home
 # CHANGE DATA FOLDER
