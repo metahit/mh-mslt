@@ -72,8 +72,8 @@ for (i in 1:length(gbd_city_region_data)) {
     for (d in 1:nrow(DISEASE_SHORT_NAMES)){
       in_measure <- disease_measures_list[dm] %>% as.character() %>% tolower()
       
-      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)" ||
-          in_measure == "prevalence") {
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)")
+        {
       }
       else {
         
@@ -93,6 +93,7 @@ for (i in 1:length(gbd_city_region_data)) {
         disbayes_input_list_city_regions_2[[index]]$indexagg <- paste(disbayes_input_list_city_regions_2[[index]]$index, disbayes_input_list_city_regions_2[[index]]$sex_age_cat,
                                                   disbayes_input_list_city_regions_2[[index]]$cityregion, sep = "_")
         
+        ### Separate age and sex and   
         suppressWarnings(names(disbayes_input_list_city_regions_2)[index] <- paste(gbd_city_region_data[[i]]$cityregion,in_measure, DISEASE_SHORT_NAMES$sname[d], sep = '_'))
         
         index <- index + 1
@@ -102,17 +103,40 @@ for (i in 1:length(gbd_city_region_data)) {
   }
 }
 
+### Save for to inspect problematic diseases
+
+for (i in 1:length(disbayes_input_list_city_regions_2)) {
+ 
+  
+    ## Separate age and sex to then order the data by age and sex
+    
+    disbayes_input_list_city_regions_2_test <- list()
+  
+    disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2[[i]]
+
+    disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]] %>%
+     separate(sex_age_cat, c("sex", "age_cat"))
+    
+    ## Order the data
+    disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]][order(disbayes_input_list_city_regions_2_test[[i]]$sex, disbayes_input_list_city_regions_2_test[[i]]$age_cat),]
+    
+    
+    
+    write_rds(disbayes_input_list_city_regions_2_test[[i]],paste0(relative_path_mslt, "data/city regions/Ci2num/",paste0(names(disbayes_input_list_city_regions_2)[i]),".rds"))
+  
+}
 
 
 
-### Run for each element of the list (time consuming, also RunLoc. Check virtual machine with Ian Thomas)
+## Try catch to skip errors
+tryCatchCi2NumDF <- function(x) tryCatch(Ci2NumDF(x), error = function(e) e)
+disbayes_input_list_city_regions_3  <- lapply(disbayes_input_list_city_regions_2, tryCatchCi2NumDF)
 
-#### Run this excluding prevalence and YLDs
-
-disbayes_input_list_city_regions_3 <- lapply(disbayes_input_list_city_regions_2, Ci2NumDF)
+### Graphs to check prevalence inputs for errors
 
 
-### ADD Prevalence adn YLDS numbers (est)
+
+### if condition?
 
 ### Create aggregated data for city regions using index combined with sex age cat and city region
 

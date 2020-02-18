@@ -249,17 +249,19 @@ for (i in 1:length(gbd_loc_data_processed)){
 ## Create aggregated data frame (sums all numbers from localities within a city region) SEE HOW THIS IS WORKING, best to continue 
 ### with dataframe above and then have a combined dataset with all possible inputs for disbayes
 #### Drop location and city region (sum cannot summ string variables)
+### Rename gbd_city_region_data, as cityregionand location variables are needed in disbayes data_prep
 
+gbd_city_region_data_2 <- list()
 for (i in 1:length(gbd_city_region_data)) {
-  gbd_city_region_data[[i]] <- gbd_city_region_data[[i]][ -c(2,3) ] 
+  gbd_city_region_data_2[[i]] <- gbd_city_region_data[[i]][ -c(2,3) ] 
 }
 
 gbd_city_region_data_agg <- list()
 index <- 1
 
 ### Loop to generate aggregated data
-for (i in 1:length(gbd_city_region_data)) {
-  gbd_city_region_data_agg[[index]] <- gbd_city_region_data[[i]] %>% 
+for (i in 1:length(gbd_city_region_data_2)) {
+  gbd_city_region_data_agg[[index]] <- gbd_city_region_data_2[[i]] %>% 
                                             group_by(sex_age_cat) %>%
                                               summarise_all(funs(sum))%>%
                                                 separate(sex_age_cat, c("sex", "age"), "_")
