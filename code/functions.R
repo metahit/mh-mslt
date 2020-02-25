@@ -75,9 +75,9 @@ RunLocDf <- function(i_data) {
           
           if (nrow(idf) > 0){
             
-            population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val", "lower", "upper")
+            population_numbers <- dplyr::filter(idf, metric == "Number") %>% dplyr::select("val", "lower", "upper")
             
-            idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
+            idf_rate <- dplyr::filter(idf, metric == "Rate") %>% dplyr::select("val") 
             
             current_idf_rate <- idf_rate
             
@@ -100,10 +100,10 @@ RunLocDf <- function(i_data) {
               
               idf$cause <- dn
               
-              population_numbers <- dplyr::filter(idf, metric == "Number") %>% select("val", "lower", "upper")
+              population_numbers <- dplyr::filter(idf, metric == "Number") %>% dplyr::select("val", "lower", "upper")
               #, "lower", "upper")
               
-              idf_rate <- dplyr::filter(idf, metric == "Rate") %>% select("val") 
+              idf_rate <- dplyr::filter(idf, metric == "Rate") %>% dplyr::select("val") 
               
               idf$population_number <- 0
               
@@ -128,7 +128,7 @@ RunLocDf <- function(i_data) {
             
             if (is.null(age_sex_df)){
               
-              age_sex_df <- select(idf, age, sex, population_number, location, cityregion, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
+              age_sex_df <- dplyr::select(idf, age, sex, population_number, location, cityregion, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)])
               
               
               names(idf)[ncol(idf)]
@@ -136,7 +136,7 @@ RunLocDf <- function(i_data) {
             }
             else{
               
-              age_sex_df <- cbind(age_sex_df, select(idf, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
+              age_sex_df <- cbind(age_sex_df, dplyr::select(idf, names(idf)[ncol(idf) - 2], names(idf)[ncol(idf) - 1] , names(idf)[ncol(idf)]))
               
               # browser()
             }
@@ -170,7 +170,7 @@ Ci2NumDF <- function(in_data) {
   
   dataframe <- dplyr::select(in_data, population_number, est, lower, upper, sex_age_cat, cityregion, indexagg)  %>%
     
-    select(a=population_number,b= est,c= lower,d=upper, e= sex_age_cat, f=cityregion, h=indexagg) %>%
+    dplyr::select(a=population_number,b= est,c= lower,d=upper, e= sex_age_cat, f=cityregion, h=indexagg) %>%
     rowwise() %>%
     
     # browser()
@@ -182,7 +182,7 @@ Ci2NumDF <- function(in_data) {
     mutate(cityregion = f) %>%
     mutate(indexagg = h) %>%
     
-    select(population_number, indexagg, num, denom) %>%
+    dplyr::select(population_number, indexagg, num, denom) %>%
     as.data.frame()
   
 }
@@ -208,7 +208,7 @@ for (d in 1:nrow(DISEASE_SHORT_NAMES)){
       
       var_name <- paste0("med_", DISEASE_SHORT_NAMES$sname[d])
       
-      disbayes_input_list[[index]] <- dplyr::filter(i_data, sex == sex_index) %>% select(age, sex, ends_with(var_name), population_number)
+      disbayes_input_list[[index]] <- dplyr::filter(i_data, sex == sex_index) %>% dplyr::select(age, sex, ends_with(var_name), population_number)
       
       ## Add column to show disease
       
@@ -298,6 +298,11 @@ conflict_prefer("fisher.test", "stats")
 conflict_prefer("group_rows", "dplyr")
 conflict_prefer("lag", "stats")
 conflict_prefer("Position", "ggplot2")
+conflict_prefer("colsplit", "reshape2")
+conflict_prefer("expand", "tidyr")
+conflict_prefer("melt", "reshape2")
+conflict_prefer("recast", "reshape2")
+conflict_prefer("rename", "dplyr") 
 
 ### test data
 
@@ -449,7 +454,7 @@ GenMSLTDF <- function(i_data, d_data) {
   
   ### selected data here should be gbd_data with all data, see how the code works with it 
   
-  gbd_popn_df <- select(gbd_df, population_number, sex_age_cat, area)
+  gbd_popn_df <- dplyr::select(gbd_df, population_number, sex_age_cat, area)
   
   ## Synthetic population (TO DO)
   
@@ -474,7 +479,7 @@ GenMSLTDF <- function(i_data, d_data) {
   
   ## Adjust all cause ylds for included diseases and injuries (exclude all cause ). From here just med 
   
-  gbd_df[["allc_ylds_adj_rate_1"]] <- (gbd_df$`ylds (years lived with disability)_med_allc`  - rowSums(select(all_ylds_df, -`ylds (years lived with disability)_med_allc`))) / 
+  gbd_df[["allc_ylds_adj_rate_1"]] <- (gbd_df$`ylds (years lived with disability)_med_allc`  - rowSums(dplyr::select(all_ylds_df, -`ylds (years lived with disability)_med_allc`))) / 
     gbd_df$population_number
   
   # ------------------- DWs ---------------------------#
@@ -520,7 +525,7 @@ GenMSLTDF <- function(i_data, d_data) {
           
           var_name <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
           
-          data <- dplyr::filter(gbd_df, sex == sex_index) %>% select(age, sex, age_cat, starts_with(var_name))
+          data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name))
           
           
           x <- data$age_cat
@@ -580,7 +585,7 @@ GenMSLTDF <- function(i_data, d_data) {
           
           var_name1 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
           
-          data <- dplyr::filter(gbd_df, sex == sex_index) %>% select(age, sex, age_cat, starts_with(var_name1))
+          data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name1))
           
           x <- data$age_cat
           y <- log(data[[var_name1]])
@@ -623,7 +628,7 @@ GenMSLTDF <- function(i_data, d_data) {
           
           var_name2 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
           
-          data <- dplyr::filter(gbd_df, sex == sex_index) %>% select(age, sex, age_cat, starts_with(var_name2))
+          data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name2))
           
           # browser() Data input and x and y are fine, different for all, however, interpolated values are all the same. 
           
@@ -788,7 +793,7 @@ RunDisease <- function(in_idata, in_mid_age, in_sex, in_disease)
   
   ##BZ: back yo using filtering, otherwise the life tables are not run by cohort (age and sex)
   dlt_df <- dplyr::filter(in_idata, age >= in_mid_age & sex == in_sex) %>% 
-    select(sex, age, dw_disease, incidence_disease, case_fatality_disease)
+    dplyr::select(sex, age, dw_disease, incidence_disease, case_fatality_disease)
   
   ##BZ: Rob, line 264 does not filter by age and sex, each disease life table starts at firt age cohort (e.g. 17) and by gender. 
   
@@ -909,7 +914,7 @@ RunNonDisease <- function(in_idata, in_sex, in_mid_age, in_non_disease)
    if (length(in_age) > 0)
      data <- dplyr::filter(data, age_cohort == in_age)
    if (length(in_outcomes) > 0)
-     data <- select(data, in_outcomes)
+     data <- dplyr::select(data, in_outcomes)
 
    td <- data
    p <- ggplot(data = td, aes (x = td[[in_outcomes[[1]]]]))
@@ -976,7 +981,7 @@ GenAggregate <- function(in_data, in_cohorts, in_population, in_outcomes){
       if (in_population != "total")
         ld <- dplyr::filter(ld, sex == in_population)
       if (length(in_outcomes) > 0)
-        ld <- select(ld, age, sex, in_outcomes)
+        ld <- dplyr::select(ld, age, sex, in_outcomes)
       if (i == 1){
         aggr <- append(aggr, as.list(ld))
         aggr <- as.data.frame(aggr)
@@ -994,7 +999,7 @@ GenAggregate <- function(in_data, in_cohorts, in_population, in_outcomes){
   }
   
   for (i in 1:length(in_outcomes)){
-    aggr[[paste0("total_",in_outcomes[i])]] <- select(aggr, starts_with(in_outcomes[i])) %>% rowSums(na.rm = T)
+    aggr[[paste0("total_",in_outcomes[i])]] <- dplyr::select(aggr, starts_with(in_outcomes[i])) %>% rowSums(na.rm = T)
     
   }
   
@@ -1070,9 +1075,9 @@ PlotGBD <- function(in_data1, in_data2, in_sex, in_cause, in_measure) {
   # in_measure <- "deaths"
   
   
-  data1 <- dplyr::filter(in_data1, sex == in_sex, cause == in_cause & measure == in_measure) %>% select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
+  data1 <- dplyr::filter(in_data1, sex == in_sex, cause == in_cause & measure == in_measure) %>% dplyr::select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
   
-  data2 <- dplyr::filter(in_data2, sex == in_sex, cause == in_cause & measure == in_measure) %>% select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
+  data2 <- dplyr::filter(in_data2, sex == in_sex, cause == in_cause & measure == in_measure) %>% dplyr::select(measure, location, sex, age, metric, cause, one_rate, age_cat)     
   
   
   p <- ggplot(data = data1, aes(age_cat,one_rate)) +

@@ -52,7 +52,8 @@ source('code/functions.R')
 
 relative_path <- '../mh-mslt/'
 pif_expanded <- read_csv(paste0(relative_path, 'data/pif_expanded.csv'))
-MSLT_DF <- read_csv(paste0(relative_path, 'data/mslt_df.csv'))
+
+# Check 
 DISEASE_SHORT_NAMES <<- read_csv(paste0(relative_path, 'data/parameters/disease_names.csv'))
 
 ## Parameters
@@ -67,7 +68,7 @@ i_sex <- c('male', 'female')
 
 ### test with one city region (CHECK WITH ALI best approach to link with the rest of the model)
 
-MSLT_DF <- mslt_df_list[[1]]
+MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_bristol.csv"))
 
 # ---- chunk-2 ----
 
