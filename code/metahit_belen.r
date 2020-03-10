@@ -1,6 +1,6 @@
-1
-datadir <- paste0(relative_path_mslt, "data/city regions/Input disbayes")
-fp <- file.path(datadir,"bristol_female_ishd.rds")
+# 1
+# datadir <- paste0(relative_path_mslt, "data/city regions/Input disbayes")
+# fp <- file.path(datadir,"bristol_female_ishd.rds")
 dat <- readRDS(fp)
 ## Add incidence and mortality numerator and denominator to originally genereted dataset for disbayes inputs. 
 ### IF IT WORKS, CREATE A DATA SET FOR DISBAYES THAT INCLUDES ALL INPUTS (NEED TO MODIFY GENERATE INPUTS DATAFRAME)
@@ -35,7 +35,6 @@ resu <- disbayes(dat = dat,
                  
                  
                  
-                 
                  ## Original data
                  inc = "inc",
                  inc_denom = "pop",
@@ -62,7 +61,7 @@ test_output <- as.data.frame(summary(resu, vars=c("cf","inc")))
 ## Plot smoothed and unsmoothed estimates 
 plot(resu)
 
-warnings()
+
 
 ## Plot just smoothed estimates
 plot(summ, variable="cf")

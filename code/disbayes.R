@@ -45,3 +45,22 @@ for (c in c(unique(disbayes_inputs$cityregion))) {
   }
 }
 
+
+#### Test code
+
+resu <- disbayes(dat = data,
+                 
+                 ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
+                 inc = "inc", 
+                 inc_denom = "pop", 
+                 prev_num = "prevn", 
+                 prev_denom = "prevdenom",
+                 mort = "mort",
+                 mort_denom = "pop",
+                 
+                 ## You'll need to change this for different diseases:
+                 ## the age below which all case fatalities are
+                 ## assumed equal in the smoothed model 
+                 eqage = 30, 
+                 smooth = TRUE  # or FALSE if don't want smoothed estimates
+)

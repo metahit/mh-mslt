@@ -213,7 +213,7 @@ gbd_city_region_data <- list()
 for (i in 1:length(gbd_loc_data_processed)){
   
 
-  gbd_city_region_data[[index]] <- bind_rows(gbd_loc_data_processed[[i]], .id = 'number')
+  gbd_city_region_data[[index]] <- bind_rows(gbd_loc_data_processed[[i]])
   
   ## Drop number columns (CHECK WHAT THIS IS DOING)
 # 
@@ -229,7 +229,11 @@ for (i in 1:length(gbd_loc_data_processed)){
   
   ### Add city region name here
   
+ 
   suppressWarnings(names(gbd_city_region_data)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
+  
+  gbd_city_region_data[[index]]$cityregion <- names(gbd_city_region_data)[index]
+  
   
   index <- index + 1
   
@@ -246,7 +250,8 @@ for (i in 1:length(gbd_loc_data_processed)){
 
 gbd_city_region_data_2 <- list()
 for (i in 1:length(gbd_city_region_data)) {
-  gbd_city_region_data_2[[i]] <- gbd_city_region_data[[i]][ -c(1,3) ] 
+  gbd_city_region_data_2[[i]] <- gbd_city_region_data[[i]]
+  #[ -c(1,3) ] 
 }
 
 gbd_city_region_data_agg <- list()
@@ -325,7 +330,7 @@ for (i in 1:length(gbd_city_region_data_2)) {
 ## CREATE ONE DATA FRAME WITH ALL LIST IN GBD DATA FRAME AGGREGATED, THEN, THIS INFO IS NEEDED IN COMPILING ALL DATA FOR MSLT
 
 gbd_data <- plyr::ldply(gbd_city_region_data_agg, rbind)
-gbd_data$area <- gbd_data$cityregion
+gbd_data$area <- gbd_data$.id
 
 
 # ---- chunk 1.6 Get Disbayes output ----
@@ -378,48 +383,47 @@ disbayes_output$sex_age_area_cat <- paste(disbayes_output$sex,disbayes_output$ye
 
 # ---- chunk 1.7 ----
 
+areas <- unique(disbayes_output$area)
+
 mslt_df <- as.data.frame(NULL)
 
 mslt_df_list <- list()
 
 index <- 1
 
-areas <- as.character(unique(disbayes_output$area))
-
-
 for (a in areas) {
   
   ### selected data here should be gbd_data with all data, see how the code works with it 
   
-  data <-  dplyr::filter(gbd_data, area == a)
+  data_1 <-  dplyr::filter(gbd_data, area == a)
   data_2 <- dplyr::filter(disbayes_output, area == a)
   
-  mslt_df_list[[index]] <- GenMSLTDF(data, data_2)
+  mslt_df_list[[index]] <- GenMSLTDF(data_1, data_2)
   mslt_df_list[[index]]<- replace(mslt_df_list[[index]], is.na(mslt_df_list[[index]]), 0)
   
   
   ### Change names to match with Rob's injury code
+
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_pdri"] <- "deaths_rate_pedestrian"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_pdri"] <- "ylds_rate_pedestrian"
   
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_pdri"] <- "deaths_rate_pedestrian"
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_pdri"] <- "ylds_rate_pedestrian"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_cyri"] <- "deaths_rate_cyclist"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_cyri"] <- "ylds_rate_cyclist"
   
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_cyri"] <- "deaths_rate_cyclist"
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_cyri"] <- "ylds_rate_cyclist"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_mtri"] <- "deaths_rate_motorcyclist"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_mtri"] <- "ylds_rate_motorcyclist"
   
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_mtri"] <- "deaths_rate_motorcyclist"
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_mtri"] <- "ylds_rate_motorcyclist"
-  
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_mvri"] <- "deaths_rate_motor"
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_mvri"] <- "ylds_rate_motor"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_mvri"] <- "deaths_rate_motor"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_mvri"] <- "ylds_rate_motor"
   
   
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_otri"] <- "deaths_rate_other"
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_otri"] <- "ylds_rate_other"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_otri"] <- "deaths_rate_other"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_otri"] <- "ylds_rate_other"
   
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_lwri"] <- "deaths_rate_lri"
-  names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_lwri"] <- "ylds_rate_lri"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "deaths_rate_lwri"] <- "deaths_rate_lri"
+   names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_lwri"] <- "ylds_rate_lri"
   
-  mslt_df_list[[index]]$sex <- as.character(mslt_df_list[[index]]$sex)
+   mslt_df_list[[index]]$sex <- as.character(mslt_df_list[[index]]$sex)
   
   index <- index + 1
   
@@ -508,4 +512,6 @@ pif_expanded_1$age <- outage
 pif_expanded <- rbind(pif_expanded, pif_expanded_1)
 
 write_csv(pif_expanded, "data/pif_expanded.csv")
+
+#### Example for one city region
 write_csv(mslt_df_list[[1]], "data/mslt_bristol.csv")
