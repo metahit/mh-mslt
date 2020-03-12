@@ -80,30 +80,30 @@ for (i in 1:length(gbd_city_region_data)) {
   }
 }
 
-# ---- chunk-1.2.3: Save to investigte issue with prevalence and ci2num function ----
+# ---- chunk-1.2.3: Save to investigte issue with prevalence and ci2num function ---- DELETE 
 
-for (i in 1:length(disbayes_input_list_city_regions_2)) {
- 
-  
-    ## Separate age and sex to then order the data by age and sex
-    
-    disbayes_input_list_city_regions_2_test <- list()
-  
-    disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2[[i]]
-
-    disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]] %>%
-     separate(sex_age_cat, c("sex", "age_cat"))
-    
-    ## Order the data
-    disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]][order(disbayes_input_list_city_regions_2_test[[i]]$sex, disbayes_input_list_city_regions_2_test[[i]]$age_cat),]
-    
-    ## Replace age "Under" with age 0
-    
-    disbayes_input_list_city_regions_2_test[[i]]$age_cat <- gsub("Under", 0 , disbayes_input_list_city_regions_2_test[[i]]$age_cat)
-    
-    write_rds(disbayes_input_list_city_regions_2_test[[i]],paste0(relative_path_mslt, "data/city regions/Ci2num/",paste0(names(disbayes_input_list_city_regions_2)[i]),".rds"))
-  
-}
+# for (i in 1:length(disbayes_input_list_city_regions_2)) {
+#  
+#   
+#     ## Separate age and sex to then order the data by age and sex
+#     
+#     disbayes_input_list_city_regions_2_test <- list()
+#   
+#     disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2[[i]]
+# 
+#     disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]] %>%
+#      separate(sex_age_cat, c("sex", "age_cat"))
+#     
+#     ## Order the data
+#     disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]][order(disbayes_input_list_city_regions_2_test[[i]]$sex, disbayes_input_list_city_regions_2_test[[i]]$age_cat),]
+#     
+#     ## Replace age "Under" with age 0
+#     
+#     disbayes_input_list_city_regions_2_test[[i]]$age_cat <- gsub("Under", 0 , disbayes_input_list_city_regions_2_test[[i]]$age_cat)
+#     
+#     write_rds(disbayes_input_list_city_regions_2_test[[i]],paste0(relative_path_mslt, "data/city regions/Ci2num/",paste0(names(disbayes_input_list_city_regions_2)[i]),".rds"))
+#   
+# }
 
 
 # ---- chunk-1.2.4: Generate num and denoms using Ci2NumDF ----

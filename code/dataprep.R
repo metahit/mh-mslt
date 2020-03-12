@@ -79,6 +79,8 @@ temp_folder <- paste0(data_folder,"temp")
 result_folder <- paste0(data_folder,"final")
 gbdfile_name <- "IHME-GBD_2017_DATA-ac95a757-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
 
+
+
 ## Loop to extract zip file data
 
 data_extracted <- NULL
@@ -247,7 +249,7 @@ for (i in 1:length(gbd_loc_data_processed)){
 ### with dataframe above and then have a combined dataset with all possible inputs for disbayes
 #### Drop location and city region (sum cannot summ string variables)
 ### Rename gbd_city_region_data, as cityregionand location variables are needed in disbayes data_prep
-
+# 
 gbd_city_region_data_2 <- list()
 for (i in 1:length(gbd_city_region_data)) {
   gbd_city_region_data_2[[i]] <- gbd_city_region_data[[i]]
@@ -260,70 +262,71 @@ index <- 1
 ### Loop to generate aggregated data
 for (i in 1:length(gbd_city_region_data_2)) {
   gbd_city_region_data_agg[[index]] <- gbd_city_region_data_2[[i]] %>% 
-                                            group_by(sex_age_cat) %>%
-                                               summarise_all(funs(if(is.numeric(.)) sum(., na.rm = TRUE) else first(.)))%>% 
-                                                  separate(sex_age_cat, c("sex", "age"), "_")
-
-
+    group_by(sex_age_cat) %>%
+    summarise_all(funs(if(is.numeric(.)) sum(., na.rm = TRUE) else first(.)))%>% 
+    separate(sex_age_cat, c("sex", "age"), "_")
+  
+  
   
   ## Add numberical age categories
   
-           gbd_city_region_data_agg[[index]]$age_cat <- 0
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="Under 5"] <- 2
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="5 to 9"] <- 7
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="10 to 14"] <- 12
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="15 to 19"] <- 17
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="20 to 24"] <- 22
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="25 to 29"] <- 27
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="30 to 34"] <- 32
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="35 to 39"] <- 37
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="40 to 44"] <- 42
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="45 to 49"] <- 47
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="50 to 54"] <- 52
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="55 to 59"] <- 57
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="60 to 64"] <- 62
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="65 to 69"] <- 67
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="70 to 74"] <- 72
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="75 to 79"] <- 77
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="80 to 84"] <- 82
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="85 to 89"] <- 87
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="90 to 94"] <- 92
-           gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="95 plus"] <- 97
-           
-  ## Change sex variable to lower case
-           
-           gbd_city_region_data_agg[[index]]$sex <- tolower(gbd_city_region_data_agg[[index]]$sex)
-           
-  ## Create age_sex category
-           
-           gbd_city_region_data_agg[[index]]$sex_age_cat <- paste(gbd_city_region_data_agg[[index]]$sex,gbd_city_region_data_agg[[index]]$age_cat, sep = "_"  )
-           
-  ## Order data
-           
-           gbd_city_region_data_agg[[index]] <- gbd_city_region_data_agg[[index]][order(gbd_city_region_data_agg[[index]]$sex, gbd_city_region_data_agg[[index]]$age_cat),]
+  gbd_city_region_data_agg[[index]]$age_cat <- 0
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="Under 5"] <- 2
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="5 to 9"] <- 7
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="10 to 14"] <- 12
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="15 to 19"] <- 17
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="20 to 24"] <- 22
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="25 to 29"] <- 27
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="30 to 34"] <- 32
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="35 to 39"] <- 37
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="40 to 44"] <- 42
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="45 to 49"] <- 47
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="50 to 54"] <- 52
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="55 to 59"] <- 57
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="60 to 64"] <- 62
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="65 to 69"] <- 67
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="70 to 74"] <- 72
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="75 to 79"] <- 77
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="80 to 84"] <- 82
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="85 to 89"] <- 87
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="90 to 94"] <- 92
+  gbd_city_region_data_agg[[index]]$age_cat [ gbd_city_region_data_agg[[index]]$age =="95 plus"] <- 97
   
-
-           
-  ## Calculate rates per one. Needed for mslt_code
-
-  for (dm in 1:length(disease_measures_list)){
-     for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-         dn <- DISEASE_SHORT_NAMES$disease[d]
-         dmeasure <- disease_measures_list[dm] %>% as.character()
-
-         gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))]] <- gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))]]/
-                                                                                                                             gbd_city_region_data_agg[[index]]$population_number
-
-              }
-         }
-           
+  ## Change sex variable to lower case
+  
+  gbd_city_region_data_agg[[index]]$sex <- tolower(gbd_city_region_data_agg[[index]]$sex)
+  
+  ## Create age_sex category
+  
+  gbd_city_region_data_agg[[index]]$sex_age_cat <- paste(gbd_city_region_data_agg[[index]]$sex,gbd_city_region_data_agg[[index]]$age_cat, sep = "_"  )
+  
+  ## Order data
+  
+  gbd_city_region_data_agg[[index]] <- gbd_city_region_data_agg[[index]][order(gbd_city_region_data_agg[[index]]$sex, gbd_city_region_data_agg[[index]]$age_cat),]
+  
+  
+  
+  # ## Calculate rates per one. Needed for mslt_code
+  # # 
+    for (dm in 1:length(disease_measures_list)){
+      for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+        dn <- DISEASE_SHORT_NAMES$disease[d]
+        dmeasure <- disease_measures_list[dm] %>% as.character()
+        
+          gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))]] <- 
+            gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))]] 
+          #gbd_city_region_data_agg[[index]]$population_number
+        
+      }
+    }
+  
   suppressWarnings(names(gbd_city_region_data_agg)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
   
   ## Save as rds for each city region
   
-   write_rds(gbd_city_region_data_agg[[index]], paste0(relative_path_mslt, "data/city regions/GBD sorted/", unique(city_regions_list_loc[[i]][[1]]$cityregion), ".rds"))
+  write_rds(gbd_city_region_data_agg[[index]], paste0(relative_path_mslt, "data/city regions/GBD sorted/", unique(city_regions_list_loc[[i]][[1]]$cityregion), ".rds"))
   
-
+  
   index <- index + 1
 }
 
