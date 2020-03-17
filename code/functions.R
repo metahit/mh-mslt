@@ -197,91 +197,115 @@ RemoveAllWs<- function(string){
 # --- GenInpDisbayes ----
 
 GenInpDisbayes <- function(i_data) {
+  
+  disbayes_input_list <- list()
+  index <- 1
+  
+  for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+    for (sex_index in i_sex){
+      
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0){
+        
+        var_name <- paste0("med_", DISEASE_SHORT_NAMES$sname[d])
 
-disbayes_input_list <- list()
-index <- 1
+        disbayes_input_list[[index]] <- dplyr::filter(i_data, sex == sex_index) %>% dplyr::select(age, sex, ends_with(var_name), population_number)
+        
+        ## Add column to show disease
+        
+        disbayes_input_list[[index]]$disease <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease" ||
+                                                         DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder" ,
+                                                       0 ,DISEASE_SHORT_NAMES$sname[d])
+        
+        ## Change column names to match disbayes code (THIS WILL CHANGE AS WE CAN USE NUMBERS DIRECTLY, WITH POPULATION DATA)
+     
+        ## Calculate rates
+         
+         
+          disbayes_input_list[[index]]$inc <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease", 0 , 
+                                                    disbayes_input_list[[index]][[tolower(paste0("incidence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
+          disbayes_input_list[[index]][["population_number"]])
+          disbayes_input_list[[index]]$mort <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder", 0 , 
+                                                     disbayes_input_list[[index]][[tolower(paste0("deaths_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
+          disbayes_input_list[[index]][["population_number"]])
+          disbayes_input_list[[index]]$prev <- disbayes_input_list[[index]][[tolower(paste0("prevalence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
+          disbayes_input_list[[index]][["population_number"]]
+        
+        ### USE these if we can have rates in the aggreagate data
 
-for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-  for (sex_index in i_sex){
-    
-    if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0){
+        # ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease", 0 , 
+        # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_med_", 
+        #                                                                                 DISEASE_SHORT_NAMES$sname[d]))] <- "inc")
+        # 
+        # 
+        # ifelse(DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder", 0 , 
+        # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_med_", 
+        #                                                                                 DISEASE_SHORT_NAMES$sname[d]))] <- "mort")        
+        # 
+        # 
+        # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("prevalence_med_", 
+        #                                                                                 DISEASE_SHORT_NAMES$sname[d]))] <- "prev"
+        
+        ## Drop columns with measures disease names combinations
+        
       
-      var_name <- paste0("med_", DISEASE_SHORT_NAMES$sname[d])
-      
-      disbayes_input_list[[index]] <- dplyr::filter(i_data, sex == sex_index) %>% dplyr::select(age, sex, ends_with(var_name), population_number)
-      
-      ## Add column to show disease
-      
-      disbayes_input_list[[index]]$disease <- DISEASE_SHORT_NAMES$sname[d]
-      
-      ## Change column names to match disbayes code (THIS WILL CHANGE AS WE CAN USE NUMBERS DIRECTLY, WITH POPULATION DATA)
-      
-      ## Calculate rates
-      disbayes_input_list[[index]]$inc <- disbayes_input_list[[index]][[tolower(paste0("incidence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-                                          disbayes_input_list[[index]][["population_number"]]
-      disbayes_input_list[[index]]$mort <- disbayes_input_list[[index]][[tolower(paste0("deaths_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-        disbayes_input_list[[index]][["population_number"]]
-      disbayes_input_list[[index]]$prev <- disbayes_input_list[[index]][[tolower(paste0("prevalence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-        disbayes_input_list[[index]][["population_number"]]
-      
-      # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_med_", DISEASE_SHORT_NAMES$sname[d]))] <- "inc"
-      # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_med_", DISEASE_SHORT_NAMES$sname[d]))] <- "mort"
-      # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("prevalence_med_", DISEASE_SHORT_NAMES$sname[d]))] <- "prev"
-      
-      ## Drop columns with measures disease names combinations
-      
-      disbayes_input_list[[index]] <- disbayes_input_list[[index]][ -c(3:6) ] 
-      
-      colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== paste0("population_number")] <- "pop"
-      
-      ## We assume remission is 0
-      
-      disbayes_input_list[[index]]$rem <- as.integer(0)
-      
-      ## create denominator for disbayes code
-      
-      disbayes_input_list[[index]]$prevdenom <- c(100,100,500,500,500,500,500,500,500,500,500,500,500,500,500,500,200,200,100,100) / 10 # total sample size 3910, generous for London (from CJ)
-      
-      ## Added agegroups to derive age groups by 1
-      
-      disbayes_input_list[[index]]$agegrp <- as.integer(seq(0,95, by=5))
-      
-      ## Replace 0 with small numbers for incidence, otherwise, disbayes does not work.
-      
-      disbayes_input_list[[index]]$inc <- ifelse(disbayes_input_list[[index]]$inc  == 0, 1e-08, disbayes_input_list[[index]]$inc)
-      
-      
-      ## Convert 5 year data file to 100 year age intervals
-      
-      
-      outage <- 0:100  # assume inc/prev/mort same in each year within a five-year age group
-      
-      ind <- findInterval(outage, disbayes_input_list[[index]]$agegrp)
-      disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
-      disbayes_input_list[[index]]$age <- outage
-      
-      disbayes_input_list[[index]] <- within(disbayes_input_list[[index]], {
-        ningrp <- rep(table(agegrp), table(agegrp))
-        # popmale <- round(popmale/ningrp) ## assume population uniform between years within age group.
-        pop <- round(pop/ningrp) ## assume population uniform between years within age group.
-        # ndieddismale <- round(popmale * (1 - exp(-mortmale)))
-        ndieddis <- round(pop * (1 - exp(-mort)))
-        # prevnmale <- round(prevdenom * prevmale)
-        prevn <- round(prevdenom * prev)
-      }
-      )
-      
-      ## add sex and disease variable to match with output data frame
-      
-      disbayes_input_list[[index]]$sex_disease <- paste(sex_index, DISEASE_SHORT_NAMES$sname[d], sep = "_")
-      
-      
-      index <-  index +1
+
+        colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== paste0("population_number")] <- "pop"
+        
+        ## We assume remission is 0
+        
+        disbayes_input_list[[index]]$rem <- as.integer(0)
+        
+        ## create denominator for disbayes code
+        
+        disbayes_input_list[[index]]$prevdenom <- c(100,100,500,500,500,500,500,500,500,500,500,500,500,500,500,500,200,200,100,100) / 10 # total sample size 3910, generous for London (from CJ)
+        
+        ## Added agegroups to derive age groups by 1
+        
+        disbayes_input_list[[index]]$agegrp <- as.integer(seq(0,95, by=5))
+        
+        ## Replace 0 with small numbers for incidence, otherwise, disbayes does not work.
+        
+        disbayes_input_list[[index]]$inc <- ifelse(disbayes_input_list[[index]]$inc  == 0, 1e-08, disbayes_input_list[[index]]$inc)
+        
+        
+        ## Convert 5 year data file to 100 year age intervals
+        
+        
+        outage <- 0:100  # assume inc/prev/mort same in each year within a five-year age group
+        
+        ind <- findInterval(outage, disbayes_input_list[[index]]$agegrp)
+        disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
+        disbayes_input_list[[index]]$age <- outage
+        
+        disbayes_input_list[[index]] <- within(disbayes_input_list[[index]], {
+          ningrp <- rep(table(agegrp), table(agegrp))
+          # popmale <- round(popmale/ningrp) ## assume population uniform between years within age group.
+          pop <- round(pop/ningrp) ## assume population uniform between years within age group.
+          # ndieddismale <- round(popmale * (1 - exp(-mortmale)))
+          
+          
+        
+          ndieddis <- round(pop * (1 - exp(-mort)))
+          # prevnmale <- round(prevdenom * prevmale)
+          prevn <- round(prevdenom * prev)
+        }
+        )
+        
+        ## add sex and disease variable to match with output data frame
+        
+        disbayes_input_list[[index]]$sex_disease <- paste(sex_index, DISEASE_SHORT_NAMES$sname[d], sep = "_")
+        
+        disbayes_input_list[[index]] <- disbayes_input_list[[index]][ -c(3:6) ]
+        # browser()
+        # 
+        index <-  index +1
+        
       }
     }
   }
   return(disbayes_input_list)
 }
+
 
 
 
@@ -557,6 +581,7 @@ GenMSLTDF <- function(i_data, d_data) {
     }
   }
   
+
   ## Interpolate all cause mortality and pylds and diseases
   
   ### Create variable names
@@ -564,52 +589,57 @@ GenMSLTDF <- function(i_data, d_data) {
   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
     
     # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
-      
-      var_name1 <- paste0("deaths_rate", "_", DISEASE_SHORT_NAMES$sname[d])
-      
-      var_name2 <- paste0("ylds (years lived with disability)_rate", "_", DISEASE_SHORT_NAMES$sname[d])
-      
-      mslt_df[, var_name1] <- 1
-      mslt_df[, var_name2] <- 1
-      
-     
+    
+    var_name1 <- paste0("deaths_rate", "_", DISEASE_SHORT_NAMES$sname[d])
+    
+    var_name2 <- paste0("ylds (years lived with disability)_rate", "_", DISEASE_SHORT_NAMES$sname[d])
+    
+    if ((var_name1 == "deaths_rate_mjdd" || var_name2 == "ylds (years lived with disability)_rate_mjdd")){
+    }
+    else{
+    mslt_df[, var_name1] <- 1
+    mslt_df[, var_name2] <- 1
+    }
+    
   }
   
-  
+  if ((var_name1 == "deaths_rate_mjdd" || var_name2 == "ylds (years lived with disability)_rate_mjdd")){
+  }
+  else{
   ### Deaths
   
   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
     for(sex_index in i_sex) {
       for (var in c('deaths_rate')) {
         # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
-          
-          var_name1 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
-          
-          data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name1))
-          
-          x <- data$age_cat
-          y <- log(data[[var_name1]])
-          
-          InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
-          
-          interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
-          age <- seq(0, 100, by = 1)
-          interpolated <- cbind(interpolated, age)
-          interpolated[,1] <- exp(interpolated[,1])
-          ## Add column with sex to create age_sex category to then merge with input_life table
-          interpolated$sex <- paste(sex_index)
-          interpolated$sex_age_cat <- paste(interpolated$sex, interpolated$age, sep = "_")
-          ## Change name of column death to mx and ylds to pyld_rate to then merge
-          ## with input_life table
-          colnames(interpolated)[1] <- var_name1
-          
-          interpolated[IsNanDataFrame(interpolated)] <- 0
-          
-          interpolated[IsInfDataFrame(interpolated)] <- 0
-          
-          mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
-                  & mslt_df$sex == sex_index, ][[var_name1]] <- interpolated[[var_name1]]
-             
+        
+        var_name1 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
+        
+        data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name1))
+        
+        x <- data$age_cat
+        y <- log(data[[var_name1]])
+        
+        InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
+        
+        interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
+        age <- seq(0, 100, by = 1)
+        interpolated <- cbind(interpolated, age)
+        interpolated[,1] <- exp(interpolated[,1])
+        ## Add column with sex to create age_sex category to then merge with input_life table
+        interpolated$sex <- paste(sex_index)
+        interpolated$sex_age_cat <- paste(interpolated$sex, interpolated$age, sep = "_")
+        ## Change name of column death to mx and ylds to pyld_rate to then merge
+        ## with input_life table
+        colnames(interpolated)[1] <- var_name1
+        
+        interpolated[IsNanDataFrame(interpolated)] <- 0
+        
+        interpolated[IsInfDataFrame(interpolated)] <- 0
+        
+        mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
+                & mslt_df$sex == sex_index, ][[var_name1]] <- interpolated[[var_name1]]
+        
       }
     }
   }
@@ -625,43 +655,43 @@ GenMSLTDF <- function(i_data, d_data) {
       for (var in c("ylds (years lived with disability)_rate")){
         
         # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
-          
-          var_name2 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
-          
-          data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name2))
-          
-          # browser() Data input and x and y are fine, different for all, however, interpolated values are all the same. 
-          
-          x <- data$age_cat
-          y <- log(data[[var_name2]])
-          
-          interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
-          
-          # browser()
-          
-          age <- seq(0, 100, by = 1)
-          interpolated <- cbind(interpolated, age)
-          interpolated[,1] <- exp(interpolated[,1])
-          
-          # browser()
-          
-          ## Add column with sex to create age_sex category to then merge with input_life table
-          interpolated$sex <- paste(sex_index)
-          interpolated$sex_age_cat <- paste(interpolated$sex, interpolated$age, sep = "_")
-          ## Change name of column death to mx and ylds to pyld_rate to then merge
-          ## with input_life table
-          colnames(interpolated)[1] <- var_name2
-          
-          # browser()
-          
-          interpolated[IsNanDataFrame(interpolated)] <- 0
-          
-          interpolated[IsInfDataFrame(interpolated)] <- 0
-          
-          mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
-                  & mslt_df$sex == sex_index, ][[var_name2]] <- interpolated[[var_name2]]
-         
         
+        var_name2 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
+        
+        data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name2))
+        
+        # browser() Data input and x and y are fine, different for all, however, interpolated values are all the same. 
+        
+        x <- data$age_cat
+        y <- log(data[[var_name2]])
+        
+        interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
+        
+        # browser()
+        
+        age <- seq(0, 100, by = 1)
+        interpolated <- cbind(interpolated, age)
+        interpolated[,1] <- exp(interpolated[,1])
+        
+        # browser()
+        
+        ## Add column with sex to create age_sex category to then merge with input_life table
+        interpolated$sex <- paste(sex_index)
+        interpolated$sex_age_cat <- paste(interpolated$sex, interpolated$age, sep = "_")
+        ## Change name of column death to mx and ylds to pyld_rate to then merge
+        ## with input_life table
+        colnames(interpolated)[1] <- var_name2
+        
+        # browser()
+        
+        interpolated[IsNanDataFrame(interpolated)] <- 0
+        
+        interpolated[IsInfDataFrame(interpolated)] <- 0
+        
+        mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
+                & mslt_df$sex == sex_index, ][[var_name2]] <- interpolated[[var_name2]]
+        
+        }
       }
     }
   }
@@ -670,7 +700,7 @@ GenMSLTDF <- function(i_data, d_data) {
   
   disease <- within(disease, rm(year, sex, area))
   
-
+  
   mslt_df <- left_join(mslt_df, disease, by = "sex_age_area_cat", keep = FALSE)
   
   names(mslt_df)[names(mslt_df) == "deaths_rate_allc"] <- "mx"
@@ -679,7 +709,6 @@ GenMSLTDF <- function(i_data, d_data) {
   return(mslt_df)
   
 }
-
 
 # --- IsNanDataFrame ---
 ## For interpolation generation, input data frame for interpolation has nan values that we replace with 0. 

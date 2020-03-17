@@ -77,28 +77,58 @@ v_folder <- "V:/Studies/MOVED/HealthImpact/Data/Global_Burden_Disease_Metahit/"
 data_folder <- paste0(work_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
-gbdfile_name <- "IHME-GBD_2017_DATA-ac95a757-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
+gbdfile_name_new <- "IHME-GBD_2017_DATA-3e0b192d-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
+gbdfile_name_old <- "IHME-GBD_2017_DATA-ac95a757-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
+### New data: "C:\Users\e95517\Dropbox\Collaborations\James Woodcock\Metahit\Data\GBD2017\IHME-GBD_2017_DATA-3e0b192d-1.zip"
+### Old data: "C:\Users\e95517\Dropbox\Collaborations\James Woodcock\Metahit\Data\GBD2017\IHME-GBD_2017_DATA-ac95a757-1.zip"
 
 
-
-## Loop to extract zip file data
-
-data_extracted <- NULL
-for (i in 1:4) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
+## Loop to extract zip file data for data with all diseases
+##### All diseases in new meta analysis
+data_extracted_new <- NULL
+for (i in 1:5) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
   file_number <- i
   
-  file_select <- paste0(data_folder,gbdfile_name, i,".zip")
+  file_select <- paste0(data_folder,gbdfile_name_new, i,".zip")
   
   unzip(file_select, exdir=temp_folder)
   
-  data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name, i, ".csv")))
-  file.remove(paste0(temp_folder,"/", gbdfile_name, i, ".csv"))
+  data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name_new, i, ".csv")))
+  file.remove(paste0(temp_folder,"/", gbdfile_name_new, i, ".csv"))
   data_read <- subset(data_read, location_name %in% local_goverment_areas$location) # location name is easier to identify
   
-  data_extracted <- rbind(data_extracted,data_read)
+  data_extracted_new <- rbind(data_extracted_new,data_read)
 }
 
 unlink(paste0(temp_folder), recursive = TRUE)
+
+
+##### Old diseases
+
+data_extracted_old <- NULL
+for (i in 1:4) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
+  file_number <- i
+  
+  file_select <- paste0(data_folder,gbdfile_name_old, i,".zip")
+  
+  unzip(file_select, exdir=temp_folder)
+  
+  data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name_old, i, ".csv")))
+  file.remove(paste0(temp_folder,"/", gbdfile_name_old, i, ".csv"))
+  data_read <- subset(data_read, location_name %in% local_goverment_areas$location) # location name is easier to identify
+  
+  data_extracted_old <- rbind(data_extracted_old,data_read)
+}
+
+unlink(paste0(temp_folder), recursive = TRUE)
+
+
+#### Compare old data with new data
+### Differences ischemic stroke
+datanewiscs <- dplyr::filter(data_extracted_new, cause_name == "Ischemic stroke")
+dataoldiscs <- dplyr::filter(data_extracted_, cause_name == "Ischemic stroke")
+### 
+
 
 # ---- chunk-1.2: Define parameters from data ----
 
@@ -106,8 +136,8 @@ unlink(paste0(temp_folder), recursive = TRUE)
 
 ## Min Length is not changing anything, how can we make it characters in the first place, rather than having to ocnvert below before running RunLocDF?
 
-DISEASE_SHORT_NAMES <- data.frame(disease = tolower(as.character(unique(data_extracted$cause_name))), 
-                                  sname = tolower(abbreviate(unique(data_extracted$cause_name, max = 2))),
+DISEASE_SHORT_NAMES <- data.frame(disease = tolower(as.character(unique(data_extracted_new$cause_name))), 
+                                  sname = tolower(abbreviate(unique(data_extracted_new$cause_name, max = 2))),
                                   stringsAsFactors = F)
 
 DISEASE_SHORT_NAMES <- DISEASE_SHORT_NAMES %>% mutate(is_not_dis = ifelse((str_detect(disease, "injuries") |
@@ -145,6 +175,7 @@ DISEASE_SHORT_NAMES$males <- ifelse(DISEASE_SHORT_NAMES$disease %in% c("breast c
 
 DISEASE_SHORT_NAMES$females <- 1
 
+DISEASE_SHORT_NAMES$sname <- gsub("'", '', DISEASE_SHORT_NAMES$sname)
 
 ## Replace NAs with blank
 
@@ -304,23 +335,32 @@ for (i in 1:length(gbd_city_region_data_2)) {
   
   gbd_city_region_data_agg[[index]] <- gbd_city_region_data_agg[[index]][order(gbd_city_region_data_agg[[index]]$sex, gbd_city_region_data_agg[[index]]$age_cat),]
   
-  
-  
-  # ## Calculate rates per one. Needed for mslt_code
-  # # 
-    for (dm in 1:length(disease_measures_list)){
-      for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-        dn <- DISEASE_SHORT_NAMES$disease[d]
-        dmeasure <- disease_measures_list[dm] %>% as.character()
-        
-          gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))]] <- 
-            gbd_city_region_data_agg[[index]][[tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))]] 
-          #gbd_city_region_data_agg[[index]]$population_number
-        
-      }
-    }
+   
   
   suppressWarnings(names(gbd_city_region_data_agg)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
+  
+  
+  ### Calculate rates per one. Needed for mslt_code
+  # for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+  #   for (dm in 1:length(disease_measures_list)){
+  #     # dn <- DISEASE_SHORT_NAMES$disease[d]
+  #     dmeasure <- disease_measures_list[dm] %>% as.character() %>% tolower
+  #     
+  #     
+  #     
+  #     var_rate <- c(paste(tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
+  #     var_med <- c(paste(tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
+  #     
+  #     
+  #     if ((var_rate == "deaths_rate_mjdd" || var_rate == "ylds (years lived with disability)_rate_mjdd")){
+  #     }
+  #     else{
+  #       gbd_city_region_data_agg[[index]][[var_rate]] <- gbd_city_region_data_agg[[index]][[var_med]] / 
+  #         gbd_city_region_data_agg[[index]]$population_number
+  #     }
+  #   }
+  # }
+  # 
   
   ## Save as rds for each city region
   
@@ -335,6 +375,29 @@ for (i in 1:length(gbd_city_region_data_2)) {
 gbd_data <- plyr::ldply(gbd_city_region_data_agg, rbind)
 gbd_data$area <- gbd_data$.id
 
+### Calculate rates as we need these for mslt data frame
+
+
+### Calculate rates per one. Needed for mslt_code
+for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+  for (dm in 1:length(disease_measures_list)){
+    # dn <- DISEASE_SHORT_NAMES$disease[d]
+    dmeasure <- disease_measures_list[dm] %>% as.character() %>% tolower
+
+      
+      
+      var_rate <- c(paste(tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
+      var_med <- c(paste(tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
+      
+      
+      if ((var_rate == "deaths_rate_mjdd" || var_rate == "ylds (years lived with disability)_rate_mjdd")){
+      }
+      else{
+    gbd_data[[var_rate]] <- gbd_data[[var_med]] / 
+        gbd_data$population_number
+    }
+  }
+}
 
 # ---- chunk 1.6 Get Disbayes output ----
 

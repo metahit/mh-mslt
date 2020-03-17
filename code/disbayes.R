@@ -1,12 +1,9 @@
 # ---- Chunk 1: Disbayes ----
 
 library(disbayes)
-options(mc.cores = parallel::detectCores())
+options(mc.cores = parallel::detectCores(1))
 rstan_options(auto_write = TRUE)  
 
-## Disbayes inputs are saved here: disbayes_inputs. These were generated in script disbayes_data_prep
-
-data <- filter(disbayes_input_beta_agg, cityregion == "bristol", disease == "ishd", sex == "Female")
 
 
 ### Loop to generate disbayes outputs for: diseases, sex and area. Uses GenOutDisbayes. Assumptions and inputs for disbayes

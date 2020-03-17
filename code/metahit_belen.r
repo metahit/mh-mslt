@@ -15,8 +15,8 @@ dat <- readRDS(fp)
 
 ## Filter disbayes_inputs for city region, disease and sex data
 
-dat <- dplyr::filter(disbayes_inputs, cityregion == "bristol", disease == "strk", sex == "female")
-
+dat <- dplyr::filter(disbayes_inputs, cityregion == "greatermanchester", disease == "brsc", sex == "female") 
+dat2 <- dplyr::filter(disbayes_inputs_original, cityregion == "greatermanchester", disease == "brsc", sex == "female") 
 
 library(disbayes)
 

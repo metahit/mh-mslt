@@ -29,6 +29,8 @@ for (i in 1:length(gbd_city_region_data_agg)) {
   index <- index + 1
 }
 
+
+
 # ---- chunk-1.2.1: Add city regions names ----
 
 for (i in 1:length(disbayes_input_list_city_regions)){
@@ -49,7 +51,9 @@ for (i in 1:length(gbd_city_region_data)) {
       
       ### exclude ylds for now, we are interested in disbayes inputs but later may use ylds uncertainty parameters
       
-      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)")
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)" ||
+          DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease" || 
+          DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder")
         {
       }
       else {
@@ -80,31 +84,6 @@ for (i in 1:length(gbd_city_region_data)) {
   }
 }
 
-# ---- chunk-1.2.3: Save to investigte issue with prevalence and ci2num function ---- DELETE 
-
-# for (i in 1:length(disbayes_input_list_city_regions_2)) {
-#  
-#   
-#     ## Separate age and sex to then order the data by age and sex
-#     
-#     disbayes_input_list_city_regions_2_test <- list()
-#   
-#     disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2[[i]]
-# 
-#     disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]] %>%
-#      separate(sex_age_cat, c("sex", "age_cat"))
-#     
-#     ## Order the data
-#     disbayes_input_list_city_regions_2_test[[i]] <- disbayes_input_list_city_regions_2_test[[i]][order(disbayes_input_list_city_regions_2_test[[i]]$sex, disbayes_input_list_city_regions_2_test[[i]]$age_cat),]
-#     
-#     ## Replace age "Under" with age 0
-#     
-#     disbayes_input_list_city_regions_2_test[[i]]$age_cat <- gsub("Under", 0 , disbayes_input_list_city_regions_2_test[[i]]$age_cat)
-#     
-#     write_rds(disbayes_input_list_city_regions_2_test[[i]],paste0(relative_path_mslt, "data/city regions/Ci2num/",paste0(names(disbayes_input_list_city_regions_2)[i]),".rds"))
-#   
-# }
-
 
 # ---- chunk-1.2.4: Generate num and denoms using Ci2NumDF ----
 
@@ -134,12 +113,14 @@ index <- index + 1
 disbayes_input_list_city_regions_3b <-  list.clean(disbayes_input_list_city_regions_3b, fun = is.null, recursive = TRUE)
 
 
-disbayes_input_list_city_regions_4 <- disbayes_input_list_city_regions_3b %>% lapply(as.data.frame) %>% rbind_all() %>% group_by(indexagg)
+disbayes_input_list_city_regions_4 <- disbayes_input_list_city_regions_3b %>% lapply(as.data.frame) %>% bind_rows() %>% group_by(indexagg)
 
 ### Old, does not work, replaced by code above
 # disbayes_input_list_city_regions_4 <- dplyr::ldply(disbayes_input_list_city_regions_3b, rbind) %>% group_by(indexagg)
 
 disbayes_input_list_city_regions_5 <- disbayes_input_list_city_regions_4 %>% summarise_all(funs(sum))
+
+disbayes_input_list_city_regions_5$indexagg <- gsub("'", '', disbayes_input_list_city_regions_5$indexagg)
 
 disbayes_input_list_city_regions_6 <- disbayes_input_list_city_regions_5 %>%  mutate_if(is.character, RemoveAllWs)%>% 
   mutate(index = indexagg) %>% 
@@ -174,10 +155,13 @@ disease_disbayes <- unique(disbayes_input_list_city_regions_6$disease)
 measure_disbayes <- unique(disbayes_input_list_city_regions_6$measure)
 sex_disbayes <- unique(disbayes_input_list_city_regions_6$sex)
 
+
 ## To wider 
 
 
-disbayes_input_list_city_regions_7 <- disbayes_input_list_city_regions_6 %>% pivot_wider(id_cols = c(agegr, sex, population_number, cityregion, measure, disease), names_from = measure, values_from = c(num, denom))
+disbayes_input_list_city_regions_7 <- disbayes_input_list_city_regions_6 %>% 
+                                      pivot_wider(id_cols = c(agegr, sex, population_number, cityregion, measure, disease), 
+                                      names_from = measure, values_from = c(num, denom))
 
 ## Create list
 index <- 1
@@ -203,8 +187,8 @@ for (c in city_regions_names){
       ### It leaves NA values (I need to have all columns filled in)
      
        
-      disbayes_input_list2[[index]]$index <- tolower(paste(disbayes_input_list2[[index]]$disease, 
-                                                  disbayes_input_list2[[index]]$sex, 
+      disbayes_input_list2[[index]]$index <- tolower(paste(disbayes_input_list2[[index]]$sex, 
+                                                  disbayes_input_list2[[index]]$disease, 
                                                   disbayes_input_list2[[index]]$age, 
                                                   disbayes_input_list2[[index]]$cityregion, sep = "_"))
        # disbayes_input_list2[[index]] <- disbayes_input_list2[[index]] %>% pivot_wider(id_cols = c(index), names_from = measure, values_from = c(num, denom))
@@ -219,19 +203,24 @@ for (c in city_regions_names){
 
 ## First data set rates
 disbayes_inputs_df <- do.call(rbind, disbayes_input_list_city_regions)
-disbayes_inputs_df <- do.call(rbind, disbayes_inputs_df)
-disbayes_inputs_df$index <- paste(disbayes_inputs_df$disease, disbayes_inputs_df$sex, disbayes_inputs_df$age, disbayes_inputs_df$cityregion, sep = "_")
+
+### Some issue with disease column, which we do not need, to rbind to dataframe
+disbayes_inputs_df <- lapply(disbayes_inputs_df, function(x) { x["disease"] <- NULL; x })
+disbayes_inputs_df <- dplyr::bind_rows(disbayes_inputs_df)
+
+### CHECK WHAT HAPPENEND WITH CITY REGIONS AND THATN INDEX IS THE SAME AS IN DISBAYES INPUT DATAFRAME2
+disbayes_inputs_df$index <- paste(disbayes_inputs_df$sex_disease, disbayes_inputs_df$age, disbayes_inputs_df$cityregion, sep = "_")
 ## Second data set with num and denom
 disbayes_inputs_df2 <- do.call(rbind, disbayes_input_list2)
 disbayes_inputs_df2 <-   disbayes_inputs_df2[ -c(1:5,10) ]
 
-disbayes_inputs_df <- do.call(rbind, disbayes_input_list_city_regions)
-disbayes_inputs_df <- do.call(rbind, disbayes_inputs_df)
-disbayes_inputs_df$index <- paste(disbayes_inputs_df$disease, disbayes_inputs_df$sex, disbayes_inputs_df$age, disbayes_inputs_df$cityregion, sep = "_")
 
 ## Final data set to process in disbayes. Filter data by city region, disease and sex. COMPARE with saved data in rds
 disbayes_inputs <- disbayes_inputs_df %>%
-  left_join(disbayes_inputs_df2)
+  left_join(disbayes_inputs_df2) %>% 
+  separate(sex_disease, c("drop", "disease")) 
+
+disbayes_inputs <- disbayes_inputs[, !(colnames(disbayes_inputs ) %in% c("drop","index"))]
 
 
 write_rds(disbayes_inputs, paste0(relative_path_mslt, "data/city regions/Input disbayes/disbayes_inputs", ".rds"))
