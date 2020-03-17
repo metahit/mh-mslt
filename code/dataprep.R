@@ -125,8 +125,24 @@ unlink(paste0(temp_folder), recursive = TRUE)
 
 #### Compare old data with new data
 ### Differences ischemic stroke
-datanewiscs <- dplyr::filter(data_extracted_new, cause_name == "Ischemic stroke")
-dataoldiscs <- dplyr::filter(data_extracted_, cause_name == "Ischemic stroke")
+datanewiscs <- dplyr::filter(data_extracted_new, cause_name == "Ischemic stroke", location_name == "Greater London")
+dataoldiscs <- dplyr::filter(data_extracted_old, cause_name == "Ischemic stroke", location_name == "Greater London")
+
+### Order data
+datanewiscs <- datanewiscs[order(datanewiscs$measure_id, datanewiscs$measure_name, 
+                                  datanewiscs$location_id, datanewiscs$location_name, 
+                                  datanewiscs$sex_id, datanewiscs$sex_name, datanewiscs$age_id, 
+                                  datanewiscs$age_name, datanewiscs$cause_id, datanewiscs$cause_name,
+                                  datanewiscs$metric_id, datanewiscs$metric_name),]
+
+dataoldiscs <- dataoldiscs[order(dataoldiscs$measure_id, dataoldiscs$measure_name, 
+                                 dataoldiscs$location_id, dataoldiscs$location_name, 
+                                 dataoldiscs$sex_id, dataoldiscs$sex_name, dataoldiscs$age_id, 
+                                 dataoldiscs$age_name, dataoldiscs$cause_id, dataoldiscs$cause_name,
+                                 dataoldiscs$metric_id, dataoldiscs$metric_name),]
+
+
+
 ### 
 
 
@@ -148,6 +164,7 @@ DISEASE_SHORT_NAMES <- DISEASE_SHORT_NAMES %>% mutate(is_not_dis = ifelse((str_d
 DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "allc", "is_not_dis"] <- 2
 
 DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "lwri", "is_not_dis"] <- 1
+
 
 
 ### Combine with acronyms from execute-mh
