@@ -2,15 +2,9 @@
 
 # ---- chunk-intro ----
 
-# require(knitr)
-# require(kableExtra)
-# require(citr)
-# require(gridExtra)
 require(ggpubr)
-# require(grid)
 require(ggplot2)
 require(arsenal)
-
 require(janitor)
 require(tidyverse)
 require(dplyr)
@@ -20,7 +14,8 @@ require(reshape)
 require(reshape2)
 require(zoo)
 require(stringi)
-
+require(tidyverse)
+require(rlist)
 if (interactive()) {
   require(conflicted)
 }
@@ -68,7 +63,7 @@ i_sex <- c('male', 'female')
 
 ### test with one city region (CHECK WITH ALI best approach to link with the rest of the model)
 
-MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_bristol.csv"))
+MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_england.csv"))
 
 # ---- chunk-2 ----
 
