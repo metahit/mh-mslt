@@ -85,19 +85,19 @@ gbdfile_name_old <- "IHME-GBD_2017_DATA-ac95a757-" # CHANGE NAME WHEN NEW DATA I
 
 ## Loop to extract zip file data for data with all diseases
 ##### All diseases in new meta analysis
-data_extracted_old <- NULL
+data_extracted_new <- NULL
 for (i in 1:5) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
   file_number <- i
   
-  file_select <- paste0(data_folder,gbdfile_name_old, i,".zip")
+  file_select <- paste0(data_folder,gbdfile_name_new, i,".zip")
   
   unzip(file_select, exdir=temp_folder)
   
-  data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name_old, i, ".csv")))
+  data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name_new, i, ".csv")))
   file.remove(paste0(temp_folder,"/", gbdfile_name_new, i, ".csv"))
   data_read <- subset(data_read, location_name %in% local_goverment_areas$location) # location name is easier to identify
   
-  data_extracted_old <- rbind(data_extracted_old,data_read)
+  data_extracted_new <- rbind(data_extracted_new,data_read)
 }
 
 unlink(paste0(temp_folder), recursive = TRUE)
@@ -105,24 +105,8 @@ unlink(paste0(temp_folder), recursive = TRUE)
 
 ##### Old diseases
 
-data_extracted_old <- NULL
-for (i in 1:4) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT DATA FOR ALL LOCALITIES IN ENGLAND
-  file_number <- i
-  
-  file_select <- paste0(data_folder,gbdfile_name_old, i,".zip")
-  
-  unzip(file_select, exdir=temp_folder)
-  
-  data_read <- read_csv((paste0(temp_folder,"/", gbdfile_name_old, i, ".csv")))
-  file.remove(paste0(temp_folder,"/", gbdfile_name_old, i, ".csv"))
-  data_read <- subset(data_read, location_name %in% local_goverment_areas$location) # location name is easier to identify
-  
-  data_extracted_old <- rbind(data_extracted_old,data_read)
-}
 
-unlink(paste0(temp_folder), recursive = TRUE)
-
-data_extracted <- data_extracted_old
+data_extracted <- data_extracted_new
 # ---- chunk-1.2: Define parameters from data ----
 
 ## Define measure (e.g. deaths) and cause parameters (e.g. all causes, breast cancer) (this is to avoid hard coding the parameters)
@@ -401,37 +385,37 @@ for (d in 1:nrow(DISEASE_SHORT_NAMES)){
 ## add name to column outputs (column 0) NEED TO GENENERATE OUTPUTS LIKE CHRIS FROM THE DISBAYES SCRIPT
 
 ### create column one with outcome and year
-countries_smoothed_res <- cbind(
-  mes=rownames(countries_smoothed_res), countries_smoothed_res)
+cityregions_smoothed_res <- cbind(
+  mes=rownames(cityregions_smoothed_res), cityregions_smoothed_res)
 
 ### Separate avoce in outcome and year
-countries_smoothed_res <- cbind(countries_smoothed_res, (str_split_fixed(countries_smoothed_res$
+cityregions_smoothed_res <- cbind(cityregions_smoothed_res, (str_split_fixed(cityregions_smoothed_res$
                                                                                mes, fixed('['), 2)))
 
-countries_smoothed_res <- countries_smoothed_res[ (countries_smoothed_res$`1` %in% c("inc", "cf", "prev")), ]
-countries_smoothed_res$`1` <- as.character(countries_smoothed_res$`1`)
-countries_smoothed_res$`2` <- as.character(countries_smoothed_res$`2`)
-countries_smoothed_res$`2` <- gsub("].*", "",countries_smoothed_res$`2`)
+cityregions_smoothed_res <- cityregions_smoothed_res[ (cityregions_smoothed_res$`1` %in% c("inc", "cf", "prev")), ]
+cityregions_smoothed_res$`1` <- as.character(cityregions_smoothed_res$`1`)
+cityregions_smoothed_res$`2` <- as.character(cityregions_smoothed_res$`2`)
+cityregions_smoothed_res$`2` <- gsub("].*", "",cityregions_smoothed_res$`2`)
 
 
 ## Rename columns
-names(countries_smoothed_res)[names(countries_smoothed_res) == "1"] <- "rates"
-names(countries_smoothed_res)[names(countries_smoothed_res) == "2"] <- "year"
+names(cityregions_smoothed_res)[names(cityregions_smoothed_res) == "1"] <- "rates"
+names(cityregions_smoothed_res)[names(cityregions_smoothed_res) == "2"] <- "year"
 
 ## Rename string values inc to incidence, cf to case fatality and prev to prevalence
 
-countries_smoothed_res <- countries_smoothed_res %>% 
+cityregions_smoothed_res <- cityregions_smoothed_res %>% 
   mutate(rates = str_replace(rates, "inc", "incidence"))  %>%
   mutate(rates = str_replace(rates, "cf", "case_fatality"))  %>%
   mutate(rates = str_replace(rates, "prev", "prevalence"))
 
 ## Move to columns for data for case_fatality, incidence and prevelence
 
-countries_smoothed_res$disease_rate <- paste(countries_smoothed_res$rates, countries_smoothed_res$disease, sep = "_")
-countries_smoothed_res2 <- countries_smoothed_res %>% pivot_wider(id_cols = c(area, gender, model, year), names_from = disease_rate, values_from = c(med, lower95, upper95))
-names(countries_smoothed_res2) = gsub(pattern = "med_", replacement = "", x = names(countries_smoothed_res2))
+cityregions_smoothed_res$disease_rate <- paste(cityregions_smoothed_res$rates, cityregions_smoothed_res$disease, sep = "_")
+cityregions_smoothed_res2 <- cityregions_smoothed_res %>% pivot_wider(id_cols = c(area, gender, model, year), names_from = disease_rate, values_from = c(med, lower95, upper95))
+names(cityregions_smoothed_res2) = gsub(pattern = "med_", replacement = "", x = names(cityregions_smoothed_res2))
 
-disbayes_output <- countries_smoothed_res2 %>%
+disbayes_output <- cityregions_smoothed_res2 %>%
   dplyr::rename(sex = gender) %>% 
   mutate_if(is.factor, as.character)
 disbayes_output$year <- disbayes_output$year %>% as.numeric(disbayes_output$year)
