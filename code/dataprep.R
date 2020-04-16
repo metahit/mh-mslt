@@ -548,7 +548,7 @@ ind <- findInterval(outage, p$age)
 pif_expanded <- p[ind,]
 pif_expanded$age <- outage
 
-p_1 <- filter(pif, sex == "female")
+p_1 <- dplyr::filter(pif, sex == "female")
 
 outage <- min(p_1$age):100
 
@@ -562,4 +562,4 @@ pif_expanded <- rbind(pif_expanded, pif_expanded_1)
 write_csv(pif_expanded, "data/pif_expanded.csv")
 
 #### Example for one city region
-write_csv(mslt_df_list[[1]], "data/mslt_england.csv")
+write_csv(mslt_df_list[[1]], "data/mslt_bristol.csv")
