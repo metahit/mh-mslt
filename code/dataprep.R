@@ -20,7 +20,10 @@
 # Nottingham: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Nottingham, Newark and Sherwood, Rushcliffe. (NO GBD DATA AVAILABLE)
 # 
 # West Midlands Combined Authority: Birmingham, Coventry, Dudley, Sandwell, Solihull, Walsall, Wolverhampton.
-
+require(rlist)
+require(dplyr)
+require(tidyverse)
+source('code/functions.R')
 
 # ---- chunk-1: Data preparation ----
 

@@ -537,21 +537,25 @@ GenMSLTDF <- function(i_data, d_data) {
     }
   }
   
-  ## Interpolate dw rates 
+  ## Interpolate dw rates (and deaths and ylds?)
   
+# variables <- c('dw_adj', 'ylds (years lived with disability)_rate', 'deaths_rate')  
   
   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
     for(sex_index in i_sex) {
-      for (var in c('dw_adj')){#, 'deaths_rate', 'ylds (years lived with disability)_rate')){
+      for (var in c('dw_adj') ){ 
+  
         
-        if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0) {
+        if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || DISEASE_SHORT_NAMES$sname[d] == "mjdd") {}
+        else{
           
           
           var_name <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
           
           data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name))
-          
-          
+  
+         
+
           x <- data$age_cat
           y <- log(data[[var_name]])
           
@@ -575,127 +579,132 @@ GenMSLTDF <- function(i_data, d_data) {
           mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
                   & mslt_df$sex == sex_index, ][[var_name]] <- interpolated[[var_name]]
           
-          index <- index + 1
+          index <- index + 1           
+          #browser()
+          
         }
       }
     }
   }
   
-
+#
   ## Interpolate all cause mortality and pylds and diseases
-  
-  ### Create variable names
-  
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-    
-    # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
-    
-    var_name1 <- paste0("deaths_rate", "_", DISEASE_SHORT_NAMES$sname[d])
-    
-    var_name2 <- paste0("ylds (years lived with disability)_rate", "_", DISEASE_SHORT_NAMES$sname[d])
-    
-    if ((var_name1 == "deaths_rate_mjdd" || var_name2 == "ylds (years lived with disability)_rate_mjdd")){
-    }
-    else{
-    mslt_df[, var_name1] <- 1
-    mslt_df[, var_name2] <- 1
-    }
-    
-  }
-  
-  if ((var_name1 == "deaths_rate_mjdd" || var_name2 == "ylds (years lived with disability)_rate_mjdd")){
-  }
-  else{
-  ### Deaths
-  
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-    for(sex_index in i_sex) {
-      for (var in c('deaths_rate')) {
-        # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
-        
-        var_name1 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
-        
-        data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name1))
-        
-        x <- data$age_cat
-        y <- log(data[[var_name1]])
-        
-        InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
-        
-        interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
-        age <- seq(0, 100, by = 1)
-        interpolated <- cbind(interpolated, age)
-        interpolated[,1] <- exp(interpolated[,1])
-        ## Add column with sex to create age_sex category to then merge with input_life table
-        interpolated$sex <- paste(sex_index)
+
+   ### Create variable names
+
+   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+
+     # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
+
+     var_name1 <- paste0("deaths_rate", "_", DISEASE_SHORT_NAMES$sname[d])
+
+     var_name2 <- paste0("ylds (years lived with disability)_rate", "_", DISEASE_SHORT_NAMES$sname[d])
+
+     
+     mslt_df[, var_name1] <- 1
+      mslt_df[, var_name2] <- 1
+     
+
+   }
+
+
+   ### Deaths
+
+   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+     for(sex_index in i_sex) {
+       for (var in c('deaths_rate')) {
+         # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
+
+         var_name1 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
+
+         data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name1))
+
+         
+         if (DISEASE_SHORT_NAMES$sname[d] == "mjdd") {}
+         else{
+         
+         x <- data$age_cat
+         y <- log(data[[var_name1]])
+
+         InterFunc <- stats::splinefun(x, y, method = "monoH.FC", ties = mean)
+
+         interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
+         age <- seq(0, 100, by = 1)
+         interpolated <- cbind(interpolated, age)
+         interpolated[,1] <- exp(interpolated[,1])
+         ## Add column with sex to create age_sex category to then merge with input_life table
+         interpolated$sex <- paste(sex_index)
         interpolated$sex_age_cat <- paste(interpolated$sex, interpolated$age, sep = "_")
-        ## Change name of column death to mx and ylds to pyld_rate to then merge
-        ## with input_life table
-        colnames(interpolated)[1] <- var_name1
-        
-        interpolated[IsNanDataFrame(interpolated)] <- 0
-        
-        interpolated[IsInfDataFrame(interpolated)] <- 0
-        
-        mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
-                & mslt_df$sex == sex_index, ][[var_name1]] <- interpolated[[var_name1]]
-        
-      }
-    }
-  }
-  
-  # names(gbd_df)
-  # gbd_df$`ylds (years lived with disability)_rate_mtri`
-  # gbd_df$deaths_rate_lwri
-  
-  ### YLDs
-  
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-    for(sex_index in i_sex) {
-      for (var in c("ylds (years lived with disability)_rate")){
-        
-        # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
-        
-        var_name2 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
-        
-        data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name2))
-        
-        # browser() Data input and x and y are fine, different for all, however, interpolated values are all the same. 
-        
-        x <- data$age_cat
-        y <- log(data[[var_name2]])
-        
-        interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
-        
-        # browser()
-        
-        age <- seq(0, 100, by = 1)
-        interpolated <- cbind(interpolated, age)
+         ## Change name of column death to mx and ylds to pyld_rate to then merge
+         ## with input_life table
+         colnames(interpolated)[1] <- var_name1
+
+         interpolated[IsNanDataFrame(interpolated)] <- 0
+
+         interpolated[IsInfDataFrame(interpolated)] <- 0
+
+         mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat
+                 & mslt_df$sex == sex_index, ][[var_name1]] <- interpolated[[var_name1]]
+         }
+       }
+     }
+   }
+
+   # names(gbd_df)
+   # gbd_df$`ylds (years lived with disability)_rate_mtri`
+   # gbd_df$deaths_rate_lwri
+
+   ### YLDs
+
+   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+      for(sex_index in i_sex) {
+        for (var in c("ylds (years lived with disability)_rate")){
+
+         # if (DISEASE_SHORT_NAMES$is_not_dis[d] != 2){
+
+         var_name2 <- paste0(var, '_', DISEASE_SHORT_NAMES$sname[d])
+
+         data <- dplyr::filter(gbd_df, sex == sex_index) %>% dplyr::select(age, sex, age_cat, starts_with(var_name2))
+         
+         if (DISEASE_SHORT_NAMES$sname[d] == "mjdd") {}
+         else{
+
+         # browser() Data input and x and y are fine, different for all, however, interpolated values are all the same.
+
+         x <- data$age_cat
+         y <- log(data[[var_name2]])
+
+         interpolated <- as.data.frame(InterFunc(seq(0, 100, 1)))
+
+         # browser()
+
+         age <- seq(0, 100, by = 1)
+          interpolated <- cbind(interpolated, age)
         interpolated[,1] <- exp(interpolated[,1])
-        
-        # browser()
-        
-        ## Add column with sex to create age_sex category to then merge with input_life table
-        interpolated$sex <- paste(sex_index)
-        interpolated$sex_age_cat <- paste(interpolated$sex, interpolated$age, sep = "_")
-        ## Change name of column death to mx and ylds to pyld_rate to then merge
-        ## with input_life table
-        colnames(interpolated)[1] <- var_name2
-        
-        # browser()
-        
-        interpolated[IsNanDataFrame(interpolated)] <- 0
-        
-        interpolated[IsInfDataFrame(interpolated)] <- 0
-        
-        mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat 
-                & mslt_df$sex == sex_index, ][[var_name2]] <- interpolated[[var_name2]]
-        
-        }
-      }
-    }
-  }
-  
+
+         # browser()
+
+         ## Add column with sex to create age_sex category to then merge with input_life table
+         interpolated$sex <- paste(sex_index)
+         interpolated$sex_age_cat <- paste(interpolated$sex, interpolated$age, sep = "_")
+         ## Change name of column death to mx and ylds to pyld_rate to then merge
+         ## with input_life table
+         colnames(interpolated)[1] <- var_name2
+
+         # browser()
+
+         interpolated[IsNanDataFrame(interpolated)] <- 0
+
+         interpolated[IsInfDataFrame(interpolated)] <- 0
+
+         mslt_df[mslt_df$sex_age_cat == interpolated$sex_age_cat
+                 & mslt_df$sex == sex_index, ][[var_name2]] <- interpolated[[var_name2]]
+          
+         }
+       }
+     }
+   }
+
   ## drop age and area from disease to avoid generating x and y variables
   
   disease <- within(disease, rm(year, sex, area))
