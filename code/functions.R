@@ -545,7 +545,7 @@ GenMSLTDF <- function(i_data, d_data) {
     for(sex_index in i_sex) {
       for (var in c('dw_adj') ){ 
   
-        
+        #### Exception hard coded for mjdd, best to change. The issue is that mjdd does not have pyld and deaths
         if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || DISEASE_SHORT_NAMES$sname[d] == "mjdd") {}
         else{
           
