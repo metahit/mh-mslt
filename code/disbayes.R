@@ -1,8 +1,23 @@
 # ---- Chunk 1: Disbayes ----
 
-library(disbayes)
-options(mc.cores = parallel::detectCores(1))
-rstan_options(auto_write = TRUE)  
+dotR <- file.path(Sys.getenv("C:/Scratch/R"), ".R")
+if (!file.exists(dotR)) 
+  dir.create(dotR)
+M <- file.path(dotR, "Makevars.win")
+if (!file.exists(M)) 
+  file.create(M)
+cat("\nCXX14FLAGS=-O3 -Wno-unused-variable -Wno-unused-function",
+    "CXX14 = C:/RBuildTools/mingw_64/bin/g++.exe",
+    "CXX11FLAGS=-O3 -Wno-unused-variable -Wno-unused-function",
+    file = M, sep = "\n", append = TRUE)
+
+devtools::install_github("r-lib/remotes")
+# install.packages("devtools") # if devtools not already installed
+
+options(buildtools.check = function(action) TRUE )
+library(devtools)
+install_github("chjackson/disbayes")
+
 
 
 
