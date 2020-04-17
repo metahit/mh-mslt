@@ -15,12 +15,12 @@ dat <- readRDS(fp)
 
 ## Filter disbayes_inputs for city region, disease and sex data
 
-dat <- dplyr::filter(disbayes_inputs, cityregion == "greatermanchester", disease == "brsc", sex == "female") 
-dat2 <- dplyr::filter(disbayes_inputs_original, cityregion == "greatermanchester", disease == "brsc", sex == "female") 
+dat <- dplyr::filter(bristol_bristol, cityregion == "greatermanchester", disease == "brsc", sex == "female") 
+
 
 library(disbayes)
 
-resu <- disbayes(dat = dat,
+resu <- disbayes(dat = dat2,
                  
                  ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
                  # inc = "inc",

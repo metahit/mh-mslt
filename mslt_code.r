@@ -28,7 +28,7 @@ require(codetools)
 
 ##Additional code to make disbayes work (includes ci2num to create Credible Intervals?)
 #install_github("chjackson/disbayes")
-require(disbayes)
+library(disbayes)
 
 
 rm (list = ls())

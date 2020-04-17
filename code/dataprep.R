@@ -20,6 +20,7 @@
 # Nottingham: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Nottingham, Newark and Sherwood, Rushcliffe. (NO GBD DATA AVAILABLE)
 # 
 # West Midlands Combined Authority: Birmingham, Coventry, Dudley, Sandwell, Solihull, Walsall, Wolverhampton.
+require(readr)
 require(rlist)
 require(dplyr)
 require(tidyverse)
@@ -77,7 +78,7 @@ v_folder <- "V:/Studies/MOVED/HealthImpact/Data/Global_Burden_Disease_Metahit/"
 
 ## Change folder to work or home
 # CHANGE DATA FOLDER
-data_folder <- paste0(work_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
+data_folder <- paste0(home_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
 gbdfile_name_new <- "IHME-GBD_2017_DATA-3e0b192d-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
@@ -427,8 +428,22 @@ disbayes_output$year[1:101] <- 0:100
 
 disbayes_output$sex_age_area_cat <- paste(disbayes_output$sex,disbayes_output$year, disbayes_output$area, sep = "_"  )
 
+#### Checking which variables have been smooth on disbayes
+## Plot organised data by me
+plot(dplyr::filter(disbayes_output, area == "bristol", sex == "female") %>% dplyr::select(year, incidence_carc))
 
+
+
+data_test <- cityregions_smoothed_res %>% mutate_if(is.factor, as.character) %>% 
+  dplyr::select(area, gender, disease, year, med, model, mes) %>%
+  dplyr::filter(area == "bristol", gender == "female", disease == "carc") %>%
+  dplyr::filter(str_detect(mes, "inc"))
+
+plot(data_test$year, data_test$med)
+ 
+          
 # ---- chunk 1.7 ----
+
 
 areas <- unique(disbayes_output$area)
 i_sex <- c('male', 'female')
