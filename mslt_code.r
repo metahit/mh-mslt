@@ -1,33 +1,35 @@
 
 
 # ---- chunk-intro ----
-myPaths <- .libPaths()
 
-myPaths <- c(myPaths, "C:/scratch/R")
-
-.libPaths(myPaths)  # add new path
-
-# require(knitr)
-# require(kableExtra)
-# require(citr)
-# require(gridExtra)
-# require(ggpubr)
-# require(grid)
+require(ggpubr)
 require(ggplot2)
-# require(pillar)
-require(devtools)
+require(arsenal)
 require(janitor)
-require(tidyverse)
 require(dplyr)
 require(conflicted)
 require(rlist)
 require(reshape)
 require(reshape2)
 require(zoo)
+require(stringi)
+require(tidyverse)
+require(rlist)
 if (interactive()) {
   require(conflicted)
 }
 conflict_prefer("filter", "dplyr")
+
+## Packages for generation of epi inputs
+require(devtools)
+require(rstan)
+require(Rcpp)
+require(codetools)
+
+##Additional code to make disbayes work (includes ci2num to create Credible Intervals?)
+#install_github("chjackson/disbayes")
+require(disbayes)
+
 
 rm (list = ls())
 options(scipen=999)
@@ -44,7 +46,8 @@ source('code/functions.R')
 
 relative_path <- '../mh-mslt/'
 pif_expanded <- read_csv(paste0(relative_path, 'data/pif_expanded.csv'))
-MSLT_DF <- read_csv(paste0(relative_path, 'data/mslt_df.csv'))
+
+# Check 
 DISEASE_SHORT_NAMES <<- read_csv(paste0(relative_path, 'data/parameters/disease_names.csv'))
 
 ## Parameters
@@ -57,6 +60,9 @@ i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92
 
 i_sex <- c('male', 'female')
 
+### test with one city region (CHECK WITH ALI best approach to link with the rest of the model)
+
+MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_england.csv"))
 
 # ---- chunk-2 ----
 
@@ -829,7 +835,10 @@ output_dir = 'output/'
 ## For example, year one represents the totals for all cohorts in year one of the simulation. 
 ## We can choose how many simulation years we want to show, for example, firts ten years. 
 
-### Diseases totals generation of list with diseases totals
+### Diseases totals generation of list with diseases totals over all years of simulation. 
+
+i_outcome_d <- c('mx', 'inc')
+i_outcome_nd <- c('mx', 'ylds')
 
 aggregate_frame_d_males <- list()
 aggregate_frame_d_females <- list()
@@ -1182,19 +1191,19 @@ for (ioutcome in i_outcome_nd) {
 # ## Uncomment to check that the code is dropping the male/female ending.
 # # View(aggregate_frame_males)
 # 
-# ## Create a copy of aggregate_frame_females.
-# total_aggr1 <- aggregate_frame_females
-# ## Add aggregate_frame_males values to it
-# for (i in 1:ncol(aggregate_frame_females)){
-#   total_aggr1[i] <- total_aggr1[i] + aggregate_frame_males[i]
-# }
-# 
-# ## Add data frames 2 with life years (check adds Lx and Lwx at the beginning of the variable name)
-# total_aggr2 <- aggregate_frame_females2
-# ## Add aggregate_frame_males values to it
-# for (i in 1:ncol(aggregate_frame_females2)){
-#   total_aggr2[i] <- total_aggr2[i] + aggregate_frame_males2[i]
-# }
+## Create a copy of aggregate_frame_females.
+total_aggr1 <- aggregate_frame_females
+## Add aggregate_frame_males values to it
+for (i in 1:ncol(aggregate_frame_females)){
+  total_aggr1[i] <- total_aggr1[i] + aggregate_frame_males[i]
+}
+
+## Add data frames 2 with life years (check adds Lx and Lwx at the beginning of the variable name)
+total_aggr2 <- aggregate_frame_females2
+## Add aggregate_frame_males values to it
+for (i in 1:ncol(aggregate_frame_females2)){
+  total_aggr2[i] <- total_aggr2[i] + aggregate_frame_males2[i]
+}
 
 ## Combine data frames
 
@@ -1228,19 +1237,20 @@ View(total_aggr)
 p_aggr_list <- list()
 index <- 1
 
-for (outcome in i_outcome) {
-  for (disease in i_disease) {
+for (outcome in i_outcome_d) {
+  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+
     # outcome <- i_outcome[1]
     # disease <- i_disease[1]
     
     p_aggr_list_index <- ggplot(total_aggr[1:79,], aes(x = total_aggr[['sim_year']])) +
       
-      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_bl', disease, sep = '_')]], colour = paste('total', outcome, 'num_bl', disease, sep = '_'))) +
+      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
       theme_classic() +
       geom_hline(yintercept=0, linetype='dashed', color = 'black') +
-      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_sc', disease, sep = '_')]], colour = paste('total', outcome, 'num_sc', disease, sep = '_'))) +
-      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_diff', disease, sep = '_')]], colour = paste('total', outcome, 'num_diff', disease, sep = '_'))) +
-      xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(disease, outcome)) +
+      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+      xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$sname[d], outcome)) +
       theme(plot.title = element_text(hjust = 0.5, size = 12)) +
       scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
       theme(plot.title = element_text(hjust = 0.5))
@@ -1254,7 +1264,7 @@ for (outcome in i_outcome) {
 index <- 1
 
 interpolation_index <- 1
-for (outcome in i_outcome) {
+for (outcome in i_outcome_d) {
   for (disease in i_disease) {
     file_name = paste('output/graphs', 'Aggregated Outcomes', outcome, disease, '.jpeg', sep=' ')
     jpeg(file_name)

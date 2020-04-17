@@ -1,3 +1,62 @@
+### Check that numbers for regions () add up to England total
+
+#### Population
+
+##### UK
+UK_population_total<- sum(gbd_city_region_data_agg[["United Kingdom"]]$population_number)
+print(UK_population_total)
+
+##### Countries
+
+England_population_total <- sum(gbd_city_region_data_agg[["England"]]$population_number)
+print(England_population_total)
+
+Wales_population_total <- sum(gbd_city_region_data_agg[["Wales"]]$population_number)
+print(Wales_population_total)
+### This script is to test calculations and codes
+
+### Test GBD input data for consistency in summation of England city regions to total England and UK countries to total UK. 
+Scotland_population_total <- sum(gbd_city_region_data_agg[["Scotland"]]$population_number)
+print(Scotland_population_total)
+
+Northern_Ireland_population_total <- sum(gbd_city_region_data_agg[["Northern Ireland"]]$population_number)
+print(Northern_Ireland_population_total)
+
+total_countries <- sum(England_population_total, Wales_population_total, Scotland_population_total, Northern_Ireland_population_total)
+print(total_countries)
+
+###### Regions of England test su(DO FOR ALL DISEASES AND OUTCOMES??)
+
+regions_England <- c("East Midlands", "East of England", "Greater London", "North East England", "North West England", "South East England", "South West England", "West Midlands", "Yorkshire and the Humber")
+
+England_ihd_deaths <- sum(gbd_city_region_data_agg[["England"]]$deaths_med_ishd)
+print(England_ihd_deaths)
+
+
+total_regions_england_ihd_deaths <- list()
+
+index <- 1
+
+for (i in regions_England) {
+  
+  total_regions_england_ihd_deaths[[index]] <- sum(gbd_city_region_data_agg[[paste0(i)]]$deaths_med_ishd)
+  
+  index <- index + 1
+}
+
+
+sum_total_regions_ihd_deaths <- sum(total_regions_england_ihd_deaths[[1]], total_regions_england_ihd_deaths[[2]], total_regions_england_ihd_deaths[[3]], 
+                                    total_regions_england_ihd_deaths[[4]], total_regions_england_ihd_deaths[[5]], total_regions_england_ihd_deaths[[6]],
+                                    total_regions_england_ihd_deaths[[7]], total_regions_england_ihd_deaths[[8]], total_regions_england_ihd_deaths[[9]])
+
+print(sum_total_regions_ihd_deaths)
+
+
+
+
+
+
+
 # ---- Test disbayes with one disease ----
 
 library(rstan)
