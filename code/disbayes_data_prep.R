@@ -3,7 +3,7 @@ library(rlist)
 library(tidyr)
 library(devtools)
 ### Works in virtual machine, not in work windows
-#library(disbayes)
+library(disbayes)
 ## The below code generates data to use as inputs in disbayes.
 
 
