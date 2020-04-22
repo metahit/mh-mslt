@@ -166,6 +166,24 @@ RunLocDf <- function(i_data) {
 ## This function generates num and denom to be used as inputs of disbayes. 
 ## We use this function to generate disbayes outcomes that account for inputs (GBD) uncertainty when aggregating areas (e.g. UK localities)
 
+
+ci2num <- function(est, lower, upper){
+  vals <- c(lower, est, upper) 
+  probs <- c(0.025, 0.5, 0.975)
+  bet <- SHELF::fitdist(vals=vals, probs=probs, lower=0, upper=1)$Beta
+  apost <- bet$shape1
+  bpost <- bet$shape2
+  aprior <- bprior <- 0.5
+  r <- round(apost - aprior)
+  n <- round(bpost - bprior + r)
+  list(num=r, denom=n)
+}
+
+est2num <- function(est, n){
+  list(num=est/n, denom=n)
+}
+
+
 Ci2NumDF <- function(in_data) {
   
   dataframe <- dplyr::select(in_data, population_number, est, lower, upper, sex_age_cat, cityregion, indexagg)  %>%
@@ -196,6 +214,7 @@ RemoveAllWs<- function(string){
 
 # --- GenInpDisbayes ----
 
+
 GenInpDisbayes <- function(i_data) {
   
   disbayes_input_list <- list()
@@ -204,51 +223,52 @@ GenInpDisbayes <- function(i_data) {
   for (d in 1:nrow(DISEASE_SHORT_NAMES)){
     for (sex_index in i_sex){
       
-      if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0){
+      ### hard coded here, these diseases do not have incidence or prevalence, so need to exclude
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0) {}
+      else {
         
-        var_name <- paste0("med_", DISEASE_SHORT_NAMES$sname[d])
-
-        disbayes_input_list[[index]] <- dplyr::filter(i_data, sex == sex_index) %>% dplyr::select(age, sex, ends_with(var_name), population_number)
+        var_name <- paste0("rate_", DISEASE_SHORT_NAMES$sname[d])
+        
+        disbayes_input_list[[index]] <- dplyr::filter(i_data, sex == sex_index) %>% dplyr::select(age_cat, sex, ends_with(var_name), population_number)
         
         ## Add column to show disease
         
-        disbayes_input_list[[index]]$disease <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease" ||
-                                                         DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder" ,
-                                                       0 ,DISEASE_SHORT_NAMES$sname[d])
+        disbayes_input_list[[index]]$disease <- paste0(DISEASE_SHORT_NAMES$sname[d])
+        
+        
         
         ## Change column names to match disbayes code (THIS WILL CHANGE AS WE CAN USE NUMBERS DIRECTLY, WITH POPULATION DATA)
-     
+        
         ## Calculate rates
-         
-         
-          disbayes_input_list[[index]]$inc <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease", 0 , 
-                                                    disbayes_input_list[[index]][[tolower(paste0("incidence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-          disbayes_input_list[[index]][["population_number"]])
-          disbayes_input_list[[index]]$mort <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder", 0 , 
-                                                     disbayes_input_list[[index]][[tolower(paste0("deaths_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-          disbayes_input_list[[index]][["population_number"]])
-          disbayes_input_list[[index]]$prev <- disbayes_input_list[[index]][[tolower(paste0("prevalence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-          disbayes_input_list[[index]][["population_number"]]
+        
+        # 
+        # disbayes_input_list[[index]]$inc <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease", 0 , 
+        #                                            disbayes_input_list[[index]][[tolower(paste0("incidence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
+        #                                              disbayes_input_list[[index]][["population_number"]])
+        # disbayes_input_list[[index]]$mort <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder", 0 , 
+        #                                             disbayes_input_list[[index]][[tolower(paste0("deaths_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
+        #                                               disbayes_input_list[[index]][["population_number"]])
+        # disbayes_input_list[[index]]$prev <- disbayes_input_list[[index]][[tolower(paste0("prevalence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
+        #   disbayes_input_list[[index]][["population_number"]]
         
         ### USE these if we can have rates in the aggreagate data
-
-        # ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease", 0 , 
-        # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_med_", 
-        #                                                                                 DISEASE_SHORT_NAMES$sname[d]))] <- "inc")
-        # 
-        # 
-        # ifelse(DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder", 0 , 
-        # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_med_", 
-        #                                                                                 DISEASE_SHORT_NAMES$sname[d]))] <- "mort")        
-        # 
-        # 
-        # colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("prevalence_med_", 
-        #                                                                                 DISEASE_SHORT_NAMES$sname[d]))] <- "prev"
+        
+        
+        colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_rate_", 
+                                                                                                       DISEASE_SHORT_NAMES$sname[d]))] <- "inc"
+        
+        
+        colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("deaths_rate_", 
+                                                                                                       DISEASE_SHORT_NAMES$sname[d]))] <- "mort"      
+        
+        
+        colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("prevalence_rate_", 
+                                                                                                       DISEASE_SHORT_NAMES$sname[d]))] <- "prev"
         
         ## Drop columns with measures disease names combinations
         
-      
-
+        
+        
         colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== paste0("population_number")] <- "pop"
         
         ## We assume remission is 0
@@ -259,13 +279,14 @@ GenInpDisbayes <- function(i_data) {
         
         disbayes_input_list[[index]]$prevdenom <- c(100,100,500,500,500,500,500,500,500,500,500,500,500,500,500,500,200,200,100,100) / 10 # total sample size 3910, generous for London (from CJ)
         
-        ## Added agegroups to derive age groups by 1
+        ## Added age_catgroups to derive age groups by 1
         
         disbayes_input_list[[index]]$agegrp <- as.integer(seq(0,95, by=5))
         
         ## Replace 0 with small numbers for incidence, otherwise, disbayes does not work.
         
         disbayes_input_list[[index]]$inc <- ifelse(disbayes_input_list[[index]]$inc  == 0, 1e-08, disbayes_input_list[[index]]$inc)
+        
         
         
         ## Convert 5 year data file to 100 year age intervals
@@ -275,7 +296,7 @@ GenInpDisbayes <- function(i_data) {
         
         ind <- findInterval(outage, disbayes_input_list[[index]]$agegrp)
         disbayes_input_list[[index]] <- disbayes_input_list[[index]][ind,]
-        disbayes_input_list[[index]]$age <- outage
+        disbayes_input_list[[index]]$age_cat <- outage
         
         disbayes_input_list[[index]] <- within(disbayes_input_list[[index]], {
           ningrp <- rep(table(agegrp), table(agegrp))
@@ -284,7 +305,7 @@ GenInpDisbayes <- function(i_data) {
           # ndieddismale <- round(popmale * (1 - exp(-mortmale)))
           
           
-        
+          
           ndieddis <- round(pop * (1 - exp(-mort)))
           # prevnmale <- round(prevdenom * prevmale)
           prevn <- round(prevdenom * prev)
@@ -295,7 +316,7 @@ GenInpDisbayes <- function(i_data) {
         
         disbayes_input_list[[index]]$sex_disease <- paste(sex_index, DISEASE_SHORT_NAMES$sname[d], sep = "_")
         
-        disbayes_input_list[[index]] <- disbayes_input_list[[index]][ -c(3:6) ]
+        disbayes_input_list[[index]] <- disbayes_input_list[[index]][ -c(4) ]
         # browser()
         # 
         index <-  index +1
@@ -305,6 +326,8 @@ GenInpDisbayes <- function(i_data) {
   }
   return(disbayes_input_list)
 }
+
+
 
 
 

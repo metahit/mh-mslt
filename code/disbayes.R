@@ -1,24 +1,9 @@
 # ---- Chunk 1: Disbayes ----
-
-dotR <- file.path(Sys.getenv("C:/Scratch/R"), ".R")
-if (!file.exists(dotR)) 
-  dir.create(dotR)
-M <- file.path(dotR, "Makevars.win")
-if (!file.exists(M)) 
-  file.create(M)
-cat("\nCXX14FLAGS=-O3 -Wno-unused-variable -Wno-unused-function",
-    "CXX14 = C:/RBuildTools/mingw_64/bin/g++.exe",
-    "CXX11FLAGS=-O3 -Wno-unused-variable -Wno-unused-function",
-    file = M, sep = "\n", append = TRUE)
-
-devtools::install_github("r-lib/remotes")
-# install.packages("devtools") # if devtools not already installed
-
-options(buildtools.check = function(action) TRUE )
+### I cloned the disbayes library as I was facing a lot of issues compliting the package from the github. 
+### To run disbayes we need rstan
+install.packages("devtools")
 library(devtools)
 install_github("chjackson/disbayes")
-
-
 
 
 ### Loop to generate disbayes outputs for: diseases, sex and area. Uses GenOutDisbayes. Assumptions and inputs for disbayes
@@ -60,7 +45,7 @@ for (c in c(unique(disbayes_inputs$cityregion))) {
 
 #### Test code
 
-resu <- disbayes(dat = data,
+resu <- disbayes:::disbayes(dat = data,
                  
                  ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
                  inc = "inc", 

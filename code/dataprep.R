@@ -20,10 +20,14 @@
 # Nottingham: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Nottingham, Newark and Sherwood, Rushcliffe. (NO GBD DATA AVAILABLE)
 # 
 # West Midlands Combined Authority: Birmingham, Coventry, Dudley, Sandwell, Solihull, Walsall, Wolverhampton.
-require(readr)
-require(rlist)
-require(dplyr)
-require(tidyverse)
+rm (list = ls())
+options(scipen=999)
+library(readr)
+library(rlist)
+library(dplyr)
+library(tidyverse)
+library(conflicted)
+
 source('code/functions.R')
 
 # ---- chunk-1: Data preparation ----
@@ -78,7 +82,7 @@ v_folder <- "V:/Studies/MOVED/HealthImpact/Data/Global_Burden_Disease_Metahit/"
 
 ## Change folder to work or home
 # CHANGE DATA FOLDER
-data_folder <- paste0(home_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
+data_folder <- paste0(work_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
 gbdfile_name_new <- "IHME-GBD_2017_DATA-3e0b192d-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
@@ -131,6 +135,10 @@ DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "allc", "is_not_dis"] <- 2
 DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "lwri", "is_not_dis"] <- 1
 
 
+### Code for major depresive disorder (no deaths) and hypertensive heart disease (no incidence)
+DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "hyhd", "is_not_dis"] <- 3
+
+DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "mjdd", "is_not_dis"] <- 3
 
 ### Combine with acronyms from execute-mh
 
@@ -214,6 +222,8 @@ gbd_loc_data_processed[[index]] <- lapply(city_regions_list_loc[[i]], RunLocDf)
 index <- index + 1
 
 }
+
+
 
 ### Delete null data frames within lists
 
@@ -322,27 +332,27 @@ for (i in 1:length(gbd_city_region_data_2)) {
   suppressWarnings(names(gbd_city_region_data_agg)[index] <- paste(city_regions_list_loc[[i]][[1]]$cityregion, sep = '_'))
   
   
-  ### Calculate rates per one. Needed for mslt_code
-  # for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-  #   for (dm in 1:length(disease_measures_list)){
-  #     # dn <- DISEASE_SHORT_NAMES$disease[d]
-  #     dmeasure <- disease_measures_list[dm] %>% as.character() %>% tolower
-  #     
-  #     
-  #     
-  #     var_rate <- c(paste(tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
-  #     var_med <- c(paste(tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
-  #     
-  #     
-  #     if ((var_rate == "deaths_rate_mjdd" || var_rate == "ylds (years lived with disability)_rate_mjdd")){
-  #     }
-  #     else{
-  #       gbd_city_region_data_agg[[index]][[var_rate]] <- gbd_city_region_data_agg[[index]][[var_med]] / 
-  #         gbd_city_region_data_agg[[index]]$population_number
-  #     }
-  #   }
-  # }
-  # 
+  ### Calculate rates per one. Needed for mslt_code (exclude major depresive disorders (no deaths) and hyoertensive heart disease (no incidence))
+  for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+    for (dm in 1:length(disease_measures_list)){
+      # dn <- DISEASE_SHORT_NAMES$disease[d]
+      dmeasure <- disease_measures_list[dm] %>% as.character() %>% tolower
+
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] == 3){
+      }
+      else{
+
+
+      var_rate <- c(paste(tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
+      var_med <- c(paste(tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
+
+
+        gbd_city_region_data_agg[[index]][[var_rate]] <- gbd_city_region_data_agg[[index]][[var_med]] /
+          gbd_city_region_data_agg[[index]]$population_number
+      }
+    }
+  }
+
   
   ## Save as rds for each city region
   
@@ -357,29 +367,6 @@ for (i in 1:length(gbd_city_region_data_2)) {
 gbd_data <- plyr::ldply(gbd_city_region_data_agg, rbind)
 gbd_data$area <- gbd_data$.id
 
-### Calculate rates as we need these for mslt data frame
-
-
-### Calculate rates per one. Needed for mslt_code
-for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-  for (dm in 1:length(disease_measures_list)){
-    # dn <- DISEASE_SHORT_NAMES$disease[d]
-    dmeasure <- disease_measures_list[dm] %>% as.character() %>% tolower
-
-      
-      
-      var_rate <- c(paste(tolower(paste(dmeasure, "rate", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
-      var_med <- c(paste(tolower(paste(dmeasure, "med", DISEASE_SHORT_NAMES$sname[d], sep = "_"))))
-      
-      
-      if ((var_rate == "deaths_rate_mjdd" || var_rate == "ylds (years lived with disability)_rate_mjdd")){
-      }
-      else{
-    gbd_data[[var_rate]] <- gbd_data[[var_med]] / 
-        gbd_data$population_number
-    }
-  }
-}
 
 # ---- chunk 1.6 Get Disbayes output ----
 

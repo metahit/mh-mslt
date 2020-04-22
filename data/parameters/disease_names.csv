@@ -13,7 +13,7 @@ cardiovascular diseases,crdd,0,NA,no_pif,1,1
 ischemic heart disease,ishd,0,Ischemic heart disease,ihd,1,1
 stroke,strk,0,Stroke,stroke,1,1
 ischemic stroke,iscs,0,NA,no_pif,1,1
-hypertensive heart disease,hyhd,0,NA,no_pif,1,1
+hypertensive heart disease,hyhd,3,NA,no_pif,1,1
 breast cancer,brsc,0,Breast cancer,breast,0,1
 uterine cancer,utrc,0,Uterine cancer,endo,0,1
 prostate cancer,prsc,0,NA,no_pif,1,1
@@ -29,4 +29,4 @@ other road injuries,otri,1,NA,other,1,1
 stomach cancer,stmc,0,NA,no_pif,1,1
 liver cancer,lvrc,0,NA,no_pif,1,1
 "tracheal, bronchus, and lung cancer",tbalc,0,"Tracheal, bronchus, and lung cancer",lc,1,1
-major depressive disorder,mjdd,0,NA,no_pif,1,1
+major depressive disorder,mjdd,3,NA,no_pif,1,1

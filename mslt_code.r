@@ -20,15 +20,6 @@ if (interactive()) {
 }
 conflict_prefer("filter", "dplyr")
 
-## Packages for generation of epi inputs
-require(devtools)
-require(rstan)
-require(Rcpp)
-require(codetools)
-
-##Additional code to make disbayes work (includes ci2num to create Credible Intervals?)
-#install_github("chjackson/disbayes")
-library(disbayes)
 
 
 rm (list = ls())
@@ -62,7 +53,7 @@ i_sex <- c('male', 'female')
 
 ### test with one city region (CHECK WITH ALI best approach to link with the rest of the model)
 
-MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_england.csv"))
+MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_bristol.csv"))
 
 # ---- chunk-2 ----
 

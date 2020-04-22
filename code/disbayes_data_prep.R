@@ -1,5 +1,9 @@
 # ---- chunk-Introduction: Disbayes data generation generation ----
-
+library(rlist)
+library(tidyr)
+library(devtools)
+### Works in virtual machine, not in work windows
+#library(disbayes)
 ## The below code generates data to use as inputs in disbayes.
 
 
@@ -12,6 +16,8 @@
 
 # ---- chunk-1: Disbayes input generation ----
 
+i_sex <- c('male', 'female')
+
 # ---- chunk-1.2: Generate city regions dataframes in a list ----
 
 index <- 1
@@ -21,8 +27,7 @@ disbayes_input_list_city_regions <- list()
 for (i in 1:length(gbd_city_region_data_agg)) {
   
   disbayes_input_list_city_regions[[index]] <- GenInpDisbayes(gbd_city_region_data_agg[[i]])
-  # disbayes_input_list_city_regions[[index]]$cityregion <- paste(names(gbd_city_region_data_agg[i]))
-  # # disbayes_input_list_city_regions[[index]]$cityregion<- paste0(names(gbd_city_region_data_agg[i]))
+
   
   names(disbayes_input_list_city_regions)[index] <- paste0(names(gbd_city_region_data_agg[i]))
   
@@ -39,7 +44,7 @@ disbayes_input_list_city_regions[[i]][[j]]$cityregion <- paste(names(disbayes_in
   }
 } 
 
-# ---- chunk-1.2.2: Generate num and denom using ci2num for incidence, prevalence and mortlaity ----
+# ---- chunk-1.2.2: Generate num and denom using ci2num for incidence, prevalence and mortality ----
 
 
 disbayes_input_list_city_regions_2 <- list()
@@ -51,10 +56,7 @@ for (i in 1:length(gbd_city_region_data)) {
       
       ### exclude ylds for now, we are interested in disbayes inputs but later may use ylds uncertainty parameters
       
-      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)" ||
-          DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease" || 
-          DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder")
-        {
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 0 || in_measure == "ylds (years lived with disability)"){
       }
       else {
         
@@ -94,21 +96,42 @@ disbayes_input_list_city_regions_3  <- lapply(disbayes_input_list_city_regions_2
 
 # ---- chunk-1.2.5: Create a dataframe with all city regions data ----
 
-## This step is to delete the data frames with errors from the list before appending the data frames in the list in a unique dataframe.
-has_prevc <- c(grepl("prevalence",names(disbayes_input_list_city_regions_3)) == TRUE) %>% as.character()
+### Old code, I was deleting all prevalence data frames, now deleting all null 
+
+# ## This step is to delete the data frames with errors from the list before appending the data frames in the list in a unique dataframe.
+# has_prevc <- c(grepl("prevalence",names(disbayes_input_list_city_regions_3)) == TRUE) %>% as.character()
+# 
+# index <- 1
+# disbayes_input_list_city_regions_3b <- list()
+# 
+# for (i in 1:length(disbayes_input_list_city_regions_3)) {
+# 
+#   if(has_prevc[[index]] == "TRUE" ) {}
+#   else{
+# 
+# disbayes_input_list_city_regions_3b[[index]] <- disbayes_input_list_city_regions_3[[i]]
+#   }
+# index <- index + 1
+# }
+
+
+
+#### Try to remove if not data frame
 
 index <- 1
 disbayes_input_list_city_regions_3b <- list()
 
 for (i in 1:length(disbayes_input_list_city_regions_3)) {
-
-  if(has_prevc[[index]] == "TRUE" ) {}
+  
+  if(NCOL(disbayes_input_list_city_regions_3[[i]]) != as.numeric(4)) {}
   else{
-
-disbayes_input_list_city_regions_3b[[index]] <- disbayes_input_list_city_regions_3[[i]]
+    
+    disbayes_input_list_city_regions_3b[[index]] <- disbayes_input_list_city_regions_3[[i]]
   }
-index <- index + 1
+  index <- index + 1
 }
+
+
 
 disbayes_input_list_city_regions_3b <-  list.clean(disbayes_input_list_city_regions_3b, fun = is.null, recursive = TRUE)
 
@@ -209,10 +232,10 @@ disbayes_inputs_df <- lapply(disbayes_inputs_df, function(x) { x["disease"] <- N
 disbayes_inputs_df <- dplyr::bind_rows(disbayes_inputs_df)
 
 ### CHECK WHAT HAPPENEND WITH CITY REGIONS AND THATN INDEX IS THE SAME AS IN DISBAYES INPUT DATAFRAME2
-disbayes_inputs_df$index <- paste(disbayes_inputs_df$sex_disease, disbayes_inputs_df$age, disbayes_inputs_df$cityregion, sep = "_")
+disbayes_inputs_df$index <- paste(disbayes_inputs_df$sex_disease, disbayes_inputs_df$age_cat, disbayes_inputs_df$cityregion, sep = "_")
 ## Second data set with num and denom
 disbayes_inputs_df2 <- do.call(rbind, disbayes_input_list2)
-disbayes_inputs_df2 <-   disbayes_inputs_df2[ -c(1:5,10) ]
+disbayes_inputs_df2 <-   disbayes_inputs_df2[ -c(1:2,4,5,12) ]
 
 
 ## Final data set to process in disbayes. Filter data by city region, disease and sex. COMPARE with saved data in rds
@@ -222,9 +245,13 @@ disbayes_inputs <- disbayes_inputs_df %>%
 
 disbayes_inputs <- disbayes_inputs[, !(colnames(disbayes_inputs ) %in% c("drop","index"))]
 
+colnames(disbayes_inputs)[which(names(disbayes_inputs =="age_cat"))] <- "age"
+
 
 write_rds(disbayes_inputs, paste0(relative_path_mslt, "data/city regions/Input disbayes/disbayes_inputs", ".rds"))
 
 
-
+##### These just to compare that updates in data and code do not modify original results. 
+compare_old <- dplyr::filter(disbayes_inputs, sex == "male", disease == "crdd", cityregion == "bristol")
+compare_new <- dplyr::filter(disbayes_inputs_original, sex == "male", disease == "crdd", cityregion == "bristol")
 
