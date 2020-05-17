@@ -167,21 +167,21 @@ RunLocDf <- function(i_data) {
 ## We use this function to generate disbayes outcomes that account for inputs (GBD) uncertainty when aggregating areas (e.g. UK localities)
 
 
-ci2num <- function(est, lower, upper){
-  vals <- c(lower, est, upper) 
-  probs <- c(0.025, 0.5, 0.975)
-  bet <- SHELF::fitdist(vals=vals, probs=probs, lower=0, upper=1)$Beta
-  apost <- bet$shape1
-  bpost <- bet$shape2
-  aprior <- bprior <- 0.5
-  r <- round(apost - aprior)
-  n <- round(bpost - bprior + r)
-  list(num=r, denom=n)
-}
-
-est2num <- function(est, n){
-  list(num=est/n, denom=n)
-}
+# ci2num <- function(est, lower, upper){
+#   vals <- c(lower, est, upper) 
+#   probs <- c(0.025, 0.5, 0.975)
+#   bet <- SHELF::fitdist(vals=vals, probs=probs, lower=0, upper=1)$Beta
+#   apost <- bet$shape1
+#   bpost <- bet$shape2
+#   aprior <- bprior <- 0.5
+#   r <- round(apost - aprior)
+#   n <- round(bpost - bprior + r)
+#   list(num=r, denom=n)
+# }
+# 
+# est2num <- function(est, n){
+#   list(num=est/n, denom=n)
+# }
 
 
 Ci2NumDF <- function(in_data) {
@@ -193,8 +193,8 @@ Ci2NumDF <- function(in_data) {
     
     # browser()
     
-    mutate(num=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[1]])) %>%
-    mutate(denom=ifelse(b==0,0,ci2num(b/a,c/a,d/a)[[2]])) %>%
+    mutate(num=ifelse(b==0,0,disbayes:::ci2num(b/a,c/a,d/a)[[1]])) %>%
+    mutate(denom=ifelse(b==0,0,disbayes:::ci2num(b/a,c/a,d/a)[[2]])) %>%
     mutate(population_number = a) %>%
     mutate(sex_age_cat = e) %>%
     mutate(cityregion = f) %>%
@@ -234,24 +234,7 @@ GenInpDisbayes <- function(i_data) {
         ## Add column to show disease
         
         disbayes_input_list[[index]]$disease <- paste0(DISEASE_SHORT_NAMES$sname[d])
-        
-        
-        
-        ## Change column names to match disbayes code (THIS WILL CHANGE AS WE CAN USE NUMBERS DIRECTLY, WITH POPULATION DATA)
-        
-        ## Calculate rates
-        
-        # 
-        # disbayes_input_list[[index]]$inc <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "hypertensive heart disease", 0 , 
-        #                                            disbayes_input_list[[index]][[tolower(paste0("incidence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-        #                                              disbayes_input_list[[index]][["population_number"]])
-        # disbayes_input_list[[index]]$mort <- ifelse(DISEASE_SHORT_NAMES$disease[d] == "major depressive disorder", 0 , 
-        #                                             disbayes_input_list[[index]][[tolower(paste0("deaths_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-        #                                               disbayes_input_list[[index]][["population_number"]])
-        # disbayes_input_list[[index]]$prev <- disbayes_input_list[[index]][[tolower(paste0("prevalence_med_", DISEASE_SHORT_NAMES$sname[d]))]]/
-        #   disbayes_input_list[[index]][["population_number"]]
-        
-        ### USE these if we can have rates in the aggreagate data
+      
         
         
         colnames(disbayes_input_list[[index]])[colnames(disbayes_input_list[[index]])== tolower(paste0("incidence_rate_", 
@@ -363,96 +346,88 @@ conflict_prefer("rename", "dplyr")
 #### CODE for packaged disbayes
 
 GenOutDisbayes <- function(i_data) {
-  
-    disbayes_output_list <- list()
-    index_f <- 1
-    
-    for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-      for (sex_index in i_sex){
-        
-        data <- i_data
-        if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0){
-resu <- disbayes(dat = data,
-                 
-                 ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
-                 inc = "inc", 
-                 inc_denom = "pop", 
-                 prev_num = "prevn", 
-                 prev_denom = "prevdenom",
-                 mort = "mort",
-                 mort_denom = "pop",
-                 
-                 ## You'll need to change this for different diseases:
-                 ## the age below which all case fatalities are
-                 ## assumed equal in the smoothed model 
-                 eqage = 30, 
-                 smooth = TRUE  # or FALSE if don't want smoothed estimates
-)
-
-## Posterior medians and 95% credible intervals for all unknowns in the model
-disbayes_output_list[[index_f]] <- summary(resu)
-
-disbayes_output_list[[index_f]]$area <- i_data$city_region
-disbayes_output_list[[index_f]]$sex <- i_data$sex
-disbayes_output_list[[index_f]]$disease <- i_data$disease
-
-
-index_f <- index_f + 1
-        }
+  disbayes_output_list <- list()
+  index_f <- 1
+  for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+    for (sex_index in i_sex){
+      if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0 || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other'){
       }
-    }
-    return(disbayes_output_list)
-}
-
-
-#### OLD CODE
-
-GenOutDisbayes <- function(i_data) {
-
-
-disbayes_output_list <- list()
-index_f <- 1
-
-for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-  for (sex_index in i_sex){
-    
-    data <- i_data
-    
-    # disbayes_input_list[[index]]
-    
-    if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0){
-      
-      datstan <- c(as.list(data), nage=nrow(data))
-      inits <- list(
-        list(cf=rep(0.0101, datstan$nage)),
-        list(cf=rep(0.0201, datstan$nage)),
-        list(cf=rep(0.0056, datstan$nage)),
-        list(cf=rep(0.0071, datstan$nage))
-      )
-      gbdcf <- stan("disbayes-master/gbdcf-unsmoothed.stan", data=datstan, init=inits)
-      
-      ## Extract Summary statistics
-      
-      ## Add directly to dibayes input list, first 100 observations? Check with Chris
-      disbayes_output_list[[index_f]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
-      
-      
-      ## add disease names
-      disbayes_output_list[[index_f]]$disease <- DISEASE_SHORT_NAMES$sname[d]
-      
-      ## add sex
-      disbayes_output_list[[index_f]]$sex <- sex_index
-      
-      ## create sex and disease category to then join to input for disease life table dataset
-      
-      disbayes_output_list[[index_f]]$sex_disease <- paste(sex_index, DISEASE_SHORT_NAMES$sname[d], sep = "_")
-      
-      index_f <- index_f + 1
+      else {
+        data <- i_data
+        resu <- disbayes:::disbayes(dat = data,
+                                    ## You can supply either estimates and denominators, or estimates with credible intervals, or numerators and denominators.  See help(disbayes)
+                                    inc = "inc",
+                                    inc_denom = "pop",
+                                    prev_num = "prevn",
+                                    prev_denom = "prevdenom",
+                                    mort = "mort",
+                                    mort_denom = "pop",
+                                    ## You'll need to change this for different diseases:
+                                    ## the age below which all case fatalities are
+                                    ## assumed equal in the smoothed model
+                                    eqage = 30,
+                                    smooth = TRUE  # or FALSE if don't want smoothed estimates
+        )
+        ## Posterior medians and 95% credible intervals for all unknowns in the model
+        disbayes_output_list[[index_f]] <- disbayes:::summary.disbayes(resu)
+        # disbayes_output_list[[index_f]]$area <- i_data$cityregion
+        # disbayes_output_list[[index_f]]$sex <- i_data$sex
+        # disbayes_output_list[[index_f]]$disease <- i_data$disease
+        index_f <- index_f + 1
       }
     }
   }
   return(disbayes_output_list)
 }
+
+#### OLD CODE
+
+# GenOutDisbayes <- function(i_data) {
+# 
+# 
+# disbayes_output_list <- list()
+# index_f <- 1
+# 
+# for (d in 1:nrow(DISEASE_SHORT_NAMES)){
+#   for (sex_index in i_sex){
+#     
+#     data <- i_data
+#     
+#     # disbayes_input_list[[index]]
+#     
+#     if (DISEASE_SHORT_NAMES$is_not_dis[d] == 0){
+#       
+#       datstan <- c(as.list(data), nage=nrow(data))
+#       inits <- list(
+#         list(cf=rep(0.0101, datstan$nage)),
+#         list(cf=rep(0.0201, datstan$nage)),
+#         list(cf=rep(0.0056, datstan$nage)),
+#         list(cf=rep(0.0071, datstan$nage))
+#       )
+#       gbdcf <- stan("disbayes-master/gbdcf-unsmoothed.stan", data=datstan, init=inits)
+#       
+#       ## Extract Summary statistics
+#       
+#       ## Add directly to dibayes input list, first 100 observations? Check with Chris
+#       disbayes_output_list[[index_f]] <- as.data.frame(summary(gbdcf)$summary)[c(1:101, 420:519), c(6,4,8)]
+#       
+#       
+#       ## add disease names
+#       disbayes_output_list[[index_f]]$disease <- DISEASE_SHORT_NAMES$sname[d]
+#       
+#       ## add sex
+#       disbayes_output_list[[index_f]]$sex <- sex_index
+#       
+#       ## create sex and disease category to then join to input for disease life table dataset
+#       
+#       disbayes_output_list[[index_f]]$sex_disease <- paste(sex_index, DISEASE_SHORT_NAMES$sname[d], sep = "_")
+#       
+#       index_f <- index_f + 1
+#       }
+#     }
+#   }
+#   return(disbayes_output_list)
+# }
 
 # ---- GenMSLTDF ----
 

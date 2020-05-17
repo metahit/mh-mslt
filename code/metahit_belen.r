@@ -1,10 +1,8 @@
 library(devtools)
-install_github("chjackson/disbayes")
+# install_github("chjackson/disbayes")
 options(mc.cores = parallel::detectCores()) # set if you have multi-core computer. enables Stan to run faster 
 
-datadir <- "/scratch/chris/chronic/mh-mslt/data/city regions/Input disbayes"
-fp <- file.path(datadir,"bristol_male_ishd.rds")
-dat <- readRDS(fp)
+
 
 ## One example disbayes run - to show how it works
 ## Bristol, male, IHD
@@ -13,7 +11,7 @@ dat <- readRDS(fp)
 ## (2): smoothed: case fatality assumed to be a smooth spline function of age.   Should give more precise estimates, but won't work if the data are weak 
 
 library(disbayes)
-dat <- disbayes::ihdbristol
+dat <- dplyr::filter(disbayes_inputs, disease == "brsc", sex == "female", cityregion == "bristol")
 
 resu <- disbayes:::disbayes(dat = dat,
                  
@@ -33,13 +31,14 @@ resu <- disbayes:::disbayes(dat = dat,
                  )
 
 ## Posterior medians and 95% credible intervals for all unknowns in the model
-summ <- summary(resu) 
+summ <- disbayes:::summary.disbayes(resu)
 
 ## Handy tool to extract specific variables from this 
-summary(resu, vars=c("cf","inc")) 
+output <- disbayes:::summary.disbayes(resu, vars=c("cf","inc")) 
 
 ## Plot smoothed and unsmoothed estimates 
-plot(resu)
+disbayes:::plot.disbayes(resu)
+
 
 ## Plot just smoothed estimates
 plot(summ, variable="cf")

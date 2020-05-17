@@ -28,7 +28,10 @@ library(dplyr)
 library(tidyverse)
 library(conflicted)
 
-source('code/functions.R')
+setwd(getwd())
+
+source('mh-mslt/code/functions.R')
+
 
 # ---- chunk-1: Data preparation ----
 
@@ -36,8 +39,8 @@ source('code/functions.R')
 
 ## Relative paths
 
-relative_path_execute <- '../mh-execute/'
-relative_path_mslt <- '../mh-mslt/'
+relative_path_execute <- paste0(getwd(),'/mh-execute/')
+relative_path_mslt <- paste0(getwd(),'/mh-mslt/')
 
 ## Get look up table from mh-execute
 
@@ -76,13 +79,14 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 ## Defining folder where the data is stored (stored externally in my dropbox as the GBD files are large)
 ## CHANGE TO v-DRIVE
 
-work_folder <- "C:/Users/e95517/"
-home_folder <- "C:/Users/Bele/"
+work_folder <- "C:/Users/e95517/Dropbox/"
+home_folder <- "C:/Users/Bele/Dropbox/"
 v_folder <- "V:/Studies/MOVED/HealthImpact/Data/Global_Burden_Disease_Metahit/"
+vm_folder <- "/media/sf_Dropbox/"
 
 ## Change folder to work or home
 # CHANGE DATA FOLDER
-data_folder <- paste0(work_folder, "Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/")
+data_folder <- paste0(vm_folder, "Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
 gbdfile_name_new <- "IHME-GBD_2017_DATA-3e0b192d-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
@@ -105,7 +109,7 @@ for (i in 1:5) { # LOOP NUMBER DEPENDS ON NUMBER OF ZIP FILES, HERE I JUST GOT D
   file.remove(paste0(temp_folder,"/", gbdfile_name_new, i, ".csv"))
   data_read <- subset(data_read, location_name %in% local_goverment_areas$location) # location name is easier to identify
   
-  data_extracted_new <- rbind(data_extracted_new,data_read)
+  data_extracted_new <- rbind(data_extracted_new, data_read)
 }
 
 unlink(paste0(temp_folder), recursive = TRUE)
@@ -163,7 +167,7 @@ DISEASE_SHORT_NAMES$acronym <- word(DISEASE_SHORT_NAMES$acronym, 1)
 
 DISEASE_SHORT_NAMES$males <- ifelse(DISEASE_SHORT_NAMES$disease %in% c("breast cancer", "uterine cancer"), 0, 1)
 
-DISEASE_SHORT_NAMES$females <- 1
+DISEASE_SHORT_NAMES$females <- ifelse(DISEASE_SHORT_NAMES$disease %in% c("prostate cancer"), 0, 1)
 
 DISEASE_SHORT_NAMES$sname <- gsub("'", '', DISEASE_SHORT_NAMES$sname)
 
