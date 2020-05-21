@@ -28,10 +28,9 @@ library(dplyr)
 library(tidyverse)
 library(conflicted)
 
-setwd(getwd())
 
-source('mh-mslt/code/functions.R')
-
+source('code/functions_data_prep.R')
+setwd("C:/Metahit/")
 
 # ---- chunk-1: Data preparation ----
 
@@ -39,12 +38,12 @@ source('mh-mslt/code/functions.R')
 
 ## Relative paths
 
-relative_path_execute <- paste0(getwd(),'/mh-execute/')
+relative_path_execute <- paste0(getwd(), '/mh-execute/')
 relative_path_mslt <- paste0(getwd(),'/mh-mslt/')
 
 ## Get look up table from mh-execute
 
-look_up_table <- read_csv(paste0(relative_path_execute, 'inputs/mh_regions_lad_lookup.csv'))
+look_up_table <- read_csv(paste0(relative_path_execute, '/inputs/mh_regions_lad_lookup.csv'))
 
 ## Dataframe with local goverment areas within each city region
 

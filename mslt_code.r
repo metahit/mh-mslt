@@ -1,20 +1,21 @@
 
 
 # ---- chunk-intro ----
+## Packages to run MSLT code below
 
-require(ggpubr)
-require(ggplot2)
-require(arsenal)
-require(janitor)
-require(dplyr)
-require(conflicted)
-require(rlist)
-require(reshape)
-require(reshape2)
-require(zoo)
-require(stringi)
-require(tidyverse)
-require(rlist)
+# library(ggpubr)
+library(ggplot2)
+# library(arsenal)
+# library(janitor)
+# library(dplyr)
+library(conflicted) # KEEP HERE
+# library(rlist)
+# library(reshape)
+# library(reshape2)
+# library(zoo)
+# library(stringi)
+# library(tidyverse)
+# library(rlist)
 if (interactive()) {
   require(conflicted)
 }
@@ -28,8 +29,9 @@ options(scipen=999)
 # ---- chunk-1 ----
 
 ## Functions
+#!!BZ: error with PlotOutput_compiled
 
-source('code/functions.R')
+source('code/MSLT_functions.R')
 
 ## Data 
 
@@ -52,6 +54,8 @@ i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92
 i_sex <- c('male', 'female')
 
 ### test with one city region (CHECK WITH ALI best approach to link with the rest of the model)
+
+### REPLACE WITH ALL CITY REGIONS AS IN PER METAHIT-EXECUTE
 
 MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_bristol.csv"))
 
@@ -493,13 +497,18 @@ for (iage in i_age_cohort){
     # modify idata's mortality and pyld total for the said scenario
     td2 <- MSLT_DF
     # td2 <- subset(td2, select = -c(mx, pyld_rate))
-    td2[td2$age >= iage & td2$sex == isex,][[paste('mx')]] <- general_life_table_list_bl[[index]]$mx + mx_sc_total_disease[[index]]$total + mx_sc_total_non_disease[[index]]$total
-    td2[td2$age >= iage & td2$sex == isex,][[paste('pyld_rate')]] <- general_life_table_list_bl[[index]]$pyld_rate + pylds_sc_total_disease[[index]]$total + pylds_sc_total_non_disease[[index]]$total
+    td2[td2$age >= iage & td2$sex == isex,][[paste('mx')]] <- general_life_table_list_bl[[index]]$mx + 
+                                                              mx_sc_total_disease[[index]]$total + 
+                                                              mx_sc_total_non_disease[[index]]$total
+    
+    td2[td2$age >= iage & td2$sex == isex,][[paste('pyld_rate')]] <- general_life_table_list_bl[[index]]$pyld_rate + 
+                                                                    pylds_sc_total_disease[[index]]$total + 
+                                                                    pylds_sc_total_non_disease[[index]]$total
+    
     
     # Instead of idata, feed td to run scenarios
     general_life_table_list_sc[[index]] <- RunLifeTable(in_idata = td2, in_sex = isex, in_mid_age = iage)
     #
-    
     names(general_life_table_list_sc)[index] <- paste(iage, isex, sep = '_')
     
     
@@ -528,7 +537,7 @@ index_n <- 1
 sc_cols <- which(colnames(disease_life_table_list_sc[[index]])%in%c('age', 'sex', 'incidence_disease', 'mx', 'px'))
 bl_cols <- which(colnames(disease_life_table_list_bl[[index]])%in%c('incidence_disease', 'mx', 'px'))
 l_sc_cols <- which(colnames(general_life_table_list_sc[[l_index]])%in%c('Lx', 'Lwx', 'ex', 'ewx'))
-l_bl_cols <- which(colnames(general_life_table_list_bl[[l_index]])%in%c('Lx', 'Lwx', 'ewx'))
+l_bl_cols <- which(colnames(general_life_table_list_bl[[l_index]])%in%c('Lx', 'Lwx', 'ex', 'ewx'))
 
 for (iage in i_age_cohort){
   for (isex in i_sex){
@@ -788,15 +797,24 @@ for (iage in i_age_cohort){
     
     names(output_burden_lf_sc)[names(output_burden_lf_sc) == 'Lx'] <- paste('Lx', 'sc', sep = '_')
     names(output_burden_lf_sc)[names(output_burden_lf_sc) == 'Lwx'] <- paste('Lwx', 'sc', sep = '_')
+    names(output_burden_lf_sc)[names(output_burden_lf_sc) == 'ex'] <- paste('ex', 'sc', sep = '_')
+    names(output_burden_lf_sc)[names(output_burden_lf_sc) == 'ewx'] <- paste('ewx', 'sc', sep = '_')
     
     output_burden_lf_bl <- general_life_table_list_bl[[l_index]][,l_bl_cols]
     
     names(output_burden_lf_bl)[names(output_burden_lf_bl) == 'Lx'] <- paste('Lx', 'bl', sep = '_')
     names(output_burden_lf_bl)[names(output_burden_lf_bl) == 'Lwx'] <- paste('Lwx', 'bl', sep = '_')
+    names(output_burden_lf_bl)[names(output_burden_lf_bl) == 'ex'] <- paste('ex', 'bl', sep = '_')
+    names(output_burden_lf_bl)[names(output_burden_lf_bl) == 'ewx'] <- paste('ewx', 'bl', sep = '_')
     
-    
+    ### Difference in life years and health adjusted life years for all evey cohort year
     output_burden_lf_sc$Lx_diff <- general_life_table_list_bl[[l_index]]$Lx - general_life_table_list_sc[[l_index]]$Lx
     output_burden_lf_sc$Lwx_diff <- general_life_table_list_bl[[l_index]]$Lwx - general_life_table_list_sc[[l_index]]$Lwx
+    
+    ### Difference in life expectancy and health adjusted life expectancy for first year of cohort (show in results)
+    output_burden_lf_sc$ex_diff <- general_life_table_list_bl[[l_index]]$ex - general_life_table_list_sc[[l_index]]$ex
+    output_burden_lf_sc$ewx_diff <- general_life_table_list_bl[[l_index]]$ewx - general_life_table_list_sc[[l_index]]$ewx
+    
     
     output_burden_sc <- cbind(output_burden_sc, output_burden_lf_sc)
     output_burden_sc <- cbind(output_burden_sc, output_burden_lf_bl)
@@ -812,7 +830,7 @@ for (iage in i_age_cohort){
   }
 }
 
-# ---- chunk-11 ---- 
+# ---- chunk-11-Outputs ---- 
 
 ## Generate a data frame for all results
 
@@ -820,457 +838,513 @@ output_df <- plyr::ldply(output_burden, rbind)
 
 output_dir = 'output/'
 
-# ---- chunk-12 ----
+#### Add within each outcome subfolders for each city region
 
-## The script below aggregates all outcomes per year of simulation for all age and sex groups. 
-## For example, year one represents the totals for all cohorts in year one of the simulation. 
-## We can choose how many simulation years we want to show, for example, firts ten years. 
+# ---- chunk-11.1 Tables ----
 
-### Diseases totals generation of list with diseases totals over all years of simulation. 
+### Create age groups variable, easier to read
 
-i_outcome_d <- c('mx', 'inc')
-i_outcome_nd <- c('mx', 'ylds')
+output_df <-  output_df  %>%
+              separate(.id, c("Age group", "Gender"), "_", remove = FALSE) 
+output_df$`Age group` <- as.numeric(output_df$`Age group`)
 
-aggregate_frame_d_males <- list()
-aggregate_frame_d_females <- list()
+output_df$`Age group`[output_df$`Age group` == 17] <-"16-19"
+output_df$`Age group`[output_df$`Age group` == 22] <-"20-24"
+output_df$`Age group`[output_df$`Age group` == 27] <-"25-29"
+output_df$`Age group`[output_df$`Age group` == 32] <-"30-34"
+output_df$`Age group`[output_df$`Age group` == 37] <-"35-39"
+output_df$`Age group`[output_df$`Age group` == 42] <-"40-44"
+output_df$`Age group`[output_df$`Age group` == 47] <-"45-49"
+output_df$`Age group`[output_df$`Age group` == 52] <-"50-54"
+output_df$`Age group`[output_df$`Age group` == 57] <-"55-59"
+output_df$`Age group`[output_df$`Age group` == 62] <-"60-64"
+output_df$`Age group`[output_df$`Age group` == 67] <-"65-69"
+output_df$`Age group`[output_df$`Age group` == 72] <-"70-74"
+output_df$`Age group`[output_df$`Age group` == 77] <-"75-79"
+output_df$`Age group`[output_df$`Age group` == 82] <-"80-84"
+output_df$`Age group`[output_df$`Age group` == 87] <-"85-89"
+output_df$`Age group`[output_df$`Age group` == 92] <-"90-94"
+output_df$`Age group`[output_df$`Age group` == 97] <-"95 plus"
 
-index <- 1
+# ---- chunk-11.1.1 Life expectancy and health adjusted life expectancy ----
+#### Add uncertainty intervals
+### Life expectancy is for year one of simulation. For example, change in life expectancy for a female aged 16-19.
 
-for (ioutcome in i_outcome_d) {
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-    if (DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
-    }
-    else{
-      
-      aggregate_frame_d_males[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'male', in_outcomes = c(paste(ioutcome, 'num', 'bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, 'num', 'sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, 'num', 'diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')))
-      
-      aggregate_frame_d_females[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'female', in_outcomes = c(paste(ioutcome, 'num', 'bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, 'num', 'sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, 'num', 'diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')))
-      
-      # Keep totals only
-      aggregate_frame_d_males[[index]] <- aggregate_frame_d_males[[index]] %>% dplyr::select(contains('total'))
-      
-      aggregate_frame_d_females[[index]] <- aggregate_frame_d_females[[index]] %>% dplyr::select(contains('total'))
-      
-      index <- index + 1
-    }
-  }
-}
-
-
-### Non-diseases totals generation of list with diseases totals
-
-aggregate_frame_nd_males <- list()
-aggregate_frame_nd_females <- list()
-
-index <- 1
-
-for (ioutcome in i_outcome_nd) {
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-    ## Exclude chronic disease and all-cause mortality and  pyld
-    if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
-    }
-    else {
-      
-      aggregate_frame_nd_males[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'male', in_outcomes = c(paste(ioutcome, 'num', 'bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, 'num', 'sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, 'num', 'diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')))
-      
-      aggregate_frame_nd_females[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'female', in_outcomes = c(paste(ioutcome, 'num', 'bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, 'num', 'sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, 'num', 'diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')))
-      
-      # Remove non-numeric columns starting with age and sex
-      aggregate_frame_nd_males[[index]] <- aggregate_frame_nd_males[[index]] %>% dplyr::select(contains('total'))
-      
-      aggregate_frame_nd_females[[index]] <- aggregate_frame_nd_females[[index]] %>% dplyr::select(contains('total'))
-      
-      index <- index + 1
-    }
-  }
-}
+output_life_expectancy_change <- output_df[!duplicated(output_df$.id), c("Age group", "Gender", "ex_bl", "ex_sc", "ewx_bl", "ewx_sc", 
+                                  "ex_diff", "ewx_diff")] %>%
+                          dplyr::rename(`Life expectancy at baseline` = ex_bl, 
+                                        `Life expectancy scenario` = ex_sc, 
+                                        `Health adjusted life expectancy baseline` = ewx_bl, 
+                                        `Health adjusted life expectancy scenario` = ewx_sc, 
+                                        `Difference in life expectancy` = ex_diff, 
+                                        `Difference in health adjusted life expectancy` = ewx_diff) %>% 
+                                          mutate_if(is.numeric, round, digits = 3)
 
 
+output_life_expectancy_change <- output_life_expectancy_change[order(output_life_expectancy_change$Gender),]
 
-### Life years and health adjusted life years totals generation of list by sex and outcome. 
+saveRDS(output_life_expectancy_change, paste0(output_dir, "tables/life_expectancy/life_expectancy_change.Rds"))
 
-i_outcome_lys <- c('Lx', 'Lwx')
+# ---- chunk-11.1.2 Life years and health adjusted life years ----
+#### Add uncertainty intervals
+#### Accumulated over the life of the cohort. For example, total life years change for females 16-19 over their life course
 
-aggregate_frame_males_lys <- list()
-aggregate_frame_females_lys <- list()
+output_life_years_change <- output_df %>% 
+                      group_by(Gender, `Age group`) %>%
+                      summarise_if(is.numeric, funs(sum)) %>%
+                      dplyr::select(`Age group`, Gender, Lx_diff, Lwx_diff) %>%
+                      dplyr::rename(`Life years` = Lx_diff, 
+                      `Health adjusted life years` = Lwx_diff)  %>% 
+                      mutate_if(is.numeric, round)
 
-for (i in i_outcome_lys){
+
+saveRDS(output_life_years_change, paste0(output_dir, "tables/life_years/output_life_years_change.Rds"))
+
+# ---- chunk-11.1.2 Diseases deaths, incidence and ylds (lri) ----
+#### Add uncertainty intervals
+#### Accumulated over the life of the cohort. For example, total life years change for females 16-19 over their life course
+
+### Vector with diseases (may be a better way for this)
+
+### hard coded matches, best not to
+output_diseases_change <- output_df %>% 
+  group_by(Gender, `Age group`) %>%
+  summarise_if(is.numeric, funs(sum)) %>%
+  dplyr::select(`Age group`, Gender, matches("diff_dmt2|diff_ishd|diff_strk|diff_carc|diff_copd|diff_tbalc|diff_brsc|diff_utrc|diff_lri"))
+
+saveRDS(output_diseases_change, paste0(output_dir, "tables/diseases/output_diseases_change.Rds"))
+
+# ---- chunk-11.1.3 Injuries deaths and ylds ----
+#### Add uncertainty intervals
+#### Accumulated over the life of the cohort. For example, total life years change for females 16-19 over their life course
+
+### Vector with diseases (may be a better way for this)
+
+### hard coded matches, best not to
+output_injuries_change <- output_df %>% 
+  group_by(Gender, `Age group`) %>%
+  summarise_if(is.numeric, funs(sum)) %>%
+  dplyr::select(`Age group`, Gender, matches("diff_pedestrian|diff_cyclist|diff_motorcyclist|diff_motor"))
   
-  aggregate_frame_males_lys[[i]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'male', in_outcomes = c(paste(i, 'bl', sep = '_'), paste(i, 'sc', sep = '_'), paste(i, 'diff',sep = '_')))
-  
-  aggregate_frame_females_lys[[i]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'female', in_outcomes = c(paste(i, 'bl', sep = '_'), paste(i,  'sc', sep = '_'), paste(i, 'diff',sep = '_')))
-  
-  
-  aggregate_frame_males_lys[[i]] <- aggregate_frame_males_lys[[i]] %>% dplyr::select(contains('total'))
-  
-  aggregate_frame_females_lys[[i]] <- aggregate_frame_females_lys[[i]] %>% dplyr::select(contains('total'))
-  
-}
+saveRDS(output_injuries_change, paste0(output_dir, "tables/injuries/output_injuries_change.Rds"))
 
-## Transform lists to data frames including all aggregated outcomes by sex
-
-### Females
-
-aggregate_females_df <- do.call(cbind, c(aggregate_frame_d_females, aggregate_frame_nd_females, aggregate_frame_females_lys)) %>%
-  mutate(simulation_yr = c(1:84), sex = 'female')
-
-## Drop string added to Lx and Lwx column names (not sure why, but happens in this step)
-  
-names(aggregate_females_df) <-  gsub("Lx.total_Lx", "total_Lx", names(aggregate_females_df))
-names(aggregate_females_df) <-  gsub("Lwx.total_Lwx", "total_Lwx", names(aggregate_females_df))
-
-### Males
-
-aggregate_males_df <- do.call(cbind, c(aggregate_frame_d_males, aggregate_frame_nd_males, aggregate_frame_males_lys)) %>% 
-  mutate(simulation_yr = c(1:84), sex = 'male') 
-
-## Drop string added to Lx and Lwx column names (not sure why, but happens in this step)
-
-names(aggregate_males_df) <-  gsub("Lx.total_Lx", "total_Lx", names(aggregate_males_df))
-names(aggregate_males_df) <-  gsub("Lwx.total_Lwx", "total_Lwx", names(aggregate_males_df))
-
-
-# ---- chunk- 13 ----  
-
-## COHORT GRAPHS
-
-### DISEASE DEATHS AND INCIDENCE NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
-
-#### Define variables names
-bl <- 'num_bl'
-sc <- 'num_sc'
-diff <- 'num_diff'
-i_outcome_d <- c('mx', 'inc')
-
-
-for (iage in i_age_cohort){
-  for (isex in i_sex) {
-    for (ioutcome in i_outcome_d) {
-      for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-        
-        
-        if (isex == 'male' && (DISEASE_SHORT_NAMES$disease[d] %in% c('breast cancer', 'uterine cancer'))
-            || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
-        }
-        else{
-          
-          pdf(paste0(output_dir, DISEASE_SHORT_NAMES$sname[d],'_', isex, '_', iage, '_', ioutcome, '.pdf'),width=5.5,height=4)
-          
-          p_index  <- PlotOutput_compiled(in_data = output_df, in_age = iage, in_population = isex, in_outcomes = c('age', paste(ioutcome, bl, DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, sc, DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, diff, DISEASE_SHORT_NAMES$sname[d], sep = '_')), in_legend = ifelse(ioutcome == 'inc', 'Incidence', 'Deaths'), in_disease = DISEASE_SHORT_NAMES$disease[d])
-          
-          
-          ### Pdf is smaller and faster to save
-          # ggsave_compiled(p_index, file=paste0(output_dir, DISEASE_SHORT_NAMES$sname[d],'_', isex, '_', iage, '_', ioutcome, '.jpeg'), width = 14, height = 10, units = 'cm')
-          print(p_index)
-          dev.off()
-          
-        }
-      }
-    }
-  }
-}
-
-
-### NON-DISEASE DEATHS AND YLDS NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
-
-#### Define variables names
-bl <- 'num_bl'
-sc <- 'num_sc'
-diff <- 'num_diff'
-i_outcome_nd <- c('mx', 'ylds')
-
-
-for (iage in i_age_cohort){
-  for (isex in i_sex) {
-    for (ioutcome in i_outcome_nd) {
-      for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-        
-       
-        ## Exclude chronic disease and all-cause mortality and  pyld
-        if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
-        }
-        else {
-         
-          pdf(paste0(output_dir, DISEASE_SHORT_NAMES$acronym[d],'_', isex, '_', iage, '_', ioutcome, '.pdf'),width=5.5,height=4)
-           
-          p_index  <- PlotOutput(in_data = output_df, in_age = iage, in_population = isex, in_outcomes = c('age', paste(ioutcome, bl, DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, sc, DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, diff, DISEASE_SHORT_NAMES$acronym[d], sep = '_')), in_legend = ifelse(ioutcome == 'ylds', 'YLDs', 'Deaths'), in_disease = DISEASE_SHORT_NAMES$acronym[d])
-          
-          # ggsave(p_index, file=paste0(output_dir, DISEASE_SHORT_NAMES$acronym[d],'_', isex, '_', iage, '_', ioutcome, '.jpeg'), width = 14, height = 10, units = 'cm')
-          
-          print(p_index)
-          dev.off()
-          
-        }
-      }
-    }
-  }
-}
-
-# ---- chunk- 14 ----  
-
-## AGGREGATED GRAPHS
-
-### Females-diseases
-
-
-p_aggr_females_d_list <- list()
-index <- 1
-
-for (ioutcome in i_outcome_d) {
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-    
-    if (isex == 'male' && (DISEASE_SHORT_NAMES$disease[d] %in% c('breast cancer', 'uterine cancer'))
-        || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
-    }
-    else{
-    
-      pdf(paste0(output_dir, 'total_', DISEASE_SHORT_NAMES$sname[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
-      
-      p_aggr_females_d_list <- ggplot(aggregate_females_df[1:84,], aes(x = aggregate_females_df[['simulation_yr']])) +
-      
-      geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-      theme_classic() +
-      geom_hline(yintercept=0, linetype='dashed', color = 'black') +
-      geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-      geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-      xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
-      theme(plot.title = element_text(hjust = 0.5, size = 12)) +
-      scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
-      theme(plot.title = element_text(hjust = 0.5))
-      print(p_aggr_females_d_list)
-      dev.off()
-    
-    
-    
-    
-    
-    # p_aggr_females_list <- p_aggr_list_index
-    # index <- index + 1
-    # 
-    }
-  }
-}
-
-
-### Females-non_diseases
-
-p_aggr_females_nd_list <- list()
-index <- 1
-
-for (ioutcome in i_outcome_nd) {
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-    
-    if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
-    }
-    else {
-      
-      pdf(paste0(output_dir, 'total_', DISEASE_SHORT_NAMES$acronym[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
-      
-      p_aggr_females_nd_list <- ggplot(aggregate_females_df[1:84,], aes(x = aggregate_females_df[['simulation_yr']])) +
-        
-        geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
-        theme_classic() +
-        geom_hline(yintercept=0, linetype='dashed', color = 'black') +
-        geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
-        geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
-        xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
-        theme(plot.title = element_text(hjust = 0.5, size = 12)) +
-        scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
-        theme(plot.title = element_text(hjust = 0.5))
-      print(p_aggr_females_nd_list)
-      dev.off()
-      
-      
-      
-      
-      
-      # p_aggr_females_list <- p_aggr_list_index
-      # index <- index + 1
-      # 
-    }
-  }
-}
-
-### Males-diseases
-
-
-p_aggr_males_d_list <- list()
-index <- 1
-
-for (ioutcome in i_outcome_d) {
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-    
-    if (isex == 'male' && (DISEASE_SHORT_NAMES$disease[d] %in% c('breast cancer', 'uterine cancer'))
-        || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
-    }
-    else{
-      
-      pdf(paste0(output_dir, 'total_', DISEASE_SHORT_NAMES$sname[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
-      
-      p_aggr_males_d_list <- ggplot(aggregate_males_df[1:84,], aes(x = aggregate_males_df[['simulation_yr']])) +
-        
-        geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-        theme_classic() +
-        geom_hline(yintercept=0, linetype='dashed', color = 'black') +
-        geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-        geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-        xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
-        theme(plot.title = element_text(hjust = 0.5, size = 12)) +
-        scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
-        theme(plot.title = element_text(hjust = 0.5))
-      print(p_aggr_males_d_list)
-      dev.off()
-      
-      
-      
-      
-      
-      # p_aggr_males_list <- p_aggr_list_index
-      # index <- index + 1
-      # 
-    }
-  }
-}
-
-
-### Males-non_diseases
-
-p_aggr_males_nd_list <- list()
-index <- 1
-
-for (ioutcome in i_outcome_nd) {
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-    
-    if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
-    }
-    else {
-      
-      pdf(paste0(output_dir, 'total_', DISEASE_SHORT_NAMES$acronym[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
-      
-      p_aggr_males_nd_list <- ggplot(aggregate_males_df[1:84,], aes(x = aggregate_males_df[['simulation_yr']])) +
-        
-        geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
-        theme_classic() +
-        geom_hline(yintercept=0, linetype='dashed', color = 'black') +
-        geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
-        geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
-        xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
-        theme(plot.title = element_text(hjust = 0.5, size = 12)) +
-        scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
-        theme(plot.title = element_text(hjust = 0.5))
-      print(p_aggr_males_nd_list)
-      dev.off()
-      
-      
-      
-      
-      
-      # p_aggr_males_list <- p_aggr_list_index
-      # index <- index + 1
-      # 
-    }
-  }
-}
-
-##### DO LIFE YEAR, ALSO, SEE IF EVERYTHING CAN GBE DONE IN ONE LOOP FOR AGGREGATED
-
-
-
-
-# NO NEED FOR BELOW, BUT MAY NEED TO ADD NAMES TO VARIABLES IF AN AGGREGATED DATA FRAMES IS CREATED, NO NEED
+# # ---- chunk-11.2 Graphs ---- CHECK GRAPHS AND WHAT WE WANT
+# # ---- chunk-11.2.1 Graphs cohorts age and sex ----
 # 
-# ## Uncomment to check that the code is dropping the male/female ending.
-# # View(aggregate_frame_males)
+# ### DISEASE DEATHS AND INCIDENCE NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
 # 
-## Create a copy of aggregate_frame_females.
-total_aggr1 <- aggregate_frame_females
-## Add aggregate_frame_males values to it
-for (i in 1:ncol(aggregate_frame_females)){
-  total_aggr1[i] <- total_aggr1[i] + aggregate_frame_males[i]
-}
-
-## Add data frames 2 with life years (check adds Lx and Lwx at the beginning of the variable name)
-total_aggr2 <- aggregate_frame_females2
-## Add aggregate_frame_males values to it
-for (i in 1:ncol(aggregate_frame_females2)){
-  total_aggr2[i] <- total_aggr2[i] + aggregate_frame_males2[i]
-}
-
-## Combine data frames
-
-total_aggr <- cbind.data.frame(total_aggr1, total_aggr2)
-
-total_aggr$sim_year <- seq.int(nrow(total_aggr))
-
-
-## Uncomment to see total data frame
-View(total_aggr)
-
-## Test that total_aggr is adding males and females dataframes
-#
-# (aggregate_frame_females2$Lx.Lx_bl_22 + aggregate_frame_males2$Lx.Lx_bl_22) -total_aggr$Lx.Lx_bl_22
-
-
-
-
-# ---- chunk-16 ----
-
-### aDJUST THIS CODE TO FO FEMALES, MALES, DISEASE, NOS DISEASES AND UPDATE LIST OF OUTCOMES. 
-####This plot has to be customised to in_outcomes, here, only totals shown, but specifications are up to the user. ADD LOOP for all outcomes over time and total TABLE.
-
-####[] is used here to indicate the number of simulation years into the future.
-####Disease outcomes has to be changed to the outcome of interest
-
-#### Test code with loops for aggregated outcomes diseases burden. NOT WORKING.
-
-### Compare with loops for age and sex cohort outcomes.
-
-p_aggr_list <- list()
-index <- 1
-
-for (outcome in i_outcome_d) {
-  for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-
-    # outcome <- i_outcome[1]
-    # disease <- i_disease[1]
-    
-    p_aggr_list_index <- ggplot(total_aggr[1:79,], aes(x = total_aggr[['sim_year']])) +
-      
-      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-      theme_classic() +
-      geom_hline(yintercept=0, linetype='dashed', color = 'black') +
-      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-      geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
-      xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$sname[d], outcome)) +
-      theme(plot.title = element_text(hjust = 0.5, size = 12)) +
-      scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
-      theme(plot.title = element_text(hjust = 0.5))
-    p_aggr_list[[index]] <- p_aggr_list_index
-    index <- index + 1
-    
-    
-  }
-}
-
-index <- 1
-
-interpolation_index <- 1
-for (outcome in i_outcome_d) {
-  for (disease in i_disease) {
-    file_name = paste('output/graphs', 'Aggregated Outcomes', outcome, disease, '.jpeg', sep=' ')
-    jpeg(file_name)
-    print(p_aggr_list[[index]])
-    index <- index + 1
-    dev.off()
-  }
-}
-
-
-p_aggregated <- do.call(marrangeGrob, list(grobs=p_aggr_list, nrow = 2, ncol = 2))
-p_aggregated
-
-
-
-
-
-
+# #### Define variables names
+# bl <- 'num_bl'
+# sc <- 'num_sc'
+# diff <- 'num_diff'
+# i_outcome_d <- c('mx', 'inc')
+# 
+# 
+# for (iage in i_age_cohort){
+#   for (isex in i_sex) {
+#     for (ioutcome in i_outcome_d) {
+#       for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#         
+#         
+#         if (isex == 'male' && (DISEASE_SHORT_NAMES$disease[d] %in% c('breast cancer', 'uterine cancer'))
+#             || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
+#         }
+#         else{
+#           
+#           pdf(paste0(output_dir, 'graphs/cohorts/', DISEASE_SHORT_NAMES$sname[d],'_', isex, '_', iage, '_', ioutcome, '.pdf'),width=5.5,height=4)
+#           
+#           p_index  <- PlotOutput_compiled(in_data = output_df, in_age = iage, in_population = isex, in_outcomes = c('age', paste(ioutcome, bl, DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, sc, DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, diff, DISEASE_SHORT_NAMES$sname[d], sep = '_')), in_legend = ifelse(ioutcome == 'inc', 'Incidence', 'Deaths'), in_disease = DISEASE_SHORT_NAMES$disease[d])
+#           
+#           
+#           ### Pdf is smaller and faster to save than jpeg
+#           # ggsave_compiled(p_index, file=paste0(output_dir, DISEASE_SHORT_NAMES$sname[d],'_', isex, '_', iage, '_', ioutcome, '.jpeg'), width = 14, height = 10, units = 'cm')
+#           print(p_index)
+#           dev.off()
+#           
+#         }
+#       }
+#     }
+#   }
+# }
+# 
+# 
+# ### NON-DISEASE DEATHS AND YLDS NUMBERS: graphs by age and sex cohort, over the life course of cohort.  
+# 
+# #### Define variables names
+# bl <- 'num_bl'
+# sc <- 'num_sc'
+# diff <- 'num_diff'
+# i_outcome_nd <- c('mx', 'ylds')
+# 
+# 
+# for (iage in i_age_cohort){
+#   for (isex in i_sex) {
+#     for (ioutcome in i_outcome_nd) {
+#       for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#         
+#        
+#         ## Exclude chronic disease and all-cause mortality and  pyld
+#         if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
+#         }
+#         else {
+#          
+#           pdf(paste0(output_dir, 'graphs/cohorts/', DISEASE_SHORT_NAMES$acronym[d],'_', isex, '_', iage, '_', ioutcome, '.pdf'),width=5.5,height=4)
+#            
+#           p_index  <- PlotOutput(in_data = output_df, in_age = iage, in_population = isex, in_outcomes = c('age', paste(ioutcome, bl, DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, sc, DISEASE_SHORT_NAMES$acronym[d], sep = '_'), paste(ioutcome, diff, DISEASE_SHORT_NAMES$acronym[d], sep = '_')), in_legend = ifelse(ioutcome == 'ylds', 'YLDs', 'Deaths'), in_disease = DISEASE_SHORT_NAMES$acronym[d])
+#           
+#           # ggsave(p_index, file=paste0(output_dir, DISEASE_SHORT_NAMES$acronym[d],'_', isex, '_', iage, '_', ioutcome, '.jpeg'), width = 14, height = 10, units = 'cm')
+#           
+#           print(p_index)
+#           dev.off()
+#           
+#         }
+#       }
+#     }
+#   }
+# }
+# 
+# 
+# # ---- chunk-11.2.1 Graphs aggreagated cohorts ----
+# 
+# ### First create aggregated data frames
+# 
+# i_outcome_d <- c('mx', 'inc')
+# i_outcome_nd <- c('mx', 'ylds')
+# 
+# aggregate_frame_d_males <- list()
+# aggregate_frame_d_females <- list()
+# 
+# index <- 1
+# 
+# for (ioutcome in i_outcome_d) {
+#   for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#     if (DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
+#     }
+#     else{
+#       
+#       aggregate_frame_d_males[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, 
+#                                                        in_population = 'male', in_outcomes = c(paste(ioutcome, 'num', 'bl', 
+#                                                                                                      DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, 'num', 'sc', 
+#                                                                                                                                                      DISEASE_SHORT_NAMES$sname[d], sep = '_'), paste(ioutcome, 'num', 'diff', 
+#                                                                                                                                                                                                      DISEASE_SHORT_NAMES$sname[d], sep = '_')))
+#       
+#       aggregate_frame_d_females[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'female', 
+#                                                          in_outcomes = c(paste(ioutcome, 'num', 'bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'), 
+#                                                                          paste(ioutcome, 'num', 'sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'), 
+#                                                                          paste(ioutcome, 'num', 'diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')))
+#       
+#       # Keep totals only
+#       aggregate_frame_d_males[[index]] <- aggregate_frame_d_males[[index]] %>% dplyr::select(contains('total'))
+#       
+#       aggregate_frame_d_females[[index]] <- aggregate_frame_d_females[[index]] %>% dplyr::select(contains('total'))
+#       
+#       index <- index + 1
+#     }
+#   }
+# }
+# 
+# 
+# #### Non-Diseases: ylds and deaths
+# 
+# aggregate_frame_nd_males <- list()
+# aggregate_frame_nd_females <- list()
+# 
+# index <- 1
+# 
+# for (ioutcome in i_outcome_nd) {
+#   for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#     ## Exclude chronic disease and all-cause mortality and  pyld
+#     if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
+#     }
+#     else {
+#       
+#       aggregate_frame_nd_males[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'male', 
+#                                                         in_outcomes = c(paste(ioutcome, 'num', 'bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), 
+#                                                                         paste(ioutcome, 'num', 'sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), 
+#                                                                         paste(ioutcome, 'num', 'diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')))
+#       
+#       aggregate_frame_nd_females[[index]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'female',
+#                                                           in_outcomes = c(paste(ioutcome, 'num', 'bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), 
+#                                                                           paste(ioutcome, 'num', 'sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'), 
+#                                                                           paste(ioutcome, 'num', 'diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')))
+#       
+#       # Remove non-numeric columns starting with age and sex
+#       aggregate_frame_nd_males[[index]] <- aggregate_frame_nd_males[[index]] %>% dplyr::select(contains('total'))
+#       
+#       aggregate_frame_nd_females[[index]] <- aggregate_frame_nd_females[[index]] %>% dplyr::select(contains('total'))
+#       
+#       index <- index + 1
+#     }
+#   }
+# }
+# 
+# 
+# #### Life years and health adjusted life years
+# 
+# i_outcome_lys <- c('Lx', 'Lwx')
+# 
+# aggregate_frame_males_lys <- list()
+# aggregate_frame_females_lys <- list()
+# 
+# for (i in i_outcome_lys){
+#   
+#   aggregate_frame_males_lys[[i]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'male', 
+#                                                  in_outcomes = c(paste(i, 'bl', sep = '_'), paste(i, 'sc', sep = '_'), 
+#                                                                  paste(i, 'diff',sep = '_')))
+#   
+#   aggregate_frame_females_lys[[i]] <- GenAggregate(in_data = output_df, in_cohorts = 17, in_population = 'female', 
+#                                                    in_outcomes = c(paste(i, 'bl', sep = '_'), 
+#                                                                    paste(i,  'sc', sep = '_'), paste(i, 'diff',sep = '_')))
+#   
+#   
+#   aggregate_frame_males_lys[[i]] <- aggregate_frame_males_lys[[i]] %>% dplyr::select(contains('total'))
+#   
+#   aggregate_frame_females_lys[[i]] <- aggregate_frame_females_lys[[i]] %>% dplyr::select(contains('total'))
+#   
+# }
+# 
+# ## Transform lists for diseases, non-diseases and life years to data frames including all aggregated outcomes by sex
+# 
+# ### Females
+# 
+# aggregate_females_df <- do.call(cbind, c(aggregate_frame_d_females, aggregate_frame_nd_females, aggregate_frame_females_lys)) %>%
+#   mutate(simulation_yr = c(1:84), sex = 'female')
+# 
+# ## Drop string added to Lx and Lwx column names (not sure why, but happens in this step)
+# 
+# names(aggregate_females_df) <-  gsub("Lx.total_Lx", "total_Lx", names(aggregate_females_df))
+# names(aggregate_females_df) <-  gsub("Lwx.total_Lwx", "total_Lwx", names(aggregate_females_df))
+# 
+# ### Males
+# 
+# aggregate_males_df <- do.call(cbind, c(aggregate_frame_d_males, aggregate_frame_nd_males, aggregate_frame_males_lys)) %>% 
+#   mutate(simulation_yr = c(1:84), sex = 'male') 
+# 
+# ## Drop string added to Lx and Lwx column names (not sure why, but happens in this step)
+# 
+# names(aggregate_males_df) <-  gsub("Lx.total_Lx", "total_Lx", names(aggregate_males_df))
+# names(aggregate_males_df) <-  gsub("Lwx.total_Lwx", "total_Lwx", names(aggregate_males_df))
+# 
+# 
+# #### Aggregated graphs
+# ### Females-diseases
+# 
+# 
+# p_aggr_females_d_list <- list()
+# index <- 1
+# 
+# for (ioutcome in i_outcome_d) {
+#   for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#     
+#     if (isex == 'male' && (DISEASE_SHORT_NAMES$disease[d] %in% c('breast cancer', 'uterine cancer'))
+#         || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
+#     }
+#     else{
+#     
+#       pdf(paste0(output_dir, 'graphs/aggregated/', 'total_', DISEASE_SHORT_NAMES$sname[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
+#       
+#       p_aggr_females_d_list <- ggplot(aggregate_females_df[1:84,], aes(x = aggregate_females_df[['simulation_yr']])) +
+#       
+#       geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#       theme_classic() +
+#       geom_hline(yintercept=0, linetype='dashed', color = 'black') +
+#       geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#       geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#       xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
+#       theme(plot.title = element_text(hjust = 0.5, size = 12)) +
+#       scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
+#       theme(plot.title = element_text(hjust = 0.5))
+#       print(p_aggr_females_d_list)
+#       dev.off()
+#     
+#     
+#     
+#     
+#     
+#     # p_aggr_females_list <- p_aggr_list_index
+#     # index <- index + 1
+#     # 
+#     }
+#   }
+# }
+# 
+# 
+# ### Females-non_diseases
+# 
+# p_aggr_females_nd_list <- list()
+# index <- 1
+# 
+# for (ioutcome in i_outcome_nd) {
+#   for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#     
+#     if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
+#     }
+#     else {
+#       
+#       pdf(paste0(output_dir, 'graphs/aggregated/', 'total_', DISEASE_SHORT_NAMES$acronym[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
+#       
+#       p_aggr_females_nd_list <- ggplot(aggregate_females_df[1:84,], aes(x = aggregate_females_df[['simulation_yr']])) +
+#         
+#         geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
+#         theme_classic() +
+#         geom_hline(yintercept=0, linetype='dashed', color = 'black') +
+#         geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
+#         geom_line(mapping = aes(y = aggregate_females_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
+#         xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
+#         theme(plot.title = element_text(hjust = 0.5, size = 12)) +
+#         scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
+#         theme(plot.title = element_text(hjust = 0.5))
+#       print(p_aggr_females_nd_list)
+#       dev.off()
+#       
+#       
+#       
+#       
+#       
+#       # p_aggr_females_list <- p_aggr_list_index
+#       # index <- index + 1
+#       # 
+#     }
+#   }
+# }
+# 
+# ### Males-diseases
+# 
+# 
+# p_aggr_males_d_list <- list()
+# index <- 1
+# 
+# for (ioutcome in i_outcome_d) {
+#   for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#     
+#     if (isex == 'male' && (DISEASE_SHORT_NAMES$disease[d] %in% c('breast cancer', 'uterine cancer'))
+#         || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$is_not_dis[d] !=0){
+#     }
+#     else{
+#       
+#       pdf(paste0(output_dir, 'graphs/aggregated/', 'total_', DISEASE_SHORT_NAMES$sname[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
+#       
+#       p_aggr_males_d_list <- ggplot(aggregate_males_df[1:84,], aes(x = aggregate_males_df[['simulation_yr']])) +
+#         
+#         geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#         theme_classic() +
+#         geom_hline(yintercept=0, linetype='dashed', color = 'black') +
+#         geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#         geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#         xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
+#         theme(plot.title = element_text(hjust = 0.5, size = 12)) +
+#         scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
+#         theme(plot.title = element_text(hjust = 0.5))
+#       print(p_aggr_males_d_list)
+#       dev.off()
+#       
+#       
+#       
+#       
+#       
+#       # p_aggr_males_list <- p_aggr_list_index
+#       # index <- index + 1
+#       # 
+#     }
+#   }
+# }
+# 
+# 
+# ### Males-non_diseases
+# 
+# p_aggr_males_nd_list <- list()
+# index <- 1
+# 
+# for (ioutcome in i_outcome_nd) {
+#   for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#     
+#     if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
+#     }
+#     else {
+#       
+#       pdf(paste0(output_dir, 'graphs/aggregated/', 'total_', DISEASE_SHORT_NAMES$acronym[d],'_', 'female', '_', ioutcome, '.pdf'),width=5.5,height=4)
+#       
+#       p_aggr_males_nd_list <- ggplot(aggregate_males_df[1:84,], aes(x = aggregate_males_df[['simulation_yr']])) +
+#         
+#         geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_bl', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
+#         theme_classic() +
+#         geom_hline(yintercept=0, linetype='dashed', color = 'black') +
+#         geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_sc', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
+#         geom_line(mapping = aes(y = aggregate_males_df[[paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')]], colour = paste('total', ioutcome, 'num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_'))) +
+#         xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$disease[d], ifelse(ioutcome == 'inc', 'incidence', 'deaths'))) +
+#         theme(plot.title = element_text(hjust = 0.5, size = 12)) +
+#         scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
+#         theme(plot.title = element_text(hjust = 0.5))
+#       print(p_aggr_males_nd_list)
+#       dev.off()
+#       
+#       
+#       # p_aggr_males_list <- p_aggr_list_index
+#       # index <- index + 1
+#       # 
+#     }
+#   }
+# }
+# 
+# 
+# 
+# # ---- chunk-11.2.3 Graphs aggreagated cohorts selection simulaton years----
+# 
+# 
+# # ---- chunk-16 ----
+# 
+# ### aDJUST THIS CODE TO FO FEMALES, MALES, DISEASE, NOS DISEASES AND UPDATE LIST OF OUTCOMES. 
+# ####This plot has to be customised to in_outcomes, here, only totals shown, but specifications are up to the user. ADD LOOP for all outcomes over time and total TABLE.
+# 
+# ####[] is used here to indicate the number of simulation years into the future.
+# ####Disease outcomes has to be changed to the outcome of interest
+# 
+# #### Test code with loops for aggregated outcomes diseases burden. NOT WORKING.
+# 
+# ### Compare with loops for age and sex cohort outcomes.
+# 
+# p_aggr_list <- list()
+# index <- 1
+# 
+# for (outcome in i_outcome_d) {
+#   for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+#     
+#     # outcome <- i_outcome[1]
+#     # disease <- i_disease[1]
+#     
+#     p_aggr_list_index <- ggplot(total_aggr[1:79,], aes(x = total_aggr[['sim_year']])) +
+#       
+#       geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#       theme_classic() +
+#       geom_hline(yintercept=0, linetype='dashed', color = 'black') +
+#       geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_sc', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#       geom_line(mapping = aes(y = total_aggr[[paste('total', outcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_')]], colour = paste('total', outcome, 'num_diff', DISEASE_SHORT_NAMES$sname[d], sep = '_'))) +
+#       xlab ('Simulation years') + ylab ('Cases') + labs (title = paste(DISEASE_SHORT_NAMES$sname[d], outcome)) +
+#       theme(plot.title = element_text(hjust = 0.5, size = 12)) +
+#       scale_color_discrete(name = paste(''), labels = c('Baseline', 'Difference', 'Scenario')) +
+#       theme(plot.title = element_text(hjust = 0.5))
+#     p_aggr_list[[index]] <- p_aggr_list_index
+#     index <- index + 1
+#     
+#     
+#   }
+# }
+# 
+# index <- 1
+# 
+# interpolation_index <- 1
+# for (outcome in i_outcome_d) {
+#   for (disease in i_disease) {
+#     file_name = paste('output/graphs', 'Aggregated Outcomes', outcome, disease, '.jpeg', sep=' ')
+#     jpeg(file_name)
+#     print(p_aggr_list[[index]])
+#     index <- index + 1
+#     dev.off()
+#   }
+# }
+# 
+# 
+# p_aggregated <- do.call(marrangeGrob, list(grobs=p_aggr_list, nrow = 2, ncol = 2))
+# p_aggregated
+# 
+# 
