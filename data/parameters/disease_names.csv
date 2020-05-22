@@ -16,7 +16,7 @@ ischemic stroke,iscs,0,NA,no_pif,1,1
 hypertensive heart disease,hyhd,3,NA,no_pif,1,1
 breast cancer,brsc,0,Breast cancer,breast,0,1
 uterine cancer,utrc,0,Uterine cancer,endo,0,1
-prostate cancer,prsc,0,NA,no_pif,1,1
+prostate cancer,prsc,0,NA,no_pif,1,0
 colon and rectum cancer,carc,0,Colon and rectum cancer,colon,1,1
 malignant skin melanoma,mlsm,0,NA,no_pif,1,1
 all causes,allc,2,All causes,ac,1,1

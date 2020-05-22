@@ -2,24 +2,6 @@
 ## Create R Markdown for data preparation
 
 # ---- chunk-intro ----
-
-## City regions, prepare a dataset for each of them by aggregating local goverment areas
-
-# Sheffield City Region Combined Authority: Barnsley, Doncaster, Rotherham, Sheffield.
-# 
-# North East Combined Authority: County Durham, Gateshead, Newcastle upon Tyne, North Tyneside, Northumberland, South Tyneside, Sunderland.
-# 
-# Greater Manchester Combined Authority: Bolton, Bury, Manchester, Oldham, Rochdale, Salford, Stockport, Tameside, Trafford, Wigan.
-# 
-# Liverpool City Region Combined Authority: Halton, Knowsley, Liverpool, St. Helens, Sefton, Wirral.
-# 
-# West Yorkshire Combined Authority: Bradford, Calderdale, Kirklees, Leeds, Wakefield.
-# 
-# Bristol: Bath and North East Somerset, City of Bristol, North Somerset, South Gloucestershire.
-# 
-# Nottingham: Ashfield, Bassetlaw, Broxtowe, Gedling, Mansfield, Nottingham, Newark and Sherwood, Rushcliffe. (NO GBD DATA AVAILABLE)
-# 
-# West Midlands Combined Authority: Birmingham, Coventry, Dudley, Sandwell, Solihull, Walsall, Wolverhampton.
 rm (list = ls())
 options(scipen=999)
 library(readr)
@@ -28,18 +10,21 @@ library(dplyr)
 library(tidyverse)
 library(conflicted)
 
+## set wd
 
-source('code/functions_data_prep.R')
 setwd("C:/Metahit/")
-
-# ---- chunk-1: Data preparation ----
-
-## Run mslt_code lines to get requiered packages
 
 ## Relative paths
 
 relative_path_execute <- paste0(getwd(), '/mh-execute/')
 relative_path_mslt <- paste0(getwd(),'/mh-mslt/')
+
+##get funcions
+
+source(paste0(relative_path_mslt,'code/functions_data_prep.R'))
+
+
+# ---- chunk-1: Data preparation MSLT data inputs ----
 
 ## Get look up table from mh-execute
 
@@ -177,7 +162,7 @@ DISEASE_SHORT_NAMES$acronym[is.na(DISEASE_SHORT_NAMES$acronym)] <- "no_pif"
 
 ## Add column to match names from mh-execute
 
-write_csv(DISEASE_SHORT_NAMES, "data/parameters/disease_names.csv")
+write_csv(DISEASE_SHORT_NAMES, paste0(relative_path_mslt,"data/parameters/disease_names.csv"))
 
 disease_measures_list <- data.frame(measure = unique(data_extracted$measure_name)) %>%
   pull(measure) %>%
@@ -268,7 +253,6 @@ for (i in 1:length(gbd_loc_data_processed)){
 }
 
 
-##### ADD create aggregated data frame for ITHIMR function
 
 
 ## Create aggregated data frame (sums all numbers from localities within a city region) SEE HOW THIS IS WORKING, best to continue 
@@ -483,7 +467,7 @@ for (a in areas) {
   
 }
 
-### These should be a folder with the data for all localities of interest. 
+### Save city regions data frames to mh-execute/inputes
 
 for (i in 1:length(mslt_df_list)) {
 
@@ -491,86 +475,41 @@ write_csv(mslt_df_list[[i]], paste0(relative_path_execute, "inputs/mslt/", uniqu
   
 }
 
-## Get PIFS from Rob adn expand from five year age groups to one. 
+### Prepare city regions data for ithimr health calculations (for deaths and ylls
 
-pif <- read_csv("data/pif.csv")
+# ---- chunk-2: Data preparation ITHIMR data inputs ----
 
-pif$age <- 0
-pif$age [pif$age_cat =="16-19"] <- 17
-pif$age [pif$age_cat =="20-24"] <- 22
-pif$age [pif$age_cat =="25-29"] <- 27
-pif$age [pif$age_cat =="30-34"] <- 32
-pif$age [pif$age_cat =="35-39"] <- 37
-pif$age [pif$age_cat =="40-44"] <- 42
-pif$age [pif$age_cat =="45-49"] <- 47
-pif$age [pif$age_cat =="50-54"] <- 52
-pif$age [pif$age_cat =="55-59"] <- 57
-pif$age [pif$age_cat =="60-64"] <- 62
-pif$age [pif$age_cat =="65-69"] <- 67
-pif$age [pif$age_cat =="70-74"] <- 72
-pif$age [pif$age_cat =="75-79"] <- 77
-pif$age [pif$age_cat =="80-84"] <- 82
-pif$age [pif$age_cat =="85-89"] <- 87
-pif$age [pif$age_cat =="90-94"] <- 92
-pif$age [pif$age_cat =="95-120"] <- 97
+population_cityregions <- dplyr::select(gbd_data, sex, age, population_number, cityregion) %>%
+  mutate(index_pop = tolower(paste(sex, age, cityregion, sep = "_")))
 
-## Change names to get rid of risk factors combinations in the name (BEST IF I DO NOT HAVE TO DO THIS MANUALLY)
-
-names(pif)[names(pif) == "scen_pif_pa_ap_noise_no2_ihd"] <- "pif_ihd"
-names(pif)[names(pif) == "scen_pif_pa_ap_stroke"] <- "pif_stroke"
-names(pif)[names(pif) == "scen_pif_pa_colon" ] <- "pif_colon"
-names(pif)[names(pif) == "scen_pif_pa_t2d"] <- "pif_t2d"
-names(pif)[names(pif) == "scen_pif_pa_endo"] <- "pif_endo"
-names(pif)[names(pif) == "scen_pif_pa_ap_lc"] <- "pif_lc"
-names(pif)[names(pif) == "scen_pif_ap_lri"] <- "pif_lri"
-names(pif)[names(pif) == "scen_pif_ap_copd"] <- "pif_copd"
-names(pif)[names(pif) == "scen_pif_pa_breast"] <- "pif_breast"
-
-names(pif)[names(pif) == "scen_cyclist_Fatal"] <- "pif_cyclist_deaths"
-names(pif)[names(pif) == "scen_pedestrian_Fatal"] <- "pif_pedestrian_deaths"
-names(pif)[names(pif) == "scen_cyclist_Serious"] <- "pif_cyclist_ylds"
-names(pif)[names(pif) == "scen_pedestrian_Serious"] <- "pif_pedestrian_ylds"
-names(pif)[names(pif) == "scen_car/taxi_Fatal"] <- "pif_motor_deaths"
-names(pif)[names(pif) == "scen_motorcycle_Fatal"  ] <- "pif_motorcyclist_deaths"
-names(pif)[names(pif) == "scen_car/taxi_Serious"] <- "pif_motor_ylds"
-names(pif)[names(pif) == "scen_motorcycle_Serious"  ] <- "pif_motorcyclist_ylds"
+GBD_ithim <- read_csv("C:/Users/rstudio/Dropbox/Collaborations/James Woodcock/Metahit/Data/GBD2017/ITHIM/GBD.csv") %>%
+  dplyr::filter(metric_name == "Number") %>% 
+  dplyr::select(measure_name, location_name, sex_name, age_name, cause_name, val) %>%
+  left_join(local_goverment_areas, by = c("location_name" = "location")) %>% 
+  mutate(index_add = paste(measure_name, sex_name, age_name, cause_name, cityregion, sep = "_")) %>%
+  dplyr::select(measure_name, location_name, sex_name, age_name, cause_name, val, cityregion, index_add) %>%
+  group_by(index_add) %>%
+  summarise_if(is.numeric, funs(sum)) %>% 
+  separate(index_add, c("measure_name", "sex_name", "age_name", "cause_name", "cityregion"), "_") %>% 
+  dplyr::filter(cityregion %in% areas) %>%
+  mutate(index_pop = tolower(paste(sex_name, age_name, cityregion, sep = "_"))) %>%
+  left_join(dplyr::select(population_cityregions, c(population_number, index_pop)), by = "index_pop", keep = FALSE) %>%
+  dplyr::select(!index_pop)
 
 
-## Repeat pif lri for deaths and ylds
-
-pif$pif_lri_deaths <- pif$pif_lri
-pif$pif_lri_ylds <- pif$pif_lri
-
-## Delete pif_lri
-
-pif <- select(pif, -c(pif_lri))
+### Change names to match format for ITHIMR
+GBD_ithim$age_name[GBD_ithim$age_name =="95 plus"] <- '95 to 99'
+GBD_ithim$age_name[GBD_ithim$age_name =="Under 5"] <- '0 to 4'
 
 
-### mslt_df names are not matching pifs names, need to change this, preferably, not manually
+addrow_age_95 <- dplyr::filter(GBD_ithim, age_name == "95 to 99")
+GBD_ithim <- bind_rows(GBD_ithim, addrow_age_95)
+  
+GBD_ithim_list <- split(GBD_ithim , f = GBD_ithim$cityregion)
+  
+for (i in 1:length(GBD_ithim_list)) {
+  
+   write_csv(GBD_ithim_list[[i]], paste0(relative_path_execute, "inputs/gbd/", unique(mslt_df_list[[i]]$area), ".csv"))
+   
+ }
 
-#### MANUALLY TO CHECK THAT IT WORKS FOR ROAD INJURIES
-
-
-p <- dplyr::filter(pif, sex == "male")
-
-outage <- min(p$age):100
-
-ind <- findInterval(outage, p$age)
-pif_expanded <- p[ind,]
-pif_expanded$age <- outage
-
-p_1 <- dplyr::filter(pif, sex == "female")
-
-outage <- min(p_1$age):100
-
-ind <- findInterval(outage, p_1$age)
-pif_expanded_1 <- p_1[ind,]
-pif_expanded_1$age <- outage
-
-
-pif_expanded <- rbind(pif_expanded, pif_expanded_1)
-
-write_csv(pif_expanded, "data/pif_expanded.csv")
-
-#### Example for one city region
-write_csv(mslt_df_list[[1]], "data/mslt_bristol.csv")

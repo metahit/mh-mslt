@@ -31,17 +31,26 @@ options(scipen=999)
 ## Functions
 #!!BZ: error with PlotOutput_compiled
 
-source('code/MSLT_functions.R')
 
-## Data 
 
-## move name changes here
+setwd("C:/Metahit/")
 
-relative_path <- '../mh-mslt/'
-pif_expanded <- read_csv(paste0(relative_path, 'data/pif_expanded.csv'))
+## Relative paths
 
-# Check 
-DISEASE_SHORT_NAMES <<- read_csv(paste0(relative_path, 'data/parameters/disease_names.csv'))
+relative_path_execute <- paste0(getwd(), '/mh-execute/')
+relative_path_mslt <- paste0(getwd(),'/mh-mslt/')
+
+## get functions
+
+source(paste0(relative_path_mslt,'/code/MSLT_functions.R'))
+
+## get data
+
+pif_expanded <- read_csv(paste0(relative_path_mslt, 'data/pif_expanded.csv'))
+
+DISEASE_SHORT_NAMES <<- read_csv(paste0(relative_path_mslt, 'data/parameters/disease_names.csv'))
+
+MSLT_DF <- read_csv(paste0(relative_path_execute, "inputs/mslt/bristol_mslt.csv"))
 
 ## Parameters
 
@@ -53,11 +62,6 @@ i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92
 
 i_sex <- c('male', 'female')
 
-### test with one city region (CHECK WITH ALI best approach to link with the rest of the model)
-
-### REPLACE WITH ALL CITY REGIONS AS IN PER METAHIT-EXECUTE
-
-MSLT_DF <- read_csv(paste0(relative_path, "data/mslt_bristol.csv"))
 
 # ---- chunk-2 ----
 
