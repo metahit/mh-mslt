@@ -79,13 +79,13 @@ city_regions <- split(local_goverment_areas$location, f = local_goverment_areas$
 ## CHANGE TO v-DRIVE
 
 work_folder <- "C:/Users/e95517/Dropbox/"
-home_folder <- "C:/Users/Bele/Dropbox/"
+home_folder <- "C:/Users/rstudio/Dropbox/"
 v_folder <- "V:/Studies/MOVED/HealthImpact/Data/Global_Burden_Disease_Metahit/"
 vm_folder <- "/media/sf_Dropbox/"
 
 ## Change folder to work or home
 # CHANGE DATA FOLDER
-data_folder <- paste0(vm_folder, "Collaborations/James Woodcock/Metahit/Data/GBD2017/")
+data_folder <- paste0(home_folder, "Collaborations/James Woodcock/Metahit/Data/GBD2017/")
 temp_folder <- paste0(data_folder,"temp") 
 result_folder <- paste0(data_folder,"final")
 gbdfile_name_new <- "IHME-GBD_2017_DATA-3e0b192d-" # CHANGE NAME WHEN NEW DATA IS DOWNLOADED 
@@ -268,12 +268,12 @@ for (i in 1:length(gbd_loc_data_processed)){
 }
 
 
-
+##### ADD create aggregated data frame for ITHIMR function
 
 
 ## Create aggregated data frame (sums all numbers from localities within a city region) SEE HOW THIS IS WORKING, best to continue 
 ### with dataframe above and then have a combined dataset with all possible inputs for disbayes
-#### Drop location and city region (sum cannot summ string variables)
+
 ### Rename gbd_city_region_data, as cityregionand location variables are needed in disbayes data_prep
 # 
 gbd_city_region_data_2 <- list()
@@ -355,12 +355,6 @@ for (i in 1:length(gbd_city_region_data_2)) {
       }
     }
   }
-
-  
-  ## Save as rds for each city region
-  
-  write_rds(gbd_city_region_data_agg[[index]], paste0(relative_path_mslt, "data/city regions/GBD sorted/", unique(city_regions_list_loc[[i]][[1]]$cityregion), ".rds"))
-  
   
   index <- index + 1
 }
@@ -430,11 +424,13 @@ data_test <- cityregions_smoothed_res %>% mutate_if(is.factor, as.character) %>%
   dplyr::filter(str_detect(mes, "inc"))
 
 plot(data_test$year, data_test$med)
+
  
           
 # ---- chunk 1.7 ----
 
 
+### Keep city regions as in mh-execute (bristol, greatermanchester, leeds, liverpool, london, northeast, nottingham, sheffield, westmidlands). 
 areas <- unique(disbayes_output$area)
 i_sex <- c('male', 'female')
 
@@ -450,8 +446,10 @@ for (a in areas) {
   
   data_1 <-  dplyr::filter(gbd_data, area == a)
   data_2 <- dplyr::filter(disbayes_output, area == a)
-  
+
   mslt_df_list[[index]] <- GenMSLTDF(data_1, data_2)
+ 
+  
   mslt_df_list[[index]]<- replace(mslt_df_list[[index]], is.na(mslt_df_list[[index]]), 0)
   
   
@@ -477,13 +475,21 @@ for (a in areas) {
    names(mslt_df_list[[index]])[names(mslt_df_list[[index]]) == "ylds (years lived with disability)_rate_lwri"] <- "ylds_rate_lri"
   
    mslt_df_list[[index]]$sex <- as.character(mslt_df_list[[index]]$sex)
-  
+   
+   
+   
+   
   index <- index + 1
   
 }
 
 ### These should be a folder with the data for all localities of interest. 
-# write_csv(mslt_df, ("data/mslt_df.csv"))
+
+for (i in 1:length(mslt_df_list)) {
+
+write_csv(mslt_df_list[[i]], paste0(relative_path_execute, "inputs/mslt/", unique(mslt_df_list[[i]]$area), "_mslt", ".csv"))
+  
+}
 
 ## Get PIFS from Rob adn expand from five year age groups to one. 
 
