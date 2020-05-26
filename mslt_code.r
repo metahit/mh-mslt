@@ -2,7 +2,7 @@
 
 # ---- chunk-intro ----
 ## Packages to run MSLT code below
-
+rm (list = ls())
 # library(ggpubr)
 library(ggplot2)
 # library(arsenal)
@@ -23,7 +23,7 @@ conflict_prefer("filter", "dplyr")
 
 
 
-rm (list = ls())
+
 options(scipen=999)
 
 # ---- chunk-1 ----
@@ -49,6 +49,9 @@ source(paste0(relative_path_mslt,'/code/MSLT_functions.R'))
 pif_expanded <- read_csv(paste0(relative_path_mslt, 'data/pif_expanded.csv'))
 
 DISEASE_SHORT_NAMES <<- read_csv(paste0(relative_path_mslt, 'data/parameters/disease_names.csv'))
+
+### USE data for bristol as example here, hx-execute loops over all datasets. NOTE data with ones is for missing data potentially in 
+### new meta analysis
 
 MSLT_DF <- read_csv(paste0(relative_path_execute, "inputs/mslt/bristol_mslt.csv"))
 
@@ -840,7 +843,7 @@ for (iage in i_age_cohort){
 
 output_df <- plyr::ldply(output_burden, rbind)
 
-output_dir = 'output/'
+output_dir = paste0(relative_path_mslt,'output/')
 
 #### Add within each outcome subfolders for each city region
 
