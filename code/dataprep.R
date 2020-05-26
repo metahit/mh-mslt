@@ -502,8 +502,8 @@ GBD_ithim$age_name[GBD_ithim$age_name =="95 plus"] <- '95 to 99'
 GBD_ithim$age_name[GBD_ithim$age_name =="Under 5"] <- '0 to 4'
 
 
-addrow_age_95 <- dplyr::filter(GBD_ithim, age_name == "95 to 99")
-GBD_ithim <- bind_rows(GBD_ithim, addrow_age_95)
+# addrow_age_95 <- dplyr::filter(GBD_ithim, age_name == "95 to 99")
+# GBD_ithim <- bind_rows(GBD_ithim, addrow_age_95)
   
 GBD_ithim_list <- split(GBD_ithim , f = GBD_ithim$cityregion)
   
