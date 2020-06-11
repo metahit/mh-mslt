@@ -1,19 +1,20 @@
 
+#### 09/06/2020
+#### Code from metahit project to run mslt for covid-pa paper
+#### Added: columns to pif to model duration of sceanario
+#### to ADD: uncertainty
+### Just modelling changes to physical activity
+### MSLT data for England with inputs generated with Disbayes
 
 # ---- chunk-intro ----
 ## Packages to run MSLT code below
 rm (list = ls())
 library(ggplot2)
 library(conflicted)
-
 if (interactive()) {
   require(conflicted)
 }
 conflict_prefer("filter", "dplyr")
-
-
-
-
 options(scipen=999)
 
 # ---- chunk-1 ----
@@ -34,7 +35,6 @@ relative_path_mslt <- paste0(getwd(),'/mh-mslt/')
 
 source(paste0(relative_path_mslt,'/code/MSLT_functions.R'))
 
-
 ## get data 
 
 #### Generated for METAHIT. USIING AS EXAMPLE
@@ -53,16 +53,6 @@ i_sex <- c('male', 'female')
 ### Here pifs are applied for the first 4 years, can be modified. 
 
 sc_duration <- replicate(4,1) %>% append(replicate(80, 0))
-
-## Parameters
-
-year <- 2017
-
-# year_trend <- 2007 (not used for now)
-
-i_age_cohort <- c(17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97)
-
-i_sex <- c('male', 'female')
 
 
 # ---- chunk-2 ----
@@ -123,95 +113,6 @@ for (iage in i_age_cohort){
 
 # ---- chunk-4 ----
 
-## Create non_disease lists, these are by age and sex for road injuries and lwri baseline and scenario, including calculation of difference in rates. 
-## Different calculation for scenario deaths and ylds for lri and injuries. 
-
-
-non_disease_list <- list()
-index <- 1
-
-
-for (iage in i_age_cohort){
-  for (isex in i_sex) {
-    for (d in 1:nrow(DISEASE_SHORT_NAMES)){
-      
-      ## Exclude chronic disease and all-cause mortality and  pyld
-      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'other' || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif'){
-      }
-      else {
-        
-        ## Only keep non-diseases variables in the dataframe
-        td1 <- as.data.frame(filter(MSLT_DF, age >= iage & sex == isex) %>% 
-          dplyr::select(age, sex, contains(DISEASE_SHORT_NAMES$acronym[DISEASE_SHORT_NAMES$sname == DISEASE_SHORT_NAMES$sname[d]])))
-        
-        
-        pif_non_disease <- as.data.frame(dplyr::filter(pif_expanded, age >= iage & sex == isex) %>% 
-                                           dplyr::select(age, sex, contains(DISEASE_SHORT_NAMES$acronym[DISEASE_SHORT_NAMES$sname == DISEASE_SHORT_NAMES$sname[d]])))
-        
-        ## Modify pif by duration of intervention
-        
-        # pif_non_disease[,3] <- pif_non_disease[,3] * sc_duration
-        
-        non_disease_list[[index]] <-  RunNonDisease (td1, in_sex = isex, in_mid_age = iage, in_non_disease = DISEASE_SHORT_NAMES$acronym[d])
-        
-        non_disease_list[[index]]$non_disease <- DISEASE_SHORT_NAMES$acronym[d]
-        
-          ### For LRI we modify mortality rates and ylds rates by 1-PIF. For road trauma we multiple the PIF by baseline deaths/ylds rates to generate scenario
-        ### ylds and mortlality rates and then take the difference
-        
-        if (DISEASE_SHORT_NAMES$acronym[d] == 'lri'){
-       
-          
-          
-        ## PIFs multiplied by scenario duration  
-        ## RATES
-        ### deaths sceanario lri
-        non_disease_list[[index]][paste0('deaths_rate_sc')] <-
-          non_disease_list[[index]][paste0('deaths_rate_bl')] * 
-          (1 - pif_non_disease [paste0('pif_', DISEASE_SHORT_NAMES$acronym[d], '_deaths')] * sc_duration) 
-        
-        
-        ### ylds scenario lri
-        non_disease_list[[index]][paste0('ylds_rate_sc')] <-
-          non_disease_list[[index]][paste0('ylds_rate_bl')] * 
-          (1 - pif_non_disease [paste0('pif_', DISEASE_SHORT_NAMES$acronym[d], '_ylds')] * sc_duration) 
-        
-        }
-        else {
-          
-        ## deaths sceanario injuries
-          non_disease_list[[index]][paste0('deaths_rate_sc')] <-
-            non_disease_list[[index]][paste0('deaths_rate_bl')] * 
-            (1 - pif_non_disease [paste0('pif_', DISEASE_SHORT_NAMES$acronym[d], '_deaths')] * sc_duration) 
-          
-          
-          ## ylds scenario injuries
-          non_disease_list[[index]][paste0('ylds_rate_sc')] <-
-            non_disease_list[[index]][paste0('ylds_rate_bl')] * 
-            (1 - pif_non_disease [paste0('pif_', DISEASE_SHORT_NAMES$acronym[d], '_ylds')] * sc_duration) 
-        }
-        
-        ## Difference variable
-        
-        ## deaths difference
-        non_disease_list[[index]][paste0('diff_mort')] <- non_disease_list[[index]][paste0('deaths_rate_sc')] -
-          non_disease_list[[index]][paste0('deaths_rate_bl')]
-        ## ylds difference
-        non_disease_list[[index]][paste0('diff_ylds')] <- non_disease_list[[index]][paste0('ylds_rate_sc')] -
-          non_disease_list[[index]][paste0('ylds_rate_bl')]
-        
-        non_disease_list[[index]][IsNanDataFrame(non_disease_list[[index]])] <- 0
-        
-        names(non_disease_list)[index] <- paste(iage, isex, DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-        
-        index <- index + 1
-        
-      }
-    }
-  }  
-}
-
-# ---- chunk-5 ----
 
 ## Create scenario life tables with new pifs,includes Diabetes loop. 
 
@@ -250,7 +151,10 @@ for (iage in i_age_cohort){
         
         pif_colname <- paste0('pif_',DISEASE_SHORT_NAMES$acronym[d])
        
-        pif_disease <- pif_disease_age_sex[,colnames(pif_disease_age_sex) %in% c('age', 'sex', pif_colname)]
+        pif_disease <- (pif_disease_age_sex[,colnames(pif_disease_age_sex) %in% c('age', 'sex', pif_colname)]) 
+        
+        ### Multiply for vector for duration scenario
+     
         
         # adjustment for diabetes effect on ihd and stroke
         if(d %in% c(ishd_index,strk_index)){
@@ -265,21 +169,22 @@ for (iage in i_age_cohort){
           # (store old pif)
           old_pif <- pif_disease[[target_disease]]
           # diabetes pif = - { scenario prevalence - baseline prevalence } * (RR - 1)  / { baseline prevalence * (RR - 1) + 1 }
-          pif_dia <- -(disease_life_table_list_sc[[dia_col]]$px - disease_life_table_list_bl[[dia_col]]$px)*(relative_risk-1)/
-            (disease_life_table_list_bl[[dia_col]]$px * (relative_risk-1) + 1)
+          
+          pif_dia <- (-(disease_life_table_list_sc[[dia_col]]$px - disease_life_table_list_bl[[dia_col]]$px)*(relative_risk-1)/
+            (disease_life_table_list_bl[[dia_col]]$px * (relative_risk-1) + 1) )
+          
           # modify pif for target disease: new pif =  (1 - old pif) * (1 - diabetes pif)
-          pif_disease[[target_disease]] <- 1- (1-pif_disease[[target_disease]]) * (1-pif_dia)
+          pif_disease[[target_disease]] <- (1- (1-pif_disease[[target_disease]]) * (1-pif_dia))
           # print(sum(old_pif-pif_disease[[target_disease]]))
           
         }
-        
         ### Multiply for vector for duration scenario
         pif_disease[,2] <- pif_disease[,2] * sc_duration
         
         new_col <- td1_age_sex[[paste('incidence', DISEASE_SHORT_NAMES$sname[d], sep = '_')]] * (1 - (pif_disease[[pif_colname]]))
         
         new_col[is.na(new_col)] <- 0
-        td1_age_sex[[paste('incidence', DISEASE_SHORT_NAMES$sname[d], sep = '_')]] <- new_col
+        td1_age_sex[[paste('incidence', DISEASE_SHORT_NAMES$sname[d], sep = '_')]] <- new_col 
         
         
         
@@ -309,7 +214,7 @@ for (iage in i_age_cohort){
   }
 }
 ## Uncommnet to check scenario life tables
-# View(disease_life_table_list_sc[[3]])
+View(disease_life_table_list_sc[[3]])
 
 # ---- chunk-8 ----
 
@@ -369,47 +274,6 @@ for (iage in i_age_cohort){
   }
 
 
-#### NonDiseases (road injuries and lri)
-mx_sc_total_non_disease <- list()
-l_index <- 1
-index <- 1
-for (iage in i_age_cohort){
-  for (isex in i_sex){
-    mortality_sum <- NULL
-    mortality_sum1 <- NULL
-    create_new <- T
-    
- ## Sum all non_diseases mortality rates
-    
-    for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other'){
-      }
-      else {
-        
-        # print(paste(isex, DISEASE_SHORT_NAMES$disease[d]))
-        
-        if (create_new){
-          mortality_sum <- non_disease_list[[index]][,age_sex_cols]
-          mortality_sum$total <- 0
-          create_new <- F
-          mortality_sum$total <- mortality_sum$total +
-            (non_disease_list[[index]]$diff_mort)
-        }else{
-          mortality_sum$total <- mortality_sum$total +
-            (non_disease_list[[index]]$diff_mort)
-        }
-        
-        # cat(age, ' - ', sex,' - ',  disease,' - ',  index, ' - ', l_index,  '\n')
-        index <- index + 1
-      }
-    }
-    mx_sc_total_non_disease[[l_index]] <- mortality_sum
-    names(mx_sc_total_non_disease)[l_index] <- paste(iage, isex)
-    
-    l_index <- l_index + 1
-    
-  }
-}
 
 
 
@@ -453,45 +317,6 @@ for (iage in i_age_cohort){
   }
 }
 
-### Non-disease
-
-pylds_sc_total_non_disease <- list()
-l_index <- 1
-index <- 1
-for (iage in i_age_cohort){
-  for (isex in i_sex){
-    pylds_sum <- NULL
-    create_new <- T
-    
-    for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-      if (isex == 'male' && (DISEASE_SHORT_NAMES$disease[d] %in% c('breast cancer', 'uterine cancer'))
-          || DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other'){
-      }
-      else {
-        
-        # print(paste(isex, DISEASE_SHORT_NAMES$disease[d]))
-        
-        if (create_new){
-          pylds_sum <- non_disease_list[[index]][,age_sex_cols]
-          pylds_sum$total <- 0
-          create_new <- F
-          pylds_sum$total <- pylds_sum$total +
-            (non_disease_list[[index]]$diff_ylds)
-        }else{
-          pylds_sum$total <- pylds_sum$total +
-            (non_disease_list[[index]]$diff_ylds)
-        }
-        
-        # cat(age, ' - ', sex,' - ',  disease,' - ',  index, ' - ', l_index,  '\n')
-        index <- index + 1
-      }
-      
-    }
-    pylds_sc_total_non_disease[[l_index]] <- pylds_sum
-    names(pylds_sc_total_non_disease)[l_index] <- paste(iage, isex)
-    l_index <- l_index + 1
-  }
-}
 
 # ---- chunk-9 ----
 
@@ -511,12 +336,10 @@ for (iage in i_age_cohort){
     td2 <- MSLT_DF
     # td2 <- subset(td2, select = -c(mx, pyld_rate))
     td2[td2$age >= iage & td2$sex == isex,][[paste('mx')]] <- general_life_table_list_bl[[index]]$mx + 
-                                                              mx_sc_total_disease[[index]]$total + 
-                                                              mx_sc_total_non_disease[[index]]$total
+                                                              mx_sc_total_disease[[index]]$total
     
     td2[td2$age >= iage & td2$sex == isex,][[paste('pyld_rate')]] <- general_life_table_list_bl[[index]]$pyld_rate + 
-                                                                    pylds_sc_total_disease[[index]]$total + 
-                                                                    pylds_sc_total_non_disease[[index]]$total
+                                                                    pylds_sc_total_disease[[index]]$total
     
     
     # Instead of idata, feed td to run scenarios
@@ -593,11 +416,11 @@ for (iage in i_age_cohort){
             (1 - disease_life_table_list_bl[[index]]$px) * general_life_table_list_bl[[l_index]]$Lx
           output_burden_change$inc_num_sc <- disease_life_table_list_sc[[index]]$incidence_disease *
             (1 - disease_life_table_list_sc[[index]]$px) * general_life_table_list_sc[[l_index]]$Lx
-          output_burden_change$inc_num_diff <- output_burden_change$inc_num_sc - output_burden_change$inc_num_bl
+          output_burden_change$inc_num_diff <- output_burden_change$inc_num_bl - output_burden_change$inc_num_sc
           
           output_burden_change$mx_num_bl <- disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx
           output_burden_change$mx_num_sc <- disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx
-          output_burden_change$mx_num_diff <- output_burden_change$mx_num_sc - output_burden_change$mx_num_bl
+          output_burden_change$mx_num_diff <- output_burden_change$mx_num_bl - output_burden_change$mx_num_sc
           
           names(output_burden_change)[names(output_burden_change) == 'inc_num_bl'] <-
             paste('inc_num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')
@@ -647,11 +470,11 @@ for (iage in i_age_cohort){
             general_life_table_list_bl[[l_index]]$Lx
           output_burden_change2$inc_num_sc <- disease_life_table_list_sc[[index]]$incidence_disease * (1 - disease_life_table_list_sc[[index]]$px) * 
             general_life_table_list_sc[[l_index]]$Lx
-          output_burden_change2$inc_num_diff <- output_burden_change2$inc_num_sc - output_burden_change2$inc_num_bl
+          output_burden_change2$inc_num_diff <- output_burden_change2$inc_num_bl - output_burden_change2$inc_num_sc
           
           output_burden_change2$mx_num_bl <- disease_life_table_list_bl[[index]]$mx * general_life_table_list_bl[[l_index]]$Lx
           output_burden_change2$mx_num_sc <- disease_life_table_list_sc[[index]]$mx * general_life_table_list_sc[[l_index]]$Lx
-          output_burden_change2$mx_num_diff <- output_burden_change2$mx_num_sc - output_burden_change2$mx_num_bl
+          output_burden_change2$mx_num_diff <- output_burden_change2$mx_num_bl - output_burden_change2$mx_num_sc
           
           names(output_burden_change2)[names(output_burden_change2) == 'inc_num_bl'] <-
             paste('inc_num_bl', DISEASE_SHORT_NAMES$sname[d], sep = '_')
@@ -682,127 +505,127 @@ for (iage in i_age_cohort){
     }
     
     
-    #### Add non_diseases (injuires and lwri)
-    
-    create_new <- T
-    for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
-      if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other'){
-      }
-      else {
-        if (create_new){
-          
-          td5 <- non_disease_list[[index_n]]
-          
-          
-          ## Calculate numbers
-          
-          # ## Variable names
-          #
-          mx_num_bl <- paste('mx_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          ylds_num_bl <- paste('ylds_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          mx_num_sc <- paste('mx_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          ylds_num_sc <- paste('ylds_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-
-          ### Baseline
-          td5[[mx_num_bl]] <- non_disease_list[[index_n]]$deaths_rate_bl *
-            general_life_table_list_bl[[l_index]]$Lx
-
-          td5[[ylds_num_bl]]<- non_disease_list[[index_n]]$ylds_rate_bl *
-            general_life_table_list_bl[[l_index]]$Lx
-
-
-          ### Scenario
-          td5[[mx_num_sc]] <- non_disease_list[[index_n]]$deaths_rate_sc *
-            general_life_table_list_sc[[l_index]]$Lx
-
-          td5[[ylds_num_sc]] <- non_disease_list[[index_n]]$ylds_rate_sc *
-            general_life_table_list_bl[[l_index]]$Lx
-
-          output_burden_change3 <- list()
-          
-          ### Difference
-          
-          output_burden_change3$mx_num_diff <- non_disease_list[[index_n]]$diff_mort * general_life_table_list_sc[[l_index]]$Lx
-          
-          output_burden_change3$ylds_num_diff <- non_disease_list[[index_n]]$diff_ylds * general_life_table_list_sc[[l_index]]$Lx
-          
-          
-          ### Change names rates to match each non_disease
-          
-          names(output_burden_change3)[names(output_burden_change3) == 'diff_ylds'] <- paste('ylds_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          names(output_burden_change3)[names(output_burden_change3) == 'diff_mort'] <- paste('deaths_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          ## Change names numbers to match non_disease
-          
-          names(output_burden_change3)[names(output_burden_change3) == 'mx_num_diff'] <- paste('mx_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          names(output_burden_change3)[names(output_burden_change3) == 'ylds_num_diff'] <- paste('ylds_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          output_burden_sc <- cbind(output_burden_sc, td5)
-          output_burden_sc <- cbind(output_burden_sc, output_burden_change3)
-          
-          create_new <- F
-          
-          ## Here the calculations above are repeated, here is where the F is telling to move into the next disease
-          
-        }else{
-          
-          td6 <- non_disease_list[[index_n]]
-          
-          
-          ## Calculate numbers
-          
-          # ## Variable names
-          #
-          mx_num_bl <- paste('mx_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          ylds_num_bl <- paste('ylds_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          mx_num_sc <- paste('mx_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          ylds_num_sc <- paste('ylds_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          ### Baseline
-          td6[[mx_num_bl]] <- non_disease_list[[index_n]]$deaths_rate_bl *
-            general_life_table_list_bl[[l_index]]$Lx
-          
-          td6[[ylds_num_bl]]<- non_disease_list[[index_n]]$ylds_rate_bl *
-            general_life_table_list_bl[[l_index]]$Lx
-          
-          
-          ### Scenario
-          td6[[mx_num_sc]] <- non_disease_list[[index_n]]$deaths_rate_sc *
-            general_life_table_list_sc[[l_index]]$Lx
-          
-          td6[[ylds_num_sc]] <- non_disease_list[[index_n]]$ylds_rate_sc *
-            general_life_table_list_bl[[l_index]]$Lx
-          
-          output_burden_change4 <- list()
-          ### Difference
-          
-          output_burden_change4$mx_num_diff <- non_disease_list[[index_n]]$diff_mort * general_life_table_list_sc[[l_index]]$Lx
-          
-          output_burden_change4$ylds_num_diff <- non_disease_list[[index_n]]$diff_ylds * general_life_table_list_sc[[l_index]]$Lx
-          
-          
-          ### Change names rates to match each non_disease
-          
-          names(output_burden_change4)[names(output_burden_change4) == 'diff_ylds'] <- paste('ylds_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          names(output_burden_change4)[names(output_burden_change4) == 'diff_mort'] <- paste('deaths_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          ## Change names numbers to match non_disease
-          
-          names(output_burden_change4)[names(output_burden_change4) == 'mx_num_diff'] <- paste('mx_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          names(output_burden_change4)[names(output_burden_change4) == 'ylds_num_diff'] <- paste('ylds_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
-          
-          output_burden_sc <- cbind(output_burden_sc, td6)
-          output_burden_sc <- cbind(output_burden_sc, output_burden_change4)
-          
-        }
-        index_n <- index_n + 1
-      }
-    }
-    
+    # #### Add non_diseases (injuires and lwri)
+    # 
+    # create_new <- T
+    # for (d in 1:nrow(DISEASE_SHORT_NAMES)) {
+    #   if (DISEASE_SHORT_NAMES$is_not_dis[d] != 1 || DISEASE_SHORT_NAMES$acronym[d] == 'no_pif' || DISEASE_SHORT_NAMES$acronym[d] == 'other'){
+    #   }
+    #   else {
+    #     if (create_new){
+    #       
+    #       td5 <- non_disease_list[[index_n]]
+    #       
+    #       
+    #       ## Calculate numbers
+    #       
+    #       # ## Variable names
+    #       #
+    #       mx_num_bl <- paste('mx_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       ylds_num_bl <- paste('ylds_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       mx_num_sc <- paste('mx_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       ylds_num_sc <- paste('ylds_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    # 
+    #       ### Baseline
+    #       td5[[mx_num_bl]] <- non_disease_list[[index_n]]$deaths_rate_bl *
+    #         general_life_table_list_bl[[l_index]]$Lx
+    # 
+    #       td5[[ylds_num_bl]]<- non_disease_list[[index_n]]$ylds_rate_bl *
+    #         general_life_table_list_bl[[l_index]]$Lx
+    # 
+    # 
+    #       ### Scenario
+    #       td5[[mx_num_sc]] <- non_disease_list[[index_n]]$deaths_rate_sc *
+    #         general_life_table_list_sc[[l_index]]$Lx
+    # 
+    #       td5[[ylds_num_sc]] <- non_disease_list[[index_n]]$ylds_rate_sc *
+    #         general_life_table_list_bl[[l_index]]$Lx
+    # 
+    #       output_burden_change3 <- list()
+    #       
+    #       ### Difference
+    #       
+    #       output_burden_change3$mx_num_diff <- non_disease_list[[index_n]]$diff_mort * general_life_table_list_sc[[l_index]]$Lx
+    #       
+    #       output_burden_change3$ylds_num_diff <- non_disease_list[[index_n]]$diff_ylds * general_life_table_list_sc[[l_index]]$Lx
+    #       
+    #       
+    #       ### Change names rates to match each non_disease
+    #       
+    #       names(output_burden_change3)[names(output_burden_change3) == 'diff_ylds'] <- paste('ylds_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       names(output_burden_change3)[names(output_burden_change3) == 'diff_mort'] <- paste('deaths_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       ## Change names numbers to match non_disease
+    #       
+    #       names(output_burden_change3)[names(output_burden_change3) == 'mx_num_diff'] <- paste('mx_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       names(output_burden_change3)[names(output_burden_change3) == 'ylds_num_diff'] <- paste('ylds_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       output_burden_sc <- cbind(output_burden_sc, td5)
+    #       output_burden_sc <- cbind(output_burden_sc, output_burden_change3)
+    #       
+    #       create_new <- F
+    #       
+    #       ## Here the calculations above are repeated, here is where the F is telling to move into the next disease
+    #       
+    #     }else{
+    #       
+    #       td6 <- non_disease_list[[index_n]]
+    #       
+    #       
+    #       ## Calculate numbers
+    #       
+    #       # ## Variable names
+    #       #
+    #       mx_num_bl <- paste('mx_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       ylds_num_bl <- paste('ylds_num_bl',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       mx_num_sc <- paste('mx_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       ylds_num_sc <- paste('ylds_num_sc',DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       ### Baseline
+    #       td6[[mx_num_bl]] <- non_disease_list[[index_n]]$deaths_rate_bl *
+    #         general_life_table_list_bl[[l_index]]$Lx
+    #       
+    #       td6[[ylds_num_bl]]<- non_disease_list[[index_n]]$ylds_rate_bl *
+    #         general_life_table_list_bl[[l_index]]$Lx
+    #       
+    #       
+    #       ### Scenario
+    #       td6[[mx_num_sc]] <- non_disease_list[[index_n]]$deaths_rate_sc *
+    #         general_life_table_list_sc[[l_index]]$Lx
+    #       
+    #       td6[[ylds_num_sc]] <- non_disease_list[[index_n]]$ylds_rate_sc *
+    #         general_life_table_list_bl[[l_index]]$Lx
+    #       
+    #       output_burden_change4 <- list()
+    #       ### Difference
+    #       
+    #       output_burden_change4$mx_num_diff <- non_disease_list[[index_n]]$diff_mort * general_life_table_list_sc[[l_index]]$Lx
+    #       
+    #       output_burden_change4$ylds_num_diff <- non_disease_list[[index_n]]$diff_ylds * general_life_table_list_sc[[l_index]]$Lx
+    #       
+    #       
+    #       ### Change names rates to match each non_disease
+    #       
+    #       names(output_burden_change4)[names(output_burden_change4) == 'diff_ylds'] <- paste('ylds_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       names(output_burden_change4)[names(output_burden_change4) == 'diff_mort'] <- paste('deaths_rate_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       ## Change names numbers to match non_disease
+    #       
+    #       names(output_burden_change4)[names(output_burden_change4) == 'mx_num_diff'] <- paste('mx_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       names(output_burden_change4)[names(output_burden_change4) == 'ylds_num_diff'] <- paste('ylds_num_diff', DISEASE_SHORT_NAMES$acronym[d], sep = '_')
+    #       
+    #       output_burden_sc <- cbind(output_burden_sc, td6)
+    #       output_burden_sc <- cbind(output_burden_sc, output_burden_change4)
+    #       
+    #     }
+    #     index_n <- index_n + 1
+    #   }
+    # }
+    # 
     
     ## general_life_table_list_sc and general_life_table_list_bl (Lx)
     
@@ -821,12 +644,12 @@ for (iage in i_age_cohort){
     names(output_burden_lf_bl)[names(output_burden_lf_bl) == 'ewx'] <- paste('ewx', 'bl', sep = '_')
     
     ### Difference in life years and health adjusted life years for all evey cohort year
-    output_burden_lf_sc$Lx_diff <- general_life_table_list_sc[[l_index]]$Lx - general_life_table_list_bl[[l_index]]$Lx
-    output_burden_lf_sc$Lwx_diff <- general_life_table_list_sc[[l_index]]$Lwx - general_life_table_list_bl[[l_index]]$Lwx
+    output_burden_lf_sc$Lx_diff <- general_life_table_list_bl[[l_index]]$Lx - general_life_table_list_sc[[l_index]]$Lx
+    output_burden_lf_sc$Lwx_diff <- general_life_table_list_bl[[l_index]]$Lwx - general_life_table_list_sc[[l_index]]$Lwx
     
     ### Difference in life expectancy and health adjusted life expectancy for first year of cohort (show in results)
-    output_burden_lf_sc$ex_diff <- general_life_table_list_sc[[l_index]]$ex - general_life_table_list_bl[[l_index]]$ex
-    output_burden_lf_sc$ewx_diff <- general_life_table_list_sc[[l_index]]$ewx - general_life_table_list_bl[[l_index]]$ewx
+    output_burden_lf_sc$ex_diff <- general_life_table_list_bl[[l_index]]$ex - general_life_table_list_sc[[l_index]]$ex
+    output_burden_lf_sc$ewx_diff <- general_life_table_list_bl[[l_index]]$ewx - general_life_table_list_sc[[l_index]]$ewx
     
     
     output_burden_sc <- cbind(output_burden_sc, output_burden_lf_sc)
@@ -896,7 +719,9 @@ output_life_expectancy_change <- output_df[!duplicated(output_df$.id), c("Age gr
 
 output_life_expectancy_change <- output_life_expectancy_change[order(output_life_expectancy_change$Gender),]
 
-saveRDS(output_life_expectancy_change, paste0(output_dir, "tables/life_expectancy/life_expectancy_change.Rds"))
+saveRDS(output_life_expectancy_change, paste0(output_dir, "tables/life_expectancy/life_expectancy_change_covid.Rds"))
+
+write_csv(output_life_expectancy_change, paste0(output_dir, "tables/life_expectancy/life_expectancy_change_covid.csv"))
 
 # ---- chunk-11.1.2 Life years and health adjusted life years ----
 #### Add uncertainty intervals
@@ -911,7 +736,9 @@ output_life_years_change <- output_df %>%
                       mutate_if(is.numeric, round)
 
 
-saveRDS(output_life_years_change, paste0(output_dir, "tables/life_years/output_life_years_change.Rds"))
+saveRDS(output_life_years_change, paste0(output_dir, "tables/life_years/output_life_years_change_covid.Rds"))
+
+write_csv(output_life_years_change, paste0(output_dir, "tables/life_years/output_life_years_change_covid.csv"))
 
 # ---- chunk-11.1.2 Diseases deaths, incidence and ylds (lri) ----
 #### Add uncertainty intervals
@@ -925,7 +752,9 @@ output_diseases_change <- output_df %>%
   summarise_if(is.numeric, funs(sum)) %>%
   dplyr::select(`Age group`, Gender, matches("diff_dmt2|diff_ishd|diff_strk|diff_carc|diff_copd|diff_tbalc|diff_brsc|diff_utrc|diff_lri"))
 
-saveRDS(output_diseases_change, paste0(output_dir, "tables/diseases/output_diseases_change.Rds"))
+saveRDS(output_diseases_change, paste0(output_dir, "tables/diseases/output_diseases_change_covid.Rds"))
+
+write_csv(output_diseases_change, paste0(output_dir, "tables/diseases/output_diseases_change_covid.csv"))
 
 # ---- chunk-11.1.3 Injuries deaths and ylds ----
 #### Add uncertainty intervals
