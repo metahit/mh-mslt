@@ -1,15 +1,16 @@
-# ---- chunk-Introduction: Disbayes data generation generation ----
+# ---- chunk-Introduction: Disbayes data generation ----
+
 library(rlist)
 library(tidyr)
 library(devtools)
-### Works in virtual machine, not in work windows
 library(disbayes)
-## The below code generates data to use as inputs in disbayes.
 
 
 ## To run this code, first the following data preparation (from dataprep.R scrip has to be generated)
 
-## 1) gbd_city_region_data
+## 1) gbd_city_region_data_agg
+
+
 ## 2) disease_measure list 
 ## 3) DISEASE_SHORT_NAMES
 
@@ -95,24 +96,6 @@ tryCatchCi2NumDF <- function(x) tryCatch(Ci2NumDF(x), error = function(e) e)
 disbayes_input_list_city_regions_3  <- lapply(disbayes_input_list_city_regions_2, tryCatchCi2NumDF)
 
 # ---- chunk-1.2.5: Create a dataframe with all city regions data ----
-
-### Old code, I was deleting all prevalence data frames, now deleting all null 
-
-# ## This step is to delete the data frames with errors from the list before appending the data frames in the list in a unique dataframe.
-# has_prevc <- c(grepl("prevalence",names(disbayes_input_list_city_regions_3)) == TRUE) %>% as.character()
-# 
-# index <- 1
-# disbayes_input_list_city_regions_3b <- list()
-# 
-# for (i in 1:length(disbayes_input_list_city_regions_3)) {
-# 
-#   if(has_prevc[[index]] == "TRUE" ) {}
-#   else{
-# 
-# disbayes_input_list_city_regions_3b[[index]] <- disbayes_input_list_city_regions_3[[i]]
-#   }
-# index <- index + 1
-# }
 
 
 
@@ -239,19 +222,21 @@ disbayes_inputs_df2 <-   disbayes_inputs_df2[ -c(1:2,4,5,12) ]
 
 
 ## Final data set to process in disbayes. Filter data by city region, disease and sex. COMPARE with saved data in rds
-disbayes_inputs <- disbayes_inputs_df %>%
+disbayes_inputs_latest <- disbayes_inputs_df %>%
   left_join(disbayes_inputs_df2) %>% 
   separate(sex_disease, c("drop", "disease")) 
 
-disbayes_inputs <- disbayes_inputs[, !(colnames(disbayes_inputs ) %in% c("drop","index"))]
-
-colnames(disbayes_inputs)[which(names(disbayes_inputs =="age_cat"))] <- "age"
+disbayes_inputs_latest <- disbayes_inputs[, !(colnames(disbayes_inputs ) %in% c("drop","index"))]
 
 
-write_rds(disbayes_inputs, paste0(relative_path_mslt, "data/city regions/Input disbayes/disbayes_inputs", ".rds"))
+names(disbayes_inputs_latest)[names(disbayes_inputs_latest) == "age_cat"] <- "age"
+
+
+write_rds(disbayes_inputs_latest, paste0(relative_path_mslt, "data/city regions/Input disbayes/disbayes_inputs_new", ".rds"))
 
 
 ##### These just to compare that updates in data and code do not modify original results. 
-compare_old <- dplyr::filter(disbayes_inputs, sex == "male", disease == "crdd", cityregion == "bristol")
-compare_new <- dplyr::filter(disbayes_inputs_original, sex == "male", disease == "crdd", cityregion == "bristol")
+compare_new <- dplyr::filter(disbayes_inputs_latest, sex == "male", disease == "crdd", cityregion == "bristol")
+compare_original <- dplyr::filter(disbayes_inputs_original, sex == "male", disease == "crdd", cityregion == "bristol")
+compare_inputs <- dplyr::filter(disbayes_inputs, sex == "male", disease == "crdd", cityregion == "bristol")
 

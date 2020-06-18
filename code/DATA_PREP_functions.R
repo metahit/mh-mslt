@@ -139,8 +139,14 @@ Ci2NumDF <- function(in_data) {
     
     # browser()
     
-    mutate(num=ifelse(b==0,0,disbayes:::ci2num(b/a,c/a,d/a)[[1]])) %>%
-    mutate(denom=ifelse(b==0,0,disbayes:::ci2num(b/a,c/a,d/a)[[2]])) %>%
+    # mutate(num=ifelse(b==0,0,disbayes:::ci2num(b/a,c/a,d/a)[[1]])) %>%
+    # mutate(denom=ifelse(b==0,0,disbayes:::ci2num(b/a,c/a,d/a)[[2]])) %>%
+    
+    
+    
+    mutate(num=ifelse(b==0,0,disbayes:::ci2num(b,c,d)[[1]])) %>%
+    mutate(denom=ifelse(b==0,0,disbayes:::ci2num(b,c,d)[[2]])) %>%
+    
     mutate(population_number = a) %>%
     mutate(sex_age_cat = e) %>%
     mutate(cityregion = f) %>%
