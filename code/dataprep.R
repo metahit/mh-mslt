@@ -451,12 +451,20 @@ disbayes_input_list_city_regions_4 <- disbayes_input_list_city_regions_3b %>% la
 
 disbayes_input_list_city_regions_5 <- disbayes_input_list_city_regions_4 %>% summarise_all(funs(sum))
 
-disbayes_input_list_city_regions_5$indexagg <- gsub("'", '', disbayes_input_list_city_regions_5$indexagg)
+#### Check NAs
+
+NAs_test1 <- disbayes_input_list_city_regions_5[rowSums(is.na(disbayes_input_list_city_regions_5)) > 0,]
+
+# disbayes_input_list_city_regions_5$indexagg <- gsub("'", '', disbayes_input_list_city_regions_5$indexagg)
 
 disbayes_input_list_city_regions_6 <- disbayes_input_list_city_regions_5 %>% 
   mutate(index = indexagg) %>% 
   separate(indexagg, into=c("measure", "disease", "sex", "age", "cityregion"), sep = "_")
  # mutate_if(is.character)%>% 
+
+NAs_test2 <- disbayes_input_list_city_regions_6[rowSums(is.na(disbayes_input_list_city_regions_6)) > 0,]
+
+
 ## Add new variable with mid-age group
 
 disbayes_input_list_city_regions_6$agegr <- 0
@@ -491,8 +499,10 @@ sex_disbayes <- unique(disbayes_input_list_city_regions_6$sex)
 
 
 disbayes_input_list_city_regions_7 <- disbayes_input_list_city_regions_6 %>% 
-  pivot_wider(id_cols = c(agegr, sex, population_number, cityregion, measure, disease), 
+  pivot_wider(id_cols = c(measure, disease, sex, age, cityregion, population_number, agegr), 
               names_from = measure, values_from = c(num, denom))
+
+NAs_test3 <- disbayes_input_list_city_regions_7[rowSums(is.na(disbayes_input_list_city_regions_7)) > 0,]
 
 ## Create list
 index <- 1
