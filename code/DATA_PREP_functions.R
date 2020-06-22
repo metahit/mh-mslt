@@ -132,8 +132,8 @@ RunLocDf <- function(i_data) {
 Ci2NumDF <- function(in_data) {
   
   dataframe <- dplyr::select(in_data, population_number, est, lower, upper, sex_age_cat, cityregion, indexagg)  %>%
-    
-    dplyr::select(a=population_number,b= est,c= lower,d=upper, e= sex_age_cat, f=cityregion, h=indexagg) %>%
+    # 
+    # dplyr::select(a=population_number,b= est,c= lower,d=upper, e= sex_age_cat, f=cityregion, h=indexagg) %>%
     rowwise() %>%
     
     # browser()
@@ -143,13 +143,13 @@ Ci2NumDF <- function(in_data) {
     
     
     
-    mutate(num=ifelse(b==0,0,disbayes:::ci2num(b,c,d)[[1]])) %>%
-    mutate(denom=ifelse(b==0,0,disbayes:::ci2num(b,c,d)[[2]])) %>%
-    
-    mutate(population_number = a) %>%
-    mutate(sex_age_cat = e) %>%
-    mutate(cityregion = f) %>%
-    mutate(indexagg = h) %>%
+    mutate(num=ifelse(est==0,0,disbayes:::ci2num(est,lower, upper)[[1]])) %>%
+    mutate(denom=ifelse(est==0,0,disbayes:::ci2num(est,lower, upper)[[2]])) %>%
+    # 
+    # mutate(population_number = a) %>%
+    # mutate(sex_age_cat = e) %>%
+    # mutate(cityregion = f) %>%
+    # mutate(indexagg = h) %>%
     
     dplyr::select(population_number, indexagg, num, denom, est, lower, upper) %>%
     as.data.frame()
