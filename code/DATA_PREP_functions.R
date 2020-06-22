@@ -151,7 +151,7 @@ Ci2NumDF <- function(in_data) {
     mutate(cityregion = f) %>%
     mutate(indexagg = h) %>%
     
-    dplyr::select(population_number, indexagg, num, denom) %>%
+    dplyr::select(population_number, indexagg, num, denom, est, lower, upper) %>%
     as.data.frame()
   
 }
