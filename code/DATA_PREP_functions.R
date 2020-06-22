@@ -129,7 +129,6 @@ RunLocDf <- function(i_data) {
 }
 
 # --- Ci2NumDF ----
-
 Ci2NumDF <- function(in_data) {
   
   dataframe <- dplyr::select(in_data, population_number, est, lower, upper, sex_age_cat, cityregion, indexagg)  %>%
@@ -156,7 +155,6 @@ Ci2NumDF <- function(in_data) {
     as.data.frame()
   
 }
-
 
 # --- RemoveAllWs ---
 

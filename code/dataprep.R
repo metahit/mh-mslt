@@ -369,6 +369,7 @@ for (i in 1:length(disbayes_input_list_city_regions)){
 
 ### Prepare data to process with Ci2NumDF
 
+
 disbayes_input_list_city_regions_2 <- list()
 index <- 1
 for (i in 1:length(gbd_city_region_data)) {
@@ -418,7 +419,10 @@ for (i in 1:length(gbd_city_region_data)) {
 
 
 tryCatchCi2NumDF <- function(x) tryCatch(Ci2NumDF(x), error = function(e) e)
-disbayes_input_list_city_regions_3  <- lapply(disbayes_input_list_city_regions_2, tryCatchCi2NumDF)
+disbayes_input_list_city_regions_3  <- lapply(disbayes_input_list_city_regions_2[[1]], tryCatchCi2NumDF)
+
+ test <- Ci2NumDF(disbayes_input_list_city_regions_2[[1]])
+
 
 # ---- chunk-1.6.5: Create a dataframe with all city regions data ----
 
