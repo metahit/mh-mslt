@@ -6,7 +6,7 @@ library(citr)
 library(disbayes)
 
 
-# ---- SortGbdInput ----
+# ---- SortGbdInput ---- NOT USED ANY LONGER move to archive
 ## Not used, but, can be used if we want to get the data for one specific location only. 
 ## Selects year and localities from GBD data frame dowloaded from: http://ghdx.healthdata.org/gbd-results-tool
 
@@ -17,7 +17,7 @@ SortGbdInput <- function(in_data, in_year, in_locality) {
 
 }
 
-# --- RunLocDf ----
+# --- RunLocDf ---- NOT USED ANY LONGER move to archive
 
 ## Organises GBD data per locality to tidy format with columns for variable names (e.g. age, sex, disease-cause, disease-metrics) and calculates population numbers.
 ## Also generates rates for localities, which we may use in the future when modelling per localities. 
@@ -128,7 +128,7 @@ RunLocDf <- function(i_data) {
   return(gbd_df)
 }
 
-# --- Ci2NumDF ----
+# --- Ci2NumDF ---- NOT USED ANY LONGER, replaced with Chris markdown, moved to archive
 Ci2NumDF <- function(in_data) {
   
   dataframe <- dplyr::select(in_data, population_number, est, lower, upper, sex_age_cat, cityregion, indexagg)  %>%

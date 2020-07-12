@@ -2,7 +2,7 @@
 ## Create R Markdown for data preparation
 
 # ---- chunk-intro ----
-rm (list = ls())
+rm (list = ls()) 
 options(scipen=999)
 library(readr)
 library(rlist)
@@ -15,12 +15,13 @@ library(disbayes)
 
 ## set wd
 
-setwd("C:/Metahit/")
+# setwd("C:/Metahit/")
 
 ## Relative paths
 
-relative_path_execute <- paste0(getwd(), '/mh-execute/')
-relative_path_mslt <- paste0(getwd(),'/mh-mslt/')
+relative_path_execute <- 'C:/Metahit/mh-execute/'
+relative_path_mslt <- 'C:/Metahit/mh-mslt/'
+
 
 ##get funcions
 
@@ -110,6 +111,8 @@ DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "hyhd", "is_not_dis"] <- 3
 
 DISEASE_SHORT_NAMES[DISEASE_SHORT_NAMES$sname == "mjdd", "is_not_dis"] <- 3
 
+###Above is in Chris data prep
+
 ### Combine with acronyms from execute-mh
 
 ## Get execute-mh diseases 
@@ -167,6 +170,8 @@ data_extracted <- left_join(local_goverment_areas, data_extracted, by = "locatio
 
 
 # ---- chunk-1.4: Sort data per local goverment area ----
+
+### DONE IN CHRIS DATA PREP
 
 ## We first derive population and cases numbers (e.g. all cause mortality) for each locality and then aggregate at the City Region level. 
 
