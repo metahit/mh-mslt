@@ -5,8 +5,8 @@ calculateGBDwider <- function(gbd, local_government_areas) {
   disease <- DISEASE_SHORT_NAMES %>% dplyr::filter(acronym!="no_pif") %>% dplyr::select(disease) ### process diseases with PIFS
   
 
-   # gbd <- gbd
-   # local_government_areas <- local_government_areas
+     # gbd <- gbd
+     # local_government_areas <- local_government_areas
   
   ## Clean names columns
   gbd <- gbd
@@ -70,10 +70,10 @@ calculateGBDwider <- function(gbd, local_government_areas) {
 
 
 calculateMSLT <- function(gbd_wider, location, disease) {
-   location="bristol"
-   gbd_wider <- gbd_wider %>% filter(area==location)
-   load("C:/Metahit/mh-mslt/input/city regions/Output disbayes/cityregions_smoothed_res.rda")
-   disease <- DISEASE_SHORT_NAMES %>% dplyr::filter(acronym!="no_pif") %>% dplyr::select(disease) ### process diseases with PIFS
+   # location="bristol"
+   # gbd_wider <- gbd_wider %>% filter(area==location)
+   # load("C:/Metahit/mh-mslt/input/city regions/Output disbayes/cityregions_smoothed_res.rda")
+   # disease <- DISEASE_SHORT_NAMES %>% dplyr::filter(acronym!="no_pif") %>% dplyr::select(disease) ### process diseases with PIFS
 
   ## Create MSLT dataframe
   mslt_df <- data.frame(age = rep(c(0:100), 2), sex = append(rep("male", 101), 
