@@ -45,9 +45,20 @@ This documnets consists of the following sections:
 5) Code to run the life table only.
 
 Table 1 is an overview of inputs, ouputs and code to generate them. 
+```{r, echo=FALSE, include=TRUE}
 
+inputs_outputs <- tribble(
+~"R file", ~"Function", ~"Input variable", ~"Input file", ~"Output variable", ~"Output file"
 
+)
+kable(inputs_outputs, booktabs = T, caption = " Table 1: PMSLT inputs", longtable = TRUE) %>%
 
+  column_spec(1:2, width = "7em") %>%
+  column_spec(3:4, width = "15em") %>%
+  row_spec(0, bold = T)  %>%
+  kable_styling()
+
+```
 ##  Generation inputs for the proportional multi-state life table (PMSLT)
 
 The below code generates inputs for: United Kingdom, England, Wales, Northen Ireland, Scotland, Wales, English regions (East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England, West Midlands, Yorkshire and the Humber) and the English City Regions (Liverpool, Nottingham, Bristol, Northeast, Greater Manchester, Sheffield, West Midlands, Leeds and London). 
