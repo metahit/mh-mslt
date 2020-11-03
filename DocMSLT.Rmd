@@ -309,7 +309,7 @@ This code can be used independently if interested in life table analysis only.
 Select an area of interest. Options are: liverpool, nottingham, bristol, northeast, greatermanchester,  sheffield             westmidlands, leeds, london, United Kingdom, England, East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England , West Midlands, Yorkshire and the Humber, Northern Ireland, Scotland, Wales       
 
 ```{r,eval=FALSE}
-source(paste0(relative_path_mslt, "R/run_MSLT.R"))
+source(paste0(relative_path_mslt, "R/functions_MSLT.R"))
 
 # dataframe of the age and sex cohorts (crossing just does a cross product) for loop below
   age_sex_cohorts <- crossing(data.frame(age=i_age_cohort),
@@ -343,7 +343,7 @@ mslt_df <- mslt_inputs[["bristol"]]
 
 ### Run baseline disease life tables
 ```{r,eval=FALSE}
-source(paste0(relative_path_mslt, "R/run_MSLT.R"))
+source(paste0(relative_path_mslt, "R/functions_MSLT.R"))
 
   
   disease_cohorts <- DISEASE_SHORT_NAMES %>%
@@ -411,7 +411,7 @@ source(paste0(relative_path_mslt, "R/run_MSLT.R"))
 Re run diseases life tables with modified incidence rates by the pif.
 New incidence rates = bl incidence rates * (1-disease_pif).
 ```{r,eval=FALSE}
-source(paste0(relative_path_mslt, "R/run_MSLT.R"))
+source(paste0(relative_path_mslt, "R/functions_MSLT.R"))
   
   
   disease_relative_risks <- tribble(
@@ -682,31 +682,30 @@ General life table re-runed with modified mortality and Pylds rates
     scenario_d <- inner_join(disease_life_table_sc %>%
                              dplyr::select(age_group,sex,age,cause,incidence_disease,mx,px),
                            general_life_table_sc %>%
-                             dplyr::select(age_group,sex,age,Lx),
+                             dplyr::select(age_group,sex,age,Lx,ex,Lwx,ewx),
                            by=c("age","sex","age_group")) %>%
     mutate(intervention="sc")
   
     baseline_d <- inner_join(disease_life_table_bl %>%
                              dplyr::select(age_group,sex,age,cause,incidence_disease,mx,px),
                            general_life_table_bl %>%
-                             dplyr::select(age_group,sex,age,Lx),
+                             dplyr::select(age_group,sex,age,Lx,ex,Lwx,ewx),
                            by=c("age","sex","age_group")) %>%
     mutate(intervention="bl")
   
     disease_combined <- bind_rows(scenario_d,baseline_d) %>%
     pivot_wider(names_from  = intervention,
-                values_from = c(incidence_disease,mx,px,Lx),
-                values_fill = 0) %>%
+                values_from = c(incidence_disease,mx,px,Lx,ex,Lwx,ewx))  %>%
     mutate(inc_num_bl   = incidence_disease_bl*(1-px_bl)*Lx_bl,
            inc_num_sc   = incidence_disease_sc*(1-px_sc)*Lx_sc,
            inc_num_diff = inc_num_sc-inc_num_bl,
            mx_num_bl    = mx_bl*Lx_bl,
            mx_num_sc    = mx_sc*Lx_sc,
            mx_num_diff  = mx_num_sc-mx_num_bl) %>%
-    pivot_wider(names_from  = cause,
-                values_from = inc_num_bl:mx_num_diff,
-                values_fill = 0) %>%
-    dplyr::select(-starts_with(c("Lx", "mx", "px", "incidence_")))
+    dplyr::select(c(-mx_sc, -mx_bl, -px_sc, -px_bl, -Lx_sc, -Lx_bl, -ex_sc, -ex_bl, -Lwx_sc, -Lwx_bl, -ewx_sc, -ewx_bl)) %>%    dplyr::select(-starts_with(c( "incidence_"))) %>%
+      pivot_wider(names_from  = cause,
+                values_from = inc_num_bl:mx_num_diff)
+    
   
 ### Non_diseases life tables
   
@@ -734,10 +733,9 @@ General life table re-runed with modified mortality and Pylds rates
            mx_num_bl    = mx_bl*Lx_bl,
            mx_num_sc    = mx_sc*Lx_sc,
            mx_num_diff  = mx_num_sc-mx_num_bl) %>%
+    dplyr::select(c(cause, sex, age, age_group, ylds_num_bl, ylds_num_sc, ylds_num_diff, mx_num_bl, mx_num_sc, mx_num_diff)) %>%  
     pivot_wider(names_from  = cause,
-                values_from = diff_mort:mx_num_diff, 
-                values_fill=0) %>%
-    dplyr::select(-starts_with("Lx"))
+                values_from = ylds_num_bl:mx_num_diff)
     
 ### General life tables
   
@@ -764,9 +762,9 @@ General life table re-runed with modified mortality and Pylds rates
               inner_join(non_disease_combined, 
                          by=c("age","sex","age_group"))
   
+### Present changes in life expectancy, life years, health-adjusted life years and burden by cause (diseases and non-diseases) by age and sex cohort
 ```
-Organise outputs for presentation
-
+  
 ```{r, eval=FALSE}
 
   #### Summary data frame by age and sex and total 
@@ -775,21 +773,21 @@ Organise outputs for presentation
   output_df_agg_sex  <- output_df   %>% ### Create a simulation year columns
     group_by(age_group, sex, .add=TRUE) %>%
     dplyr::mutate(year = 1:dplyr::n()) %>%
-    dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
     ungroup() %>%
-    group_by(year, sex, .add=TRUE) %>% 
+    dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
+    group_by(year, sex, .add=TRUE) %>%
     summarise_if(is.numeric, funs(sum)) %>%
-    ungroup() 
-  
-  ######## Dataframe with all outputs aggregated by year of simlation all
+    ungroup()
+  # 
+  # ######## Dataframe with all outputs aggregated by year of simulation all
   output_df_agg_all  <- output_df   %>% ### Create a simulation year columns
     group_by(age_group, sex, .add=TRUE) %>%
     dplyr::mutate(year = 1:dplyr::n()) %>%
-    dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
     ungroup() %>%
-    group_by(year, .add=TRUE) %>% 
+    dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
+    group_by(year, .add=TRUE) %>%
     summarise_if(is.numeric, funs(sum)) %>%
-    ungroup() 
+    ungroup()
   
   ### Create age groups variable, easier to read
   
@@ -820,13 +818,13 @@ Organise outputs for presentation
     rename(age_group=age_cat)
   
   output_df <- output_df %>% left_join(population)%>%
-    rename(`Age group` = age_group_2, Gender = sex)
+    rename(`Age group` = age_group_2)
   
   
   ##################### Below outcomes for presentation ####################################################
   
   # Table: Life expectancy and health adjusted life expectancy 
-  output_life_expectancy_change <- output_df[!duplicated(output_df$cohort), c("Age group", "cohort", "Gender", "ex_bl", "ex_sc", "ewx_bl", "ewx_sc", "ex_diff", "ewx_diff", "population_number")] %>%
+  output_life_expectancy_change <- output_df[!duplicated(output_df$cohort), c("Age group", "cohort", "sex", "ex_bl", "ex_sc", "ewx_bl", "ewx_sc", "ex_diff", "ewx_diff", "population_number")] %>%
     dplyr::rename(`Life expectancy at baseline` = ex_bl, 
                   `Life expectancy scenario` = ex_sc, 
                   `Health adjusted life expectancy baseline` = ewx_bl, 
@@ -835,33 +833,156 @@ Organise outputs for presentation
                   `Difference in health adjusted life expectancy in days` = ewx_diff* 365) %>% 
     mutate_if(is.numeric, round, digits = 3) %>%
     dplyr::select(-c(ex_diff, ewx_diff, cohort)) %>%
-    relocate(population_number, .after = Gender)%>%
+    relocate(population_number, .after = sex)%>%
     rename('Population cohort'=population_number)
   
-  output_life_expectancy_change <- output_life_expectancy_change[order(output_life_expectancy_change$Gender),] 
+  output_life_expectancy_change <- output_life_expectancy_change[order(output_life_expectancy_change$sex),] 
   
   # Table: Life years and health adjusted life years ----
   
   output_life_years_change <- output_df %>% 
-    group_by(Gender, `Age group`, cohort, .add=TRUE) %>%
+    group_by(sex, `Age group`, cohort, .add=TRUE) %>%
     summarise_if(is.numeric, funs(sum)) %>%
     ungroup() %>%
-    dplyr::select(`Age group`,cohort, Gender,Lx_diff, Lwx_diff, population_number) %>%
+    dplyr::select(`Age group`,cohort, sex,Lx_diff, Lwx_diff, population_number) %>%
     dplyr::rename(`Life years` = Lx_diff, 
                   `Health adjusted life years` = Lwx_diff)  %>% 
     mutate_if(is.numeric, round) %>%
-    relocate(population_number, .after = Gender)%>%
+    relocate(population_number, .after = sex)%>%
     rename('Population cohort'=population_number) %>%
     dplyr::select(-cohort)
   
   # Table: Diseases deaths, incidence and ylds ----
   
   output_diseases_change <- output_df %>% 
-    group_by(Gender, `Age group`, cohort, .add=TRUE) %>%
+    group_by(sex, `Age group`, cohort, .add=TRUE) %>%
     summarise_if(is.numeric, funs(sum)) %>% 
     mutate_if(is.numeric, round) %>%
-    relocate(population_number, .after = Gender)%>%
+    relocate(population_number, .after = sex)%>%
     rename('Population cohort'=population_number) %>%
     dplyr::select(-cohort) %>%
-    dplyr::select(`Age group`, Gender, contains("diff"), -contains("Lx", "Lwx", "ex", "exw"))
+    dplyr::select(`Age group`, sex, contains("diff")) %>%
+    dplyr::select(-contains(c("Lx", "Lwx", "ex")))
+```
+
+### Generate graphs over simulation period
+Inputs requiered generated above. However, here, I demonstrate the use of the function run_MSLT and generate some graphs.
+
+```{r, eval=FALSE}
+source(paste0(relative_path_mslt, "R/RunMSLT.R"))
+  
+#### Graphs for changes in diseases over time 
+outputs <- RunMSLT(
+  mslt_df=read_csv("C:\\Metahit\\mh-execute\\inputs\\mslt\\bristol_mslt.csv"),
+  disease_names=readRDS("C:\\Metahit\\mh-mslt\\output\\parameters\\DISEASE_SHORT_NAMES.rds"),
+  i_sex=c("male", "female"),
+  i_age_cohort=seq(from=17, to=97, by =5),
+  pif=read_csv("C:\\Metahit\\mh-mslt\\input\\pif.csv")
+)
+
+### Incidence
+
+data_f <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "female") %>% dplyr::select("sex", "year", contains("diff"))
+data_m <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "male") %>% dplyr::select("sex", "year", contains("diff"))
+data_t <- dplyr::filter(outputs[['output_df_agg_all']]) %>% dplyr::select("year", contains("diff")) %>%
+  mutate(sex ="total")
+
+data <- bind_rows(data_f, data_m, data_t)
+
+plot_1 <- data %>%
+  ggplot(aes(x = year)) +
+  geom_smooth(aes(y = inc_num_diff_brsc,method = "loess", color="Breast cancer")) +
+  geom_smooth(aes(y = inc_num_diff_carc, method = "loess", color="Colon cancer")) +
+  geom_smooth(aes(y = inc_num_diff_dmt2, method = "loess", color="Type 2 diabetes")) +
+  geom_smooth(aes(y = inc_num_diff_tbalc, method = "loess", color="Lung cancer")) +
+  geom_smooth(aes(y = inc_num_diff_utrc, method = "loess", color="Uterine cancer")) +
+  geom_smooth(aes(y = inc_num_diff_ishd, method = "loess", color="Ischemic heart disease")) +
+  geom_smooth(aes(y = inc_num_diff_strk, method = "loess", color="Stroke")) + 
+  geom_smooth(aes(y = inc_num_diff_copd, method = "loess", color="COPD")) +
+  labs(x = "Simulation year",
+       title = paste("Changes in disease incidence over time"),
+       y = "Numbers") +
+  labs(color="") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12,face="bold"),
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10)) +
+  theme_classic() +
+  geom_hline(yintercept=0, linetype='dashed', color = 'black')+
+  facet_wrap(. ~ sex) + 
+  theme(
+    strip.background = element_blank() ) +
+  scale_fill_brewer(name = "Sex") +
+  theme(legend.position = "bottom",
+        legend.text = element_text(colour = "black", size = 8),
+        legend.key = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+plot_1
+ggsave(plot_1, file=paste0("./output/graphs/diseases/incidence.png"), width = 14, height = 10, units = "cm")
+
+
+### Deaths
+
+plot_2 <- data %>%
+  ggplot(aes(x = year)) +
+  geom_smooth(aes(y = mx_num_diff_brsc,method = "loess", color="Breast cancer")) +
+  geom_smooth(aes(y = mx_num_diff_carc, method = "loess", color="Colon cancer")) +
+  geom_smooth(aes(y = mx_num_diff_dmt2, method = "loess", color="Type 2 diabetes")) +
+  geom_smooth(aes(y = mx_num_diff_tbalc, method = "loess", color="Lung cancer")) +
+  geom_smooth(aes(y = mx_num_diff_utrc, method = "loess", color="Uterine cancer")) +
+  geom_smooth(aes(y = mx_num_diff_ishd, method = "loess", color="Ischemic heart disease")) +
+  geom_smooth(aes(y = mx_num_diff_strk, method = "loess", color="Stroke")) + 
+  geom_smooth(aes(y = mx_num_diff_copd, method = "loess", color="COPD")) +
+  labs(x = "Simulation year",
+       title = paste("Changes in disease mortality over time"),
+       y = "Numbers") +
+  labs(color="") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12,face="bold"),
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10)) +
+  theme_classic() +
+  geom_hline(yintercept=0, linetype='dashed', color = 'black')+
+  facet_wrap(. ~ sex) + 
+  theme(
+    strip.background = element_blank() ) +
+  scale_fill_brewer(name = "Sex") +
+  theme(legend.position = "bottom",
+        legend.text = element_text(colour = "black", size = 8),
+        legend.key = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+plot_2
+ggsave(plot_2, file=paste0("./output/graphs/diseases/deaths.png"), width = 14, height = 10, units = "cm")
+
+
+
+#### Graph for changes in life years 
+
+data_f <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "female") %>% dplyr::select("sex", "year", "Lx_diff", "Lwx_diff")
+data_m <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "male") %>% dplyr::select("sex", "year", "Lx_diff", "Lwx_diff")
+data_t <-  dplyr::filter(outputs[['output_df_agg_all']]) %>% dplyr::select("year", "Lx_diff", "Lwx_diff")       
+
+plot_3 <- data_t %>%
+  ggplot(aes(x = year, y = Lx_diff)) +
+  geom_smooth(method = "loess", aes(color= "Life years total")) +
+  geom_smooth(data = data_t, aes(y = Lwx_diff, method = "loess",  color= "HALYs total")) +
+  geom_smooth(data = data_f, aes(y = Lx_diff,  method = "loess",  color= "Life years female")) +
+  geom_smooth(data = data_f, aes(y = Lwx_diff,  method = "loess",  color= "HALYs female")) +
+  geom_smooth(data = data_m, aes(y = Lx_diff,  method = "loess",  color= "Life years male")) +
+  geom_smooth(data = data_m, aes(y = Lwx_diff,  method = "loess",  color= "HALYs male")) +
+  labs(x = "Simulation year",
+       title = paste("Difference life years and health-adjusted life years"),
+       y = "Numbers") +
+  labs(color="") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12,face="bold"),
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10)) +
+  theme(legend.position = "right",
+        legend.title = element_blank(),
+        legend.text = element_text(colour = "black", size = 10),
+        legend.key = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme_classic() +
+  geom_hline(yintercept=0, linetype='dashed', color = 'black')
+plot_3
+ggsave(plot_3, file=paste0("./output/lifeyears/lifeyears.png"), width = 14, height = 10, units = "cm")
+
 ```
