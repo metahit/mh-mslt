@@ -18,6 +18,9 @@ $RECYCLE.BIN/
 # =========================
 .Rproj.user
 .RData
+.Rhistory
 .DocMSLT.html
 .legacy
 disabyes
+.RData
+
