@@ -1,14 +1,11 @@
 ---
-title: "Preparing data from the Global Burden of Disease for multi-state data frame"
-author: -"Belen, Zapata-Diomedi  <belen.zapata-diomedi@rmit.edu.au>"
+title: "Proportional multi-state life table"
+author: -"Belen, Zapata-Diomedi  <belen.zapata-diomedi@rmit.edu.au>" 
         - "Alan, Both"
         -"Ali Abbas"
-date:   "`r Sys.time()`"
-output:
-    html_document:
-        code_folding: show
+date: "`r Sys.time()`"
 params:
-    date:   !r Sys.Date() - 1
+  date: !r Sys.Date() - 1
 always_allow_html: yes
 ---
 
@@ -16,22 +13,13 @@ always_allow_html: yes
 library(knitr)
 library(kableExtra)
 library(plyr)
-library(lubridate)
 library(ggplot2)
-library(ggjoy)
-library(ggpubr)
-library(plm)
-library(PerformanceAnalytics)
-library(pander)
 library(dplyr)
 library(tidyr)
 library(tibble) 
 library(knitr)
 library(readxl)
 library(stringr)
-library(Hmisc)
-library(DiagrammeR)
-library(tinytex)
 library(tibble)
 library(readr)
 options(scipen = 999)
@@ -49,7 +37,20 @@ relative_path_mslt <- paste0(mypath,'mh-mslt/')
 
 
 # Introduction
-Generate inputs for the proportional multi-state life table for: United Kingdom, England, Wales, Northen Ireland, Scotland, Wales, English regions (East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England, West Midlands, Yorkshire and the Humber) and the English City Regions (Liverpool, Nottingham, Bristol, Northeast, Greater Manchester, Sheffield, West Midlands, Leeds and London). 
+This documnets consists of the following sections: 
+1) Generation inputs for the proportional multi-state life table (PMSLT); 
+2) Code explained to run the PMSLT for one area (e.g. city regions, country); 
+3) Final function to use in mh-execute to run the PMSLT;
+4) Examles of output graphs; 
+5) Code to run the life table only.
+
+Table 1 is an overview of inputs, ouputs and code to generate them. 
+
+
+
+##  Generation inputs for the proportional multi-state life table (PMSLT)
+
+The below code generates inputs for: United Kingdom, England, Wales, Northen Ireland, Scotland, Wales, English regions (East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England, West Midlands, Yorkshire and the Humber) and the English City Regions (Liverpool, Nottingham, Bristol, Northeast, Greater Manchester, Sheffield, West Midlands, Leeds and London). 
 Raw inputs are in "inputs" folder. Processed data is in "output" folder. Final data save in mh-execute inputs/mslt.
 *GBD will update data end of October*
 
@@ -867,6 +868,7 @@ General life table re-runed with modified mortality and Pylds rates
 
 ### Generate graphs over simulation period
 Inputs requiered generated above. However, here, I demonstrate the use of the function run_MSLT and generate some graphs.
+This sections can be run independently from the rest. 
 
 ```{r, eval=FALSE}
 source(paste0(relative_path_mslt, "R/RunMSLT.R"))
@@ -917,7 +919,7 @@ plot_1 <- data %>%
         legend.key = element_blank(),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 plot_1
-ggsave(plot_1, file=paste0("./output/graphs/diseases/incidence.png"), width = 14, height = 10, units = "cm")
+ggsave(plot_1, file=paste0("./output/graphs/incidence.png"), width = 14, height = 10, units = "cm")
 
 
 ### Deaths
@@ -950,7 +952,7 @@ plot_2 <- data %>%
         legend.key = element_blank(),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 plot_2
-ggsave(plot_2, file=paste0("./output/graphs/diseases/deaths.png"), width = 14, height = 10, units = "cm")
+ggsave(plot_2, file=paste0("./output/graphs/deaths.png"), width = 14, height = 10, units = "cm")
 
 
 
@@ -983,6 +985,6 @@ plot_3 <- data_t %>%
   theme_classic() +
   geom_hline(yintercept=0, linetype='dashed', color = 'black')
 plot_3
-ggsave(plot_3, file=paste0("./output/lifeyears/lifeyears.png"), width = 14, height = 10, units = "cm")
+ggsave(plot_3, file=paste0("./output/lifeyears.png"), width = 14, height = 10, units = "cm")
 
 ```
