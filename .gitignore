@@ -17,8 +17,7 @@ $RECYCLE.BIN/
 # Operating System Files
 # =========================
 .Rproj.user
-.disbayes_compare
 .RData
 .DocMSLT.html
 .legacy
-.disabyes/archive
+disabyes
