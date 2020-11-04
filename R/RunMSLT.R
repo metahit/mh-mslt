@@ -38,7 +38,7 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
                                age_cat =="85-89" ~ 87,
                                age_cat =="90-94" ~ 92,
                                age_cat =="95-120" ~ 97)) %>% 
-    rename(pif_ihd=scen_pif_pa_ap_noise_no2_ihd, ### rename all original pif columnst to match diseases
+    dplyr::rename(pif_ihd=scen_pif_pa_ap_noise_no2_ihd, ### rename all original pif columnst to match diseases
            pif_stroke=scen_pif_pa_ap_stroke,
            pif_colon=scen_pif_pa_colon, 
            pif_t2d=scen_pif_pa_t2d,
@@ -229,12 +229,12 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   # convert the list of dataframes to single dataframes
   disease_life_table_bl <- bind_rows(disease_life_table_list_bl, .id = "age_sex_disease_cohort") %>%
     mutate(age_sex_disease_cohort = as.numeric(gsub("_.*","",age_sex_disease_cohort))) %>%
-    rename(age_group=age_sex_disease_cohort,
+    dplyr::rename(age_group=age_sex_disease_cohort,
            cause=disease)
   
   disease_life_table_sc <- bind_rows(disease_life_table_list_sc, .id = "age_sex_disease_cohort") %>%
     mutate(age_sex_disease_cohort = as.numeric(gsub("_.*","",age_sex_disease_cohort))) %>%
-    rename(age_group=age_sex_disease_cohort,
+    dplyr::rename(age_group=age_sex_disease_cohort,
            cause=disease)
 
 
@@ -295,13 +295,13 @@ for (cohort in age_sex_non_disease_cohorts$cohort) {
 # convert the list of dataframes to single dataframes
 non_disease_life_table_bl <- bind_rows(non_disease_life_table_list_bl, .id = "age_sex_non_disease_cohort") %>%
   mutate(age_sex_non_disease_cohort = as.numeric(gsub("_.*","",age_sex_non_disease_cohort))) %>%
-  rename(age_group=age_sex_non_disease_cohort,
+  dplyr::rename(age_group=age_sex_non_disease_cohort,
          cause=non_disease,
          mx=deaths_rate)
 
 non_disease_life_table_sc <- bind_rows(non_disease_life_table_list_sc, .id = "age_sex_non_disease_cohort") %>%
   mutate(age_sex_non_disease_cohort = as.numeric(gsub("_.*","",age_sex_non_disease_cohort))) %>%
-  rename(age_group=age_sex_non_disease_cohort,
+  dplyr::rename(age_group=age_sex_non_disease_cohort,
          cause=non_disease,
          mx=deaths_rate)
 
@@ -310,7 +310,7 @@ non_disease_life_table_sc <- bind_rows(non_disease_life_table_list_sc, .id = "ag
 ### Diseases: Sum mortality rate and pylds change scenarios
 mx_pylds_sc_total_disease_df <- disease_life_table_sc %>%
   group_by(age_group,sex,age) %>%
-  summarise(mortality_sum=sum(diff_mort_disease,na.rm=T),
+  dplyr::summarise(mortality_sum=sum(diff_mort_disease,na.rm=T),
             pylds_sum=sum(diff_pylds_disease,na.rm=T)) %>%
   ungroup() %>%
   mutate(age_sex_cohort=paste0(age_group,'_',sex))
@@ -318,7 +318,7 @@ mx_pylds_sc_total_disease_df <- disease_life_table_sc %>%
 ### Non-diseases
 mx_pylds_sc_total_non_disease_df <- non_disease_life_table_sc %>%
   group_by(age_group,sex,age) %>%
-  summarise(mortality_sum=sum(diff_mort,na.rm=T),
+  dplyr::summarise(mortality_sum=sum(diff_mort,na.rm=T),
             pylds_sum=sum(diff_pylds,na.rm=T)) %>%
   ungroup() %>%
   mutate(age_sex_cohort=paste0(age_group,'_',sex))
@@ -484,7 +484,7 @@ output_df_agg_sex  <- output_df   %>% ### Create a simulation year columns
   ungroup() %>%
   dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
   group_by(year, sex, .add=TRUE) %>%
-  summarise_if(is.numeric, funs(sum)) %>%
+  dplyr::summarise_if(is.numeric, funs(sum)) %>%
   ungroup()
 # 
 # ######## Dataframe with all outputs aggregated by year of simulation all
@@ -494,7 +494,7 @@ output_df_agg_all  <- output_df   %>% ### Create a simulation year columns
   ungroup() %>%
   dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
   group_by(year, .add=TRUE) %>%
-  summarise_if(is.numeric, funs(sum)) %>%
+  dplyr::summarise_if(is.numeric, funs(sum)) %>%
   ungroup()
 
 ### Create age groups variable, easier to read
@@ -523,10 +523,10 @@ output_df <- output_df %>%
 
 population <- mslt_df %>% dplyr::select(age_cat, sex, population_number) %>%
   dplyr::filter(population_number!=0) %>%
-  rename(age_group=age_cat)
+  dplyr::rename(age_group=age_cat)
 
 output_df <- output_df %>% left_join(population)%>%
-  rename(`Age group` = age_group_2)
+  dplyr::rename(`Age group` = age_group_2)
 
 
 ##################### Below outcomes for presentation ####################################################
@@ -542,7 +542,7 @@ output_life_expectancy_change <- output_df[!duplicated(output_df$cohort), c("Age
   mutate_if(is.numeric, round, digits = 3) %>%
   dplyr::select(-c(ex_diff, ewx_diff, cohort)) %>%
   relocate(population_number, .after = sex)%>%
-  rename('Population cohort'=population_number)
+  dplyr::rename('Population cohort'=population_number)
 
 output_life_expectancy_change <- output_life_expectancy_change[order(output_life_expectancy_change$sex),] 
 
@@ -550,24 +550,24 @@ output_life_expectancy_change <- output_life_expectancy_change[order(output_life
 
 output_life_years_change <- output_df %>% 
   group_by(sex, `Age group`, cohort, .add=TRUE) %>%
-  summarise_if(is.numeric, funs(sum)) %>%
+  dplyr::summarise_if(is.numeric, funs(sum)) %>%
   ungroup() %>%
   dplyr::select(`Age group`,cohort, sex,Lx_diff, Lwx_diff, population_number) %>%
   dplyr::rename(`Life years` = Lx_diff, 
                 `Health adjusted life years` = Lwx_diff)  %>% 
   mutate_if(is.numeric, round) %>%
   relocate(population_number, .after = sex)%>%
-  rename('Population cohort'=population_number) %>%
+  dplyr::rename('Population cohort'=population_number) %>%
   dplyr::select(-cohort)
 
 # Table: Diseases deaths, incidence and ylds ----
 
 output_diseases_change <- output_df %>% 
   group_by(sex, `Age group`, cohort, .add=TRUE) %>%
-  summarise_if(is.numeric, funs(sum)) %>% 
+  dplyr::summarise_if(is.numeric, funs(sum)) %>% 
   mutate_if(is.numeric, round) %>%
   relocate(population_number, .after = sex)%>%
-  rename('Population cohort'=population_number) %>%
+  dplyr::rename('Population cohort'=population_number) %>%
   dplyr::select(-cohort) %>%
   dplyr::select(`Age group`, sex, contains("diff")) %>%
   dplyr::select(-contains(c("Lx", "Lwx", "ex")))

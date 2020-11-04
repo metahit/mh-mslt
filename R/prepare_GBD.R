@@ -4,18 +4,17 @@ calculateGBDwider <- function(gbd, local_government_areas) {
 
   disease <- DISEASE_SHORT_NAMES %>% dplyr::filter(acronym!="no_pif") %>% dplyr::select(disease) ### process diseases with PIFS
   
+# 
+#        gbd <- gbd
+#        local_government_areas <- local_government_areas
 
-     # gbd <- gbd
-     # local_government_areas <- local_government_areas
-  
   ## Clean names columns
   gbd <- gbd
   # remove '_name' from column names
   names(gbd) <- gsub(pattern = "_name", replacement = "", x = names(gbd))
   gbd <- gbd %>%
     dplyr::select(-contains("id")) %>%
-    mutate(cause = tolower(cause)) %>%
-    dplyr::filter(cause %in% disease$disease)
+    mutate(cause = tolower(cause)) 
   
   ## Calculate population numbers
   gbd_tmp <- gbd %>%
@@ -30,7 +29,7 @@ calculateGBDwider <- function(gbd, local_government_areas) {
     mutate(pop = number / rate) %>%
     dplyr::select(measure,sex,age,cause,location,number,cityregion,pop) %>%
     group_by(measure, sex, age, cause, cityregion) %>%
-    summarise(number = sum(number), pop = sum(pop)) %>%
+    dplyr::summarise(number = sum(number), pop = sum(pop)) %>%
     ungroup() %>%
     # Calculate rates per one
     mutate(rate=number/pop)
@@ -62,7 +61,7 @@ calculateGBDwider <- function(gbd, local_government_areas) {
                 names_glue = "{measure}_{.value}_{disease}") %>%
     left_join(gbd_pop, by = c("age", "sex", "cityregion")) %>% 
     mutate(sex = tolower(sex)) %>%
-    rename(area=cityregion) %>%
+    dplyr::rename(area=cityregion) %>%
     arrange(area, sex, age_cat)
   return(gbd_wider)
   
@@ -243,7 +242,7 @@ calculateMSLT <- function(gbd_wider, location, disease) {
   ### Rename variables
   
   mslt_df_wider <- mslt_df_wider %>% 
-    rename(mx = deaths_rate_allc, 
+    dplyr::rename(mx = deaths_rate_allc, 
            population_number=pop) 
 
   return(mslt_df_wider)

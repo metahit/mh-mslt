@@ -1,25 +1,36 @@
 ---
 title: "Proportional multi-state life table"
-author: -"Belen, Zapata-Diomedi  <belen.zapata-diomedi@rmit.edu.au>" 
-        - "Alan, Both"
-        -"Ali Abbas"
+author: -"Belen, Zapata-Diomedi  <belen.zapata-diomedi@rmit.edu.au>" - "Alan, Both"
+  -"Ali Abbas"
 date: "`r Sys.time()`"
+output:
+  html_document:
+    df_print: paged
 params:
   date: !r Sys.Date() - 1
 always_allow_html: yes
 ---
 
-```{r Libraries, echo = FALSE, message = FALSE, warning = FALSE}
+```{r Libraries, echo = FALSE, warning = FALSE}
 library(knitr)
 library(kableExtra)
 library(plyr)
+library(lubridate)
 library(ggplot2)
+library(ggjoy)
+library(ggpubr)
+library(plm)
+library(PerformanceAnalytics)
+library(pander)
 library(dplyr)
 library(tidyr)
 library(tibble) 
 library(knitr)
 library(readxl)
 library(stringr)
+library(Hmisc)
+library(DiagrammeR)
+library(tinytex)
 library(tibble)
 library(readr)
 options(scipen = 999)
@@ -27,7 +38,7 @@ options(scipen = 999)
 
 ```{r,eval=FALSE}
 rm (list = ls()) 
-options(scipen=999)
+
 mypath <- 'C:/Metahit/'
 relative_path_execute <- paste0(mypath,'mh-execute')
 relative_path_gbd <- paste0(mypath,'mh-mslt/input/gbd/GBD2017/METAHIT/')
@@ -35,150 +46,25 @@ relative_path_mslt <- paste0(mypath,'mh-mslt/')
 
 ```
 
+```{r setup, include=FALSE}
+## Global options
+options(scipen=999)
+options("getSymbols.warning4.0"=FALSE)
+options("getSymbols.yahoo.warning"=FALSE)
+knitr::opts_chunk$set(echo = TRUE, width = 100)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
 
 # Introduction
 This documnets consists of the following sections: 
 1) Generation inputs for the proportional multi-state life table (PMSLT); 
 2) Code explained to run the PMSLT for one area (e.g. city regions, country); 
 3) Final function to use in mh-execute to run the PMSLT;
-4) Examles of output graphs; 
-5) Code to run the life table only.
-
-Table 1 is an overview of inputs, ouputs and code to generate them. 
-```{r, echo=FALSE, include=TRUE}
-
-inputs_outputs <- tribble(
-~"R file", ~"Function", ~"Input variable", ~"Input file", ~"Output variable", ~"Output file"
-
-)
-kable(inputs_outputs, booktabs = T, caption = " Table 1: PMSLT inputs", longtable = TRUE) %>%
-
-  column_spec(1:2, width = "7em") %>%
-  column_spec(3:4, width = "15em") %>%
-  row_spec(0, bold = T)  %>%
-  kable_styling()
-
-```
-##  Generation inputs for the proportional multi-state life table (PMSLT)
-
-The below code generates inputs for: United Kingdom, England, Wales, Northen Ireland, Scotland, Wales, English regions (East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England, West Midlands, Yorkshire and the Humber) and the English City Regions (Liverpool, Nottingham, Bristol, Northeast, Greater Manchester, Sheffield, West Midlands, Leeds and London). 
-Raw inputs are in "inputs" folder. Processed data is in "output" folder. Final data save in mh-execute inputs/mslt.
-*GBD will update data end of October*
+4) Examles of output graphs
 
 
-Read look-up table mapping between local authorities and city regions, and add names for regions that are not city regions. For the city regions we add up data available for lower and upper tier local authorithy areas. 
-
-```{r,eval=FALSE}
-names_non_cr <- c("United Kingdom", "England", "East Midlands", "East of England", "Greater London", "North East England", 
-                  'North West England', "South East England", "South West England", "West Midlands", "Yorkshire and the Humber", 
-                  "Northern Ireland", "Scotland", "Wales")
-local_government_areas <- read_csv(file.path(relative_path_execute, "inputs/mh_regions_lad_lookup.csv"))
-for (i in names_non_cr){
-  local_government_areas <- rbind(local_government_areas, rep(i, ncol(local_government_areas)))
-}
-local_government_areas  <- local_government_areas %>%
-    dplyr::filter(!is.na(cityregion)) %>%
-    dplyr::rename(location = lad11nm) %>%
-    dplyr::mutate(location = gsub('St. Helens', 'St Helens', location))
-```
-
-Read original GBD data for 2017. UPDATE with new release Oct 2020.
-DISBAYES INPUTS WILL ALSO NEED UPDATING. DISCUSS WITH TEAM.
-```{r,eval=FALSE}
-gbd1 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-1.csv"))
-gbd2 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-2.csv"))
-gbd3 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-3.csv"))
-gbd4 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-4.csv"))
-gbd5 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-5.csv"))
-gbd <- rbind(gbd1, gbd2, gbd3, gbd4, gbd5) %>%
-    dplyr::filter(location_name %in% local_government_areas$location)
-rm(gbd1, gbd2, gbd3, gbd4, gbd5)
-
-```
-
-Read look-up table mapping between local authorities and city regions, and add names for regions that are not city regions
-
-```{r,eval=FALSE}
-names_non_cr <- c("United Kingdom", "England", "East Midlands", "East of England", "Greater London", "North East England", 
-                  'North West England', "South East England", "South West England", "West Midlands", "Yorkshire and the Humber", 
-                  "Northern Ireland", "Scotland", "Wales")
-local_government_areas <- read_csv(file.path(relative_path_execute, "inputs/mh_regions_lad_lookup.csv"))
-for (i in names_non_cr){
-  local_government_areas <- rbind(local_government_areas, rep(i, ncol(local_government_areas)))
-}
-
-
-local_government_areas  <- local_government_areas %>%
-    dplyr::filter(!is.na(cityregion)) %>%
-    dplyr::rename(location = lad11nm) %>%
-    dplyr::mutate(location = gsub('St. Helens', 'St Helens', location))
-
-
-
-  ## Join geographical data to GBD data original look up table. First check similarities between locations in gbd data and local_goverment_areas data.
-  
-  ### Compare gdd location_name with local_goverment_areas locations (local authority districs (lad))
-
-  gbd_loc <- unique(gbd$location_name)
-  ons_lad <- unique(local_government_areas$location)
-  diff <- setdiff(ons_lad, gbd_loc) ### difference ony
-  
-  ### GBD data for nottingham city regions is not available local authority district (Ashfield, Bassetlaw, Broxtow, Gedling, Mansfield, Newark and        Sherwood,Rushcliffe) but for Nottingham and Nottinghamshire. Then we used Notthinghan and Nottinghamshire gbd data for Nottinham city region
-  ### Replace as per above. City of London still missing from GBD data.
-
-  local_government_areas <- local_government_areas %>% mutate(location=ifelse(cityregion=="nottingham" & location!="Nottingham", "Nottinghamshire", location))
-  
-  ## check difference 
-  
-  gbd_loc <- unique(gbd$location_name)
-  ons_lad <- unique(local_government_areas$location)
-  diff <- setdiff(ons_lad, gbd_loc)
- 
-  
-  ## Join local goverment data to get city regions names and then aggregate data (numbers) by city region.
-  
-  gbd <- gbd %>% left_join(local_government_areas, by=c("location_name"="location"))
-
-  
-  
-
-```
-
-
-Read disease coding table
-
-```{r,eval=FALSE}
-disease_names_execute <- read_csv(file.path(relative_path_execute, "inputs/dose_response/disease_outcomes_lookup.csv")) %>%
-    select(GBD_name, acronym) %>%
-    mutate(disease = tolower(GBD_name))
-    
-DISEASE_SHORT_NAMES <- data.frame(disease = tolower(as.character(unique(gbd$cause_name))), 
-                                  sname = tolower(abbreviate(unique(gbd$cause_name, max = 2))),
-                                  stringsAsFactors = F) %>%
-    dplyr::mutate(is_not_dis = ifelse((str_detect(disease, "injuries") |
-                                str_detect(disease, "All causes") |
-                                str_detect(disease, "Lower respiratory infections")), 
-                               1, 0) ) %>%
-    dplyr::mutate(is_not_dis = case_when(sname == "allc"  ~  2,
-                                  sname == "lwri"  ~  1,
-                                  ## Code for major depressive disorder (no deaths) and hypertensive heart disease (no incidence)
-                                  sname == "hyhd"  ~  3,
-                                  sname == "mjdd"  ~  3,
-                                  TRUE  ~  is_not_dis)) %>%
-    left_join(disease_names_execute, by="disease") %>%
-    dplyr::mutate(acronym = ifelse(str_detect(disease, "injuries"), disease, acronym),
-           acronym = word(acronym, 1),
-           males = ifelse(disease %in% c("uterine cancer", "breast cancer"), 0, 1),
-           females = ifelse(disease %in% "prostate cancer", 0, 1),
-           sname = gsub("'", '', sname),
-           acronym = ifelse(is.na(acronym), "no_pif", acronym))
-
-saveRDS(DISEASE_SHORT_NAMES, paste0(relative_path_mslt, "output/parameters/DISEASE_SHORT_NAMES.rds"))
-```    
-
-# Inputs Proportional multi-state life table
-
-## Data inputs
+# Generation inputs for the proportional multi-state life table (PMSLT)
 
 Data inputs for the proportional multi-state life table model (PMSLT) include inputs for: general life table (population, mortality rates and prevalent years lived with disability rates for all causes (YLD)), diseases life tables (incidence and case fatality) and injuries process (mortality rates and years lived with disability rates). Table 1 describes all data inputs for the MSLT. Each of the MSLT components and related code are explained below Table 1. Data inputs were generated for: United Kingdon, England, Wales, Scotland, England Regions () and English city regions/Combined Authorities (). We used Global Burden of Disease data [@RN1] for all data inputs, and an Disbayes to derive case fatality (not available in GBD). GBD data is available for rates per 100,000 people, total numbers and percentage by age groups (5-years smallest category) and sex. Percentage represents proportion of the contribution of a diseases to the total burden, we do not use percentages. 
 
@@ -200,17 +86,76 @@ kable(pmslt_inputs, booktabs = T, caption = " Table 1: PMSLT inputs", longtable 
   kable_styling()
 ```
 
-## Data processing
-Steps and code to generate inputs to run PMSLT.
+Table 2 is an overview of inputs, ouputs and code for the generation of data inputs.
 
-## Calculate baseline data by area
+```{r, echo=FALSE, include=TRUE}
+inputs_outputs <- tribble(
+~"R file", ~"Function", ~"Input variable", ~"Input file", ~"Output variable", ~"Output file", 
+"mh-mslt\\R\\prepare_GEO.R", "GetGEO", "data_local", "mh-execute\\input\\mh_regions_lad_lookup.csv", "local_goverment_areas", "N\\A", 
+"mh-mslt\\R\\organise_GBD.R", "GetGBD", "path and local_goverment_area", "mh-mslt\\input\\gbd\\METAHIT...local_goverment_areas", "gbd", "N\\A", 
+"mh-mslt\\R\\get_disease_names.R", "GetDiseaseTable", "disease_names_execute", "mh-execute\\inputs\\dose_response\\disease_outcomes_lookup.csv", "DISEASE_SHORT_NAMES", "mh-mslt\\output\\paramters\\DISEASE_SHORT_NAMES",
+"mh-metahit\\R\\prepare_GBD.R", "calculateGBDwider", "gbd, local and government_areas", "gbd and local_goverment_areas", "gbd_wider", "N\\A",
+"mh-metahit\\R\\prepare_GBD.R", "calculateMSLT" , "gbd_wider and location-disease", "gbd_wider, location (cityregion)  and DISEASE_SHORT_NAMES", "mslt_df_wider", "mh-execute\\inputs\\mslt"
+
+)
+kable(inputs_outputs, booktabs = T, caption = " Table 2: Inputs and outputs", longtable = TRUE) %>%
+  row_spec(0, bold = T)  %>%
+  kable_styling()
+
+```
+
+The below code generates inputs for: United Kingdom, England, Wales, Northen Ireland, Scotland, Wales, English regions (East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England, West Midlands, Yorkshire and the Humber) and the English City Regions (Liverpool, Nottingham, Bristol, Northeast, Greater Manchester, Sheffield, West Midlands, Leeds and London). 
+Raw inputs are in "inputs" folder. Processed data is in "output" folder. Final data save in mh-execute inputs/mslt.
+*GBD will update data end of October*
+
+
+Read look-up table mapping between local authorities and city regions, and add names for regions that are not city regions. For the city regions we add up data available for lower and upper tier local authorithy areas. 
+
+```{r,eval=FALSE}
+source(paste0(relative_path_mslt, "R/prepare_GEO.R"))
+data_local <- read_csv(file.path(relative_path_execute, "inputs/mh_regions_lad_lookup.csv"))
+local_government_areas <- GetGEO(data_local)
+head(local_government_areas)
+```
+
+Read original GBD data for 2017 and map to local goverment area. This step is requiered to map local goverment areas to gbd data and then to city regions.
+UPDATE with new release Oct 2020.
+DISBAYES INPUTS WILL ALSO NEED UPDATING. DISCUSS WITH TEAM.
+
+```{r,eval=FALSE}
+source(paste0(relative_path_mslt, "R/organise_GBD.R"))
+gbd <- getGBD(relative_path_gbd, local_government_areas)
+head(gbd)
+
+```
+
+
+Read disease coding table.
+
+```{r,eval=FALSE}
+source(paste0(relative_path_mslt, "R/get_disease_names.R"))
+disease_names_execute=read_csv(file.path(relative_path_execute, "inputs/dose_response/disease_outcomes_lookup.csv"))
+DISEASE_SHORT_NAMES <- GetDiseaseTable(disease_names_execute)
+
+head(DISEASE_SHORT_NAMES)
+
+saveRDS(DISEASE_SHORT_NAMES, paste0(relative_path_mslt, "output/parameters/DISEASE_SHORT_NAMES.rds"))
+```    
+
+
+## Data processing
+Steps and code to generate inputs to run PMSLT from above generated files: gbd, local_goverment_areas and DISEASE_SHORT_NAMES.
+
+### Calculate baseline data by area
 Orginal GBD data tidy up for later processing for PMSLT dataframe and disbayes inputs. Generates dataframe for all areas (city regions, UK, countries and English Regions). Inputs are by age (5-year groups) and sex.
+
 ```{r,eval=FALSE}
 source(paste0(relative_path_mslt, "R/prepare_GBD.R"))
 
 gbd_wider <- calculateGBDwider(gbd = gbd, local_government_areas = local_government_areas)
-# saveRDS(gbd_wider, paste0(relative_path_mslt, "data/gbd_wider.rds")) ## save here to compae with Mel data generation
+head(gbd_wider)
 ```
+
 ## Calculate baseline data for PMSLT
 A PMSLT dataframe of inputs is generated from above dataframe by single year of age and adding Disbayes outputs. Disbayes output generated by Chris J. Data saved in input folder of mh-execute.
 ```{r,eval=FALSE}
@@ -236,7 +181,7 @@ index <- index + 1
 }
 ```
 
-# Run model
+# Code explained to run the PMSLT for one area (e.g. city regions, country); 
 
 ## Inputs
 1) mslt_df: above generated.
@@ -273,7 +218,7 @@ pif_expanded <- read_csv(paste0(relative_path_mslt, "/input/pif.csv")) %>%
                         age_cat =="85-89" ~ 87,
                         age_cat =="90-94" ~ 92,
                         age_cat =="95-120" ~ 97)) %>% 
-                  rename(pif_ihd=scen_pif_pa_ap_noise_no2_ihd, ### rename all original pif columnst to match diseases
+                  dplyr::rename(pif_ihd=scen_pif_pa_ap_noise_no2_ihd, ### rename all original pif columnst to match diseases
                   pif_stroke=scen_pif_pa_ap_stroke,
                   pif_colon=scen_pif_pa_colon, 
                   pif_t2d=scen_pif_pa_t2d,
@@ -510,12 +455,12 @@ source(paste0(relative_path_mslt, "R/functions_MSLT.R"))
   # convert the list of dataframes to single dataframes
   disease_life_table_bl <- bind_rows(disease_life_table_list_bl, .id = "age_sex_disease_cohort") %>%
     mutate(age_sex_disease_cohort = as.numeric(gsub("_.*","",age_sex_disease_cohort))) %>%
-    rename(age_group=age_sex_disease_cohort,
+    dplyr::rename(age_group=age_sex_disease_cohort,
            cause=disease)
   
   disease_life_table_sc <- bind_rows(disease_life_table_list_sc, .id = "age_sex_disease_cohort") %>%
     mutate(age_sex_disease_cohort = as.numeric(gsub("_.*","",age_sex_disease_cohort))) %>%
-    rename(age_group=age_sex_disease_cohort,
+   dplyr::rename(age_group=age_sex_disease_cohort,
            cause=disease)
   
 ```
@@ -523,7 +468,7 @@ source(paste0(relative_path_mslt, "R/functions_MSLT.R"))
 ### Run scenarios non-diseases life tables
 Re run non_diseases life tables with modified mortality and ylds rates by the pif.
 New rates = bl rates * (1-non_disease_pif).
-TO DO: CHECK CALCULATIONS OF NON DISEASE PIFS. THIS IS NOT RIGHT AS SOME FIGURES ARE OVER ONE. CALCULATION SCENARIO_NUMBERS/BASELINE_NUMBER?
+TO DO: CHECK CALCULATIONS OF NON DISEASE PIFS. CALCULATION SCENARIO_NUMBERS/BASELINE_NUMBER?
 
 ```{r, eval=FALSE}
 
@@ -582,13 +527,13 @@ TO DO: CHECK CALCULATIONS OF NON DISEASE PIFS. THIS IS NOT RIGHT AS SOME FIGURES
   # convert the list of dataframes to single dataframes
   non_disease_life_table_bl <- bind_rows(non_disease_life_table_list_bl, .id = "age_sex_non_disease_cohort") %>%
     mutate(age_sex_non_disease_cohort = as.numeric(gsub("_.*","",age_sex_non_disease_cohort))) %>%
-    rename(age_group=age_sex_non_disease_cohort,
+    dplyr::rename(age_group=age_sex_non_disease_cohort,
            cause=non_disease,
            mx=deaths_rate)
 
   non_disease_life_table_sc <- bind_rows(non_disease_life_table_list_sc, .id = "age_sex_non_disease_cohort") %>%
     mutate(age_sex_non_disease_cohort = as.numeric(gsub("_.*","",age_sex_non_disease_cohort))) %>%
-    rename(age_group=age_sex_non_disease_cohort,
+    dplyr::rename(age_group=age_sex_non_disease_cohort,
            cause=non_disease,
            mx=deaths_rate)
 
@@ -602,7 +547,7 @@ TO DO: CHECK CALCULATIONS OF NON DISEASE PIFS. THIS IS NOT RIGHT AS SOME FIGURES
 ### Diseases: Sum mortality rate and pylds change scenarios
   mx_pylds_sc_total_disease_df <- disease_life_table_sc %>%
     group_by(age_group,sex,age) %>%
-    summarise(mortality_sum=sum(diff_mort_disease,na.rm=T),
+    dplyr::summarise(mortality_sum=sum(diff_mort_disease,na.rm=T),
               pylds_sum=sum(diff_pylds_disease,na.rm=T)) %>%
     ungroup() %>%
     mutate(age_sex_cohort=paste0(age_group,'_',sex))
@@ -610,7 +555,7 @@ TO DO: CHECK CALCULATIONS OF NON DISEASE PIFS. THIS IS NOT RIGHT AS SOME FIGURES
 ### Non-diseases
   mx_pylds_sc_total_non_disease_df <- non_disease_life_table_sc %>%
     group_by(age_group,sex,age) %>%
-    summarise(mortality_sum=sum(diff_mort,na.rm=T),
+    dplyr::summarise(mortality_sum=sum(diff_mort,na.rm=T),
               pylds_sum=sum(diff_pylds,na.rm=T)) %>%
     ungroup() %>%
     mutate(age_sex_cohort=paste0(age_group,'_',sex))
@@ -777,110 +722,7 @@ General life table re-runed with modified mortality and Pylds rates
 ### Present changes in life expectancy, life years, health-adjusted life years and burden by cause (diseases and non-diseases) by age and sex cohort
 ```
   
-```{r, eval=FALSE}
-
-  #### Summary data frame by age and sex and total 
-  
-  ######## Dataframe with all outputs aggregated by year of simlation by sex
-  output_df_agg_sex  <- output_df   %>% ### Create a simulation year columns
-    group_by(age_group, sex, .add=TRUE) %>%
-    dplyr::mutate(year = 1:dplyr::n()) %>%
-    ungroup() %>%
-    dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
-    group_by(year, sex, .add=TRUE) %>%
-    summarise_if(is.numeric, funs(sum)) %>%
-    ungroup()
-  # 
-  # ######## Dataframe with all outputs aggregated by year of simulation all
-  output_df_agg_all  <- output_df   %>% ### Create a simulation year columns
-    group_by(age_group, sex, .add=TRUE) %>%
-    dplyr::mutate(year = 1:dplyr::n()) %>%
-    ungroup() %>%
-    dplyr::select(sex, year, Lx_bl, Lx_sc, Lx_diff, Lwx_bl, Lwx_sc, Lwx_diff, contains("num")) %>%
-    group_by(year, .add=TRUE) %>%
-    summarise_if(is.numeric, funs(sum)) %>%
-    ungroup()
-  
-  ### Create age groups variable, easier to read
-  
-  output_df <- output_df %>%
-    mutate(age_group_2 = case_when(
-      age_group == 17 ~ "16-19",
-      age_group == 22 ~ "20-24",
-      age_group == 27 ~ "25-29",
-      age_group == 32 ~ "30-34",
-      age_group == 37 ~ "35-39",
-      age_group == 42 ~ "40-44",
-      age_group == 47 ~ "45-49",
-      age_group == 52 ~ "50-54",
-      age_group == 57 ~ "55-59",
-      age_group == 62 ~ "60-64",
-      age_group == 67 ~ "65-69",
-      age_group == 72 ~ "70-74",
-      age_group == 77 ~ "75-79",
-      age_group == 82 ~ "80-84",
-      age_group == 87 ~ "85-89",
-      age_group == 92 ~ "90-94",
-      age_group == 97 ~ "95 plus")) %>%
-    mutate(cohort=paste(sex, age_group, sep = "_")) 
-
-  
-  population <- mslt_df %>% dplyr::select(age_cat, sex, population_number) %>%
-    dplyr::filter(population_number!=0) %>%
-    rename(age_group=age_cat)
-  
-  output_df <- output_df %>% left_join(population)%>%
-    rename(`Age group` = age_group_2)
-  
-  
-  ##################### Below outcomes for presentation ####################################################
-  
-  # Table: Life expectancy and health adjusted life expectancy 
-  output_life_expectancy_change <- output_df[!duplicated(output_df$cohort), c("Age group", "cohort", "sex", "ex_bl", "ex_sc", "ewx_bl", "ewx_sc", "ex_diff", "ewx_diff", "population_number")] %>%
-    dplyr::rename(`Life expectancy at baseline` = ex_bl, 
-                  `Life expectancy scenario` = ex_sc, 
-                  `Health adjusted life expectancy baseline` = ewx_bl, 
-                  `Health adjusted life expectancy scenario` = ewx_sc) %>%
-    dplyr::mutate(`Difference in life expectancy in days` = ex_diff * 365, 
-                  `Difference in health adjusted life expectancy in days` = ewx_diff* 365) %>% 
-    mutate_if(is.numeric, round, digits = 3) %>%
-    dplyr::select(-c(ex_diff, ewx_diff, cohort)) %>%
-    relocate(population_number, .after = sex)%>%
-    rename('Population cohort'=population_number)
-  
-  output_life_expectancy_change <- output_life_expectancy_change[order(output_life_expectancy_change$sex),] 
-  
-  # Table: Life years and health adjusted life years ----
-  
-  output_life_years_change <- output_df %>% 
-    group_by(sex, `Age group`, cohort, .add=TRUE) %>%
-    summarise_if(is.numeric, funs(sum)) %>%
-    ungroup() %>%
-    dplyr::select(`Age group`,cohort, sex,Lx_diff, Lwx_diff, population_number) %>%
-    dplyr::rename(`Life years` = Lx_diff, 
-                  `Health adjusted life years` = Lwx_diff)  %>% 
-    mutate_if(is.numeric, round) %>%
-    relocate(population_number, .after = sex)%>%
-    rename('Population cohort'=population_number) %>%
-    dplyr::select(-cohort)
-  
-  # Table: Diseases deaths, incidence and ylds ----
-  
-  output_diseases_change <- output_df %>% 
-    group_by(sex, `Age group`, cohort, .add=TRUE) %>%
-    summarise_if(is.numeric, funs(sum)) %>% 
-    mutate_if(is.numeric, round) %>%
-    relocate(population_number, .after = sex)%>%
-    rename('Population cohort'=population_number) %>%
-    dplyr::select(-cohort) %>%
-    dplyr::select(`Age group`, sex, contains("diff")) %>%
-    dplyr::select(-contains(c("Lx", "Lwx", "ex")))
-```
-
-### Generate graphs over simulation period
-Inputs requiered generated above. However, here, I demonstrate the use of the function run_MSLT and generate some graphs.
-This sections can be run independently from the rest. 
-
+#  Final function to use in mh-execute to run the PMSLT
 ```{r, eval=FALSE}
 source(paste0(relative_path_mslt, "R/RunMSLT.R"))
   
@@ -892,12 +734,42 @@ outputs <- RunMSLT(
   i_age_cohort=seq(from=17, to=97, by =5),
   pif=read_csv("C:\\Metahit\\mh-mslt\\input\\pif.csv")
 )
+```
 
-### Incidence
 
-data_f <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "female") %>% dplyr::select("sex", "year", contains("diff"))
-data_m <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "male") %>% dplyr::select("sex", "year", contains("diff"))
-data_t <- dplyr::filter(outputs[['output_df_agg_all']]) %>% dplyr::select("year", contains("diff")) %>%
+# Examles of output
+
+## Tables
+```{r, echo=F, include=T}
+
+kable(outputs[["LifeYears"]], booktabs = T, caption = "Table 3: Life Years", longtable = TRUE) %>%
+column_spec(1:1, width = "15em") %>%
+  row_spec(0, bold = T) %>%
+  kable_styling()
+
+kable(outputs[["LifeExpectancy"]], booktabs = T, caption = "Table 5: Life Expectancy", longtable = TRUE) %>%
+column_spec(1:1, width = "15em") %>%
+  row_spec(0, bold = T) %>%
+  kable_styling()
+
+kable(outputs[["Cause"]], booktabs = T, caption = "Table 6: Diseases", longtable = TRUE) %>%
+column_spec(1:1, width = "15em") %>%
+  row_spec(0, bold = T) %>%
+  kable_styling()
+```
+
+## Graphs
+
+
+```{r, echo=FALSE}
+output_df_agg_sex <- outputs[["output_df_agg_sex"]]
+output_df_agg_all <- outputs[["output_df_agg_all"]]
+
+  ### Incidence
+
+data_f <- dplyr::filter(output_df_agg_sex, sex == "female") %>% dplyr::select("sex", "year", contains("diff"))
+data_m <- dplyr::filter(output_df_agg_sex, sex == "male") %>% dplyr::select("sex", "year", contains("diff"))
+data_t <- output_df_agg_all %>% dplyr::select("year", contains("diff")) %>%
   mutate(sex ="total")
 
 data <- bind_rows(data_f, data_m, data_t)
@@ -910,7 +782,7 @@ plot_1 <- data %>%
   geom_smooth(aes(y = inc_num_diff_tbalc, method = "loess", color="Lung cancer")) +
   geom_smooth(aes(y = inc_num_diff_utrc, method = "loess", color="Uterine cancer")) +
   geom_smooth(aes(y = inc_num_diff_ishd, method = "loess", color="Ischemic heart disease")) +
-  geom_smooth(aes(y = inc_num_diff_strk, method = "loess", color="Stroke")) + 
+  geom_smooth(aes(y = inc_num_diff_strk, method = "loess", color="Stroke")) +
   geom_smooth(aes(y = inc_num_diff_copd, method = "loess", color="COPD")) +
   labs(x = "Simulation year",
        title = paste("Changes in disease incidence over time"),
@@ -921,7 +793,7 @@ plot_1 <- data %>%
         axis.title=element_text(size=10)) +
   theme_classic() +
   geom_hline(yintercept=0, linetype='dashed', color = 'black')+
-  facet_wrap(. ~ sex) + 
+  facet_wrap(. ~ sex) +
   theme(
     strip.background = element_blank() ) +
   scale_fill_brewer(name = "Sex") +
@@ -930,7 +802,7 @@ plot_1 <- data %>%
         legend.key = element_blank(),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 plot_1
-ggsave(plot_1, file=paste0("./output/graphs/incidence.png"), width = 14, height = 10, units = "cm")
+
 
 
 ### Deaths
@@ -943,7 +815,7 @@ plot_2 <- data %>%
   geom_smooth(aes(y = mx_num_diff_tbalc, method = "loess", color="Lung cancer")) +
   geom_smooth(aes(y = mx_num_diff_utrc, method = "loess", color="Uterine cancer")) +
   geom_smooth(aes(y = mx_num_diff_ishd, method = "loess", color="Ischemic heart disease")) +
-  geom_smooth(aes(y = mx_num_diff_strk, method = "loess", color="Stroke")) + 
+  geom_smooth(aes(y = mx_num_diff_strk, method = "loess", color="Stroke")) +
   geom_smooth(aes(y = mx_num_diff_copd, method = "loess", color="COPD")) +
   labs(x = "Simulation year",
        title = paste("Changes in disease mortality over time"),
@@ -954,7 +826,7 @@ plot_2 <- data %>%
         axis.title=element_text(size=10)) +
   theme_classic() +
   geom_hline(yintercept=0, linetype='dashed', color = 'black')+
-  facet_wrap(. ~ sex) + 
+  facet_wrap(. ~ sex) +
   theme(
     strip.background = element_blank() ) +
   scale_fill_brewer(name = "Sex") +
@@ -963,15 +835,15 @@ plot_2 <- data %>%
         legend.key = element_blank(),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 plot_2
-ggsave(plot_2, file=paste0("./output/graphs/deaths.png"), width = 14, height = 10, units = "cm")
 
 
 
-#### Graph for changes in life years 
 
-data_f <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "female") %>% dplyr::select("sex", "year", "Lx_diff", "Lwx_diff")
-data_m <- dplyr::filter(outputs[['output_df_agg_sex']], sex == "male") %>% dplyr::select("sex", "year", "Lx_diff", "Lwx_diff")
-data_t <-  dplyr::filter(outputs[['output_df_agg_all']]) %>% dplyr::select("year", "Lx_diff", "Lwx_diff")       
+#### Graph for changes in life years
+
+data_f <- dplyr::filter(output_df_agg_sex, sex == "female") %>% dplyr::select("sex", "year", "Lx_diff", "Lwx_diff")
+data_m <- dplyr::filter(output_df_agg_sex, sex == "male") %>% dplyr::select("sex", "year", "Lx_diff", "Lwx_diff")
+data_t <-  output_df_agg_all %>% dplyr::select("year", "Lx_diff", "Lwx_diff")
 
 plot_3 <- data_t %>%
   ggplot(aes(x = year, y = Lx_diff)) +
@@ -996,6 +868,9 @@ plot_3 <- data_t %>%
   theme_classic() +
   geom_hline(yintercept=0, linetype='dashed', color = 'black')
 plot_3
-ggsave(plot_3, file=paste0("./output/lifeyears.png"), width = 14, height = 10, units = "cm")
+
 
 ```
+
+
+
