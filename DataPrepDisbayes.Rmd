@@ -18,12 +18,13 @@ First load required packages and specify local file paths
 ```{r}
 library(tidyverse)
 library(progress)
-library(disbayes)
+rm(list = ls())
+# library(disbayes) ## Install
 # relative_path_gbd <- "~/scratch/chronic"
 # relative_path_execute <- "~/scratch/chronic/mh-execute"
 
-relative_path_execute <- paste0(mypath,'mh-execute')
-relative_path_gbd <- paste0(mypath,'mh-mslt/input/gbd/GBD2017/METAHIT/')
+relative_path_execute <- paste0("C:/Metahit/mh-execute")
+relative_path_gbd <- paste0("C:/Metahit/mh-mslt/input/gbd/GBD2017/METAHIT")
 
 
 ```
