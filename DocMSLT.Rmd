@@ -6,6 +6,7 @@ date: "`r Sys.time()`"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 params:
   date: !r Sys.Date() - 1
 always_allow_html: yes
@@ -34,6 +35,7 @@ library(tinytex)
 library(tibble)
 library(readr)
 options(scipen = 999)
+#https://bookdown.org/yihui/rmarkdown-cookbook/r-code.html
 ```
 
 ```{r,eval=FALSE}
@@ -46,7 +48,7 @@ relative_path_mslt <- paste0(mypath,'mh-mslt/')
 
 ```
 
-```{r setup, include=FALSE}
+```{r setup}
 ## Global options
 options(scipen=999)
 options("getSymbols.warning4.0"=FALSE)
@@ -54,6 +56,8 @@ options("getSymbols.yahoo.warning"=FALSE)
 knitr::opts_chunk$set(echo = TRUE, width = 100)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(eval = TRUE)
+knitr::opts_chunk$set(error = TRUE)
 ```
 
 # Introduction
@@ -724,8 +728,12 @@ General life table re-runed with modified mortality and Pylds rates
   
 #  Final function to use in mh-execute to run the PMSLT
 ```{r, eval=FALSE}
+
 source(paste0(relative_path_mslt, "R/RunMSLT.R"))
-  
+## we need hooks to run the function
+function_hook = function(before, options, envir) {
+  if(before) {
+source(paste0(relative_path_mslt, "R/RunMSLT.R"))
 #### Graphs for changes in diseases over time 
 outputs <- RunMSLT(
   mslt_df=read_csv("C:\\Metahit\\mh-execute\\inputs\\mslt\\bristol_mslt.csv"),
@@ -733,26 +741,29 @@ outputs <- RunMSLT(
   i_sex=c("male", "female"),
   i_age_cohort=seq(from=17, to=97, by =5),
   pif=read_csv("C:\\Metahit\\mh-mslt\\input\\pif.csv")
-)
+)} else {
+  
+}
+}
 ```
 
 
 # Examles of output
 
 ## Tables
-```{r, echo=F, include=T}
+```{r, function_hook}
 
-kable(outputs[["LifeYears"]], booktabs = T, caption = "Table 3: Life Years", longtable = TRUE) %>%
+knitr::kable(outputs[["LifeYears"]], booktabs = T, caption = "Table 3: Life Years", longtable = TRUE) %>%
 column_spec(1:1, width = "15em") %>%
   row_spec(0, bold = T) %>%
   kable_styling()
 
-kable(outputs[["LifeExpectancy"]], booktabs = T, caption = "Table 5: Life Expectancy", longtable = TRUE) %>%
+knitr::kable(outputs[["LifeExpectancy"]], booktabs = T, caption = "Table 5: Life Expectancy", longtable = TRUE) %>%
 column_spec(1:1, width = "15em") %>%
   row_spec(0, bold = T) %>%
   kable_styling()
 
-kable(outputs[["Cause"]], booktabs = T, caption = "Table 6: Diseases", longtable = TRUE) %>%
+knitr::kable(outputs[["Cause"]], booktabs = T, caption = "Table 6: Diseases", longtable = TRUE) %>%
 column_spec(1:1, width = "15em") %>%
   row_spec(0, bold = T) %>%
   kable_styling()
