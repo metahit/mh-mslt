@@ -4,12 +4,12 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   
   ### Functions requiered 
   source(paste0(relative_path_mslt, "R/functions_MSLT.R"))
-  # mslt_df <- read_csv("C:\\Metahit\\mh-execute\\inputs\\mslt\\bristol_mslt.csv")
-  # disease_names <- readRDS("C:\\Metahit\\mh-mslt\\output\\parameters\\DISEASE_SHORT_NAMES.rds")
-  # i_sex <- c("male", "female")
-  # i_age_cohort <- seq(from=17, to=97, by =5)
-  # pif <- read_csv("C:\\Metahit\\mh-mslt\\input\\pif.csv") 
-  
+  # mslt_df=read_csv("~/mh-execute/inputs/mslt/bristol_mslt.csv")
+  # disease_names=readRDS("~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds")
+  # i_sex=c("male", "female")
+  # i_age_cohort=seq(from=17, to=97, by =5)
+  # pif=read_csv("~/mh-mslt/input/pif.csv")
+
   
   ### Relative risks diabetes
   DIABETES_IHD_RR_F <- 2.82 ## c(2.82, CI (2.35, 3.38) get SD from CI
