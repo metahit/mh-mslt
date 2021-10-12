@@ -18,15 +18,12 @@ First load required packages and specify local file paths
 ```{r}
 library(tidyverse)
 library(progress)
-rm(list = ls())
-# library(disbayes) ## Install
+library(disbayes) ## Install
 # relative_path_gbd <- "~/scratch/chronic"
 # relative_path_execute <- "~/scratch/chronic/mh-execute"
 
 relative_path_execute <- paste0("C:/Metahit/mh-execute")
-relative_path_gbd <- paste0("C:/Metahit/mh-mslt/input/gbd/GBD2017/METAHIT")
-
-
+relative_path_gbd <- paste0("C:/Metahit/mh-mslt/input/gbd/GBD2019/METAHIT")
 ```
 
 
@@ -47,49 +44,43 @@ local_government_areas  <- local_government_areas %>%
 ```
 
 Read Global Burden of Disease data 
+UPDATE: BZ added latest diseases 11-10-21 and removed hard coded files
 
 ```{r,eval=FALSE}
-gbd1 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-1.csv"))
-gbd2 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-2.csv"))
-gbd3 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-3.csv"))
-gbd4 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-4.csv"))
-gbd5 <- read_csv(file.path(relative_path_gbd, "IHME-GBD_2017_DATA-3e0b192d-5.csv"))
-gbd <- rbind(gbd1, gbd2, gbd3, gbd4, gbd5) %>%
+list_of_files <- list.files(path = relative_path_gbd,
+                            pattern = "\\.csv$",
+                            full.names = TRUE)
+gbd <- do.call(rbind, lapply(list_of_files, read.csv)) %>%
     dplyr::filter(location_name %in% local_government_areas$location)
-rm(gbd1, gbd2, gbd3, gbd4, gbd5)
 ```
 
 Read disease coding table
+UPDATE: BZ added latest diseases to disease_names_execute 11-10-21
+
 
 ```{r,eval=FALSE}
-disease_names_execute <- read_csv(file.path(relative_path_execute, "inputs/dose_response/disease_outcomes_lookup.csv")) %>%
-    select(GBD_name, acronym) %>%
+disease_names_execute <- read_csv(file.path(relative_path_execute, "inputs/dose_response/disease_outcomes_lookup_new.csv")) %>% select(GBD_name, acronym) %>%
     mutate(disease = tolower(GBD_name))
-    
-DISEASE_SHORT_NAMES <- data.frame(disease = tolower(as.character(unique(gbd$cause_name))), 
-                                  sname = tolower(abbreviate(unique(gbd$cause_name, max = 2))),
-                                  stringsAsFactors = F) %>%
-    dplyr::mutate(is_not_dis = ifelse((str_detect(disease, "injuries") |
-                                str_detect(disease, "All causes") |
-                                str_detect(disease, "Lower respiratory infections")), 
-                               1, 0) ) %>%
-    dplyr::mutate(is_not_dis = case_when(sname == "allc"  ~  2,
+
+DISEASE_SHORT_NAMES <- disease_names_execute %>%
+                         mutate(sname = abbreviate(disease)) %>%
+    mutate(is_not_dis = ifelse((grepl("injuries", disease) | # grepl determines if the disease string contains 'injuries'
+                                   grepl("all causes", disease) |
+                                   grepl("lower respiratory infections", disease)), 
+                               1, 0)) %>%
+    mutate(is_not_dis = case_when(sname == "allc"  ~  2,
                                   sname == "lwri"  ~  1,
-                                  ## Code for major depressive disorder (no deaths) and hypertensive heart disease (no incidence)
-                                  sname == "hyhd"  ~  3,
-                                  sname == "mjdd"  ~  3,
+                                  sname == "npls" ~ 2,
+                                  sname == "crdd" ~ 2,
                                   TRUE  ~  is_not_dis)) %>%
-    left_join(disease_names_execute, by="disease") %>%
-    dplyr::mutate(acronym = ifelse(str_detect(disease, "injuries"), disease, acronym),
-           acronym = word(acronym, 1),
-           males = ifelse(disease %in% c("uterine cancer", "breast cancer"), 0, 1),
-           females = ifelse(disease %in% "prostate cancer", 0, 1),
-           sname = gsub("'", '', sname),
-           acronym = ifelse(is.na(acronym), "no_pif", acronym))
+    mutate(
+      males = ifelse(disease %in% c("uterine cancer", "breast cancer"), 0, 1),
+      females = ifelse(disease %in% "prostate cancer", 0, 1),
+      sname = gsub("'", '', sname),
+      acronym = ifelse(is.na(acronym), sapply(strsplit(disease, " "), head, 1), acronym))
 
-saveRDS(DISEASE_SHORT_NAMES, paste0(relative_path_gbd, "DISEASE_SHORT_NAMES.rds"))
+saveRDS(DISEASE_SHORT_NAMES, paste0(relative_path_gbd, "/DISEASE_SHORT_NAMES.rds"))
 ```    
-
 
 Join geographical data to GBD data 
 
@@ -100,7 +91,7 @@ gbd <- gbd %>%
     dplyr::mutate(cause = tolower(cause)) %>%
     left_join(local_government_areas, by="location")
 
-save(gbd, local_government_areas, DISEASE_SHORT_NAMES, file=file.path(relative_path_gbd, "GBD2017.rda"))
+save(gbd, local_government_areas, DISEASE_SHORT_NAMES, file=file.path(relative_path_gbd, "/GBD2019.rda"))
 ```
 
 
@@ -110,7 +101,7 @@ save(gbd, local_government_areas, DISEASE_SHORT_NAMES, file=file.path(relative_p
 
 This part is the most computationally intensive.  For each estimated "rate" published by the GBD (actually a proportion), the associated credible interval is converted to an "effective sample size" that describes the amount of information that the estimate is based on.
 
-For example, for prevalence estimates, these are assumed to be based on a survey of n people in the area, and observing r people with the disease.   The point estimate is assumed to equal r/n, and the credible interval is interpreted as the posterior interval we would get from a Bayesian analysis of these data with a vague (Beta(0,0)) prior.    The implied values of r and n can then be computed based on the point estimate and credible interval. 
+For example, for prevalence estimates, these are assumed to be based on a survey of n people in the area, and observing r people with the disease.   The point estimate is assumed to equal r/n, and the credible interval is interpreted as the posterior interval we would get from a Bayesian analysis of these data with a vague (Beta(0,0)) prior. The implied values of r and n can then be computed based on the point estimate and credible interval. 
 
 n is referred to as the "effective sample size".   Note that this is generally not equal to the actual population of the area.    They would only be equal if a survey of the full population had been conducted.  We do not have access to the underlying data or methods that GBD used to calculate the credible interval, so we do not know the true value of n. 
 
