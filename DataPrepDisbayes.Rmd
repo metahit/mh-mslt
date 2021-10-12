@@ -22,8 +22,8 @@ library(disbayes) ## Install
 # relative_path_gbd <- "~/scratch/chronic"
 # relative_path_execute <- "~/scratch/chronic/mh-execute"
 
-relative_path_execute <- paste0("C:/Metahit/mh-execute")
-relative_path_gbd <- paste0("C:/Metahit/mh-mslt/input/gbd/GBD2019/METAHIT")
+relative_path_execute <- paste0("~mh-execute")
+relative_path_gbd <- paste0("~mh-mslt/input/gbd/GBD2019/METAHIT")
 ```
 
 
