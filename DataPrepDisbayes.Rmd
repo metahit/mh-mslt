@@ -22,8 +22,8 @@ library(disbayes) ## Install
 # relative_path_gbd <- "~/scratch/chronic"
 # relative_path_execute <- "~/scratch/chronic/mh-execute"
 
-relative_path_execute <- paste0("~mh-execute")
-relative_path_gbd <- paste0("~mh-mslt/input/gbd/GBD2019/METAHIT")
+relative_path_execute <- paste0("~/mh-execute")
+relative_path_gbd <- paste0("~/mh-mslt/input/gbd/GBD2019/METAHIT")
 ```
 
 
@@ -83,19 +83,24 @@ saveRDS(DISEASE_SHORT_NAMES, paste0(relative_path_gbd, "/DISEASE_SHORT_NAMES.rds
 ```    
 
 Join geographical data to GBD data 
+Update 13/10: Belen added population numbers for later use in c2num function. 
 
 ```{r,eval=FALSE}
 names(gbd) <- gsub(pattern = "_name", replacement = "", x = names(gbd))
-gbd <- gbd %>%
+gbd_temp <- gbd %>%
     dplyr::select(-contains("id")) %>%
     dplyr::mutate(cause = tolower(cause)) %>%
-    left_join(local_government_areas, by="location")
+    left_join(local_government_areas, by="location") %>%
+    pivot_wider(names_from="metric", values_from=c("val", "upper", "lower")) %>%
+    mutate(pop = val_Number*100000/val_Rate) %>%
+    pivot_longer(cols = val_Percent:lower_Number,
+                 names_to = "metric",
+                 values_to = "val") %>%
+    separate(metric, c("metric2", "metric")) %>%
+    pivot_wider(names_from = "metric2", values_from = "val")
 
-save(gbd, local_government_areas, DISEASE_SHORT_NAMES, file=file.path(relative_path_gbd, "/GBD2019.rda"))
+save(gbd_temp, local_government_areas, DISEASE_SHORT_NAMES, file=file.path(relative_path_gbd, "/GBD2019.rda"))
 ```
-
-
-
 
 # Determining "effective sample sizes" behind estimates
 
@@ -112,11 +117,11 @@ Lower limits published as 0 and upper limits published as 1 are modified to be c
 
 ```{r,eval=FALSE}
 gbdp <- 
-    gbd %>%
+    gbd_temp %>%
     dplyr::filter(metric == "Rate") %>% 
-    dplyr::filter(cause != "all causes") %>% 
+    dplyr::filter(!cause %in% c("all causes", "road injuries", "pedestrian road injuries", "cyclist road     injuries", "motorcyclist road injuries", "motor vechicle road injuries", "other road injuries", "motor vehicle road injuries", "depressive disorders" , "hypertensive heart disease")) %>%
     dplyr::mutate(num = NA, denom = NA) %>%
-    dplyr::mutate(val = val/100000, lower = lower / 100000, upper = upper / 100000) %>%
+    dplyr::mutate(val = val/100000, lower = lower/100000, upper = upper/100000) %>%
     dplyr::mutate(lower = if_else(lower==0, pmin(val/2, 0.00001), lower)) %>% 
     dplyr::mutate(upper = if_else(upper==1, pmax((1+val)/2, 0.99999), upper))
 ```
@@ -131,16 +136,16 @@ for (i in 1:nest){
   if (gbdp$val[i] < gbdp$upper[i] &
       gbdp$val[i] > gbdp$lower[i]) { 
     pb$tick()
-    counts <- disbayes:::ci2num(gbdp$val[i], gbdp$lower[i], gbdp$upper[i])
+    counts <- disbayes:::ci2num(gbdp$val[i], gbdp$lower[i], gbdp$upper[i], denom0=gbdp$pop[i])
     gbdp$num[i] <- counts$num
     gbdp$denom[i] <- counts$denom
   }
 }
-saveRDS(gbdp, file=file.path(relative_path_gbd, "GBD2017.rds"))
+saveRDS(gbdp, file=file.path(relative_path_gbd, "GBD2019.rds"))
 ```
 
 ```{r,echo=FALSE}
-gbdp <- readRDS(file=file.path(relative_path_gbd, "GBD2017.rds"))
+gbdp <- readRDS(file=file.path(relative_path_gbd, "GBD2019.rds"))
 ```
 
 
