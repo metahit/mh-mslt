@@ -65,7 +65,7 @@ knitr::opts_chunk$set(error = TRUE)
 # Introduction
 The proportional multi-state multiple-cohort life table model (PMSLT) is a population level model (macro) approach to simulate health (and economic) implications of changes in exposure to health risk factors (e.g. physical inactivity, air pollution and diet). The PMSLT has been widely used to simulate outcomes for population level interventions for chronic disease prevention. 
 
-The model was developed by Jan Barendregt and colleagues and has been widely used in Australia and New Zealand [-@RN2; -@RN1]. 
+The model was developed by Jan Barendregt and colleagues and has been widely used in Australia and New Zeland [-@RN2; -@RN1]. 
 
 The basic infrastructure of the model consist of three components: (1) Effect size for the intervention of interest (e.g. intervention to urban design that modifies population levels of physical activity); (2) Calculation of the potential impact fraction (PIF) to derive the change in occurrence of disease (incidence/case fatality) attributable to a change in the distribution of the risk factor (e.g. physical activity); and (3) Use of the PMSLT to simulate health (and economic) outcomes attributable to a change in the distribution of health risk factor/s in the population of interest. Figure \@ref(fig:figure1) summaries the basic infrastructure of the model. ITHIM is included in Figure \@ref(fig:figure1) to show that both approaches share in common steps one and two and differ in the mechanisms of calculation of change in health burden. 
 
@@ -84,16 +84,16 @@ For the PMSLT model we use the term *health-adjusted life year* (HALY). As *summ
 
 # Proportional multi-state multiple-cohort life table model
 Figure \@ref(fig:figure2) is a schematic representation of the PMSLT. The two PMSLT components are the life table and the diseases process for each of the modeled diseases (ADD INJURIES). 
-The two components are modelled for both the base case (no intervention) and the sceario (with intervention) for each sex and 5-year age cohorts. The life table models the survival for the cohort and includes for a given age interval the probability of dying, the number of people alive, life yers and the rate of total prevalent years lived with disability (pYLD total). Total pYLD is the proportion of life that is lost due to diseases and injury (disability) and adjusts life years to derive the measure of Health adjusted life years (HALYs).
-For each of the modelled diseases and their disease processes, incidence, prevalence and disease specific mortality are calculated. Transition
+The two components are modeled for both the base case (no intervention) and the scenario (with intervention) for each sex and 5-year age cohorts. The life table models the survival for the cohort and includes for a given age interval the probability of dying, the number of people alive, life years and the rate of total prevalent years lived with disability (pYLD total). Total pYLD is the proportion of life that is lost due to diseases and injury (disability) and adjusts life years to derive the measure of Health adjusted life years (HALYs).
+For each of the modeled diseases and their disease processes, incidence, prevalence and disease specific mortality are calculated. Transition
 probabilities between states are used in the derivation of incidence to adjust the transition from healthy to diseased and case fatality from
 disease to dead from the diseases [@RN1] (see Table XX for data inputs).
 The PIFs by age and sex cohort (see Figure \@ref(fig:figure1)) modify incidence in the scenario’s
-disease process. The PIF measures the proportional chage in disease risk when exposure to a risk factor changes [@RN11]. Because type 2
+disease process. The PIF measures the proportional change in disease risk when exposure to a risk factor changes [@RN11]. Because type 2
 diabetes is a risk factor for ischemic heart disease and stroke [@RN14; @RN15], the
 impact of changes in type 2 diabetes due to the scenario are calculated (TO DO). Disability weights (TO DO), which reflect the health loss attributable to disease on a scale from 0 (perfect health) to 1 (equivalent to death) [@RN18] are multiplied by disease prevalence to derive disease specific pYLDs.
 The difference between pYLDs and mortality rates between base case and scenarios disease processes are collected in the scenario life table to modify all-cause mortality and pYLD total. Cohorts in the general life table
-are modelled from the baseline year (e.g. 2017) until they die or reach the age of 100.
+are modeled from the baseline year (e.g. 2017) until they die or reach the age of 100.
 The health outputs are measured as the difference between the base case and scenario disease processes and life table. The model assumes that diseases are independent from one another (i.e. the probability of developing one disease is unrelated to the probability of developing
 another) and are independent from all causes of death [@RN2].
 For the latest scientific reference for the PMSLT see @RN19.
@@ -102,7 +102,7 @@ knitr::include_graphics("presentation/Figure5.png")
 ```
 
 ## Disability weights
-Disability weights (DW) are derived from disease specific prevalent years lived with disability (YLD) and disease specific prevalence by age group (5 years) and sex. Data for YLDs prevalence is from the Global Burden of Disease (GBD) data for 2017. An age and sex specific-correction was introduced to counteract the effects of accumulating comorbid illnesses in the older age groups as shown in Equation \@ref(eq:dw). Interpolation was used to derive rates per single year of age from 5-year age intervals.
+Disability weights (DW) are derived from disease specific prevalent years lived with disability (YLD) and disease specific prevalence by age group (5 years) and sex. Data for YLDs prevalence is from the Global Burden of Disease (GBD) data for 2017. An age and sex specific-correction was introduced to counteract the effects of accumulating co-morbid illnesses in the older age groups as shown in Equation \@ref(eq:dw). Interpolation was used to derive rates per single year of age from 5-year age intervals.
 
 
 \begin{equation}
@@ -137,7 +137,7 @@ PIF_{combined} = \prod_{r} 1- (1 - PIF_{risk})
 
 # Generation of inputs for the proportional multi-state life table (PMSLT)
 
-Data inputs for the proportional multi-state life table model (PMSLT) include inputs for: life table (population, mortality rates and prevalent years lived with disability rates for all causes (YLD)), diseases processes (incidence and case fatality) and injuries process (mortality rates and years lived with disability rates-FOR REVISION). Table \@ref(tab:Table1) describes all data inputs for the PMSLT. Each of the PMSLT components and related code are explained below Table \@ref(tab:Table1). Data inputs were generated for: United Kingdon, England, Wales, Scotland, England Regions and English city regions/Combined Authorities. We used Global Burden of Disease data [@RN4] for all data inputs, and an Disbayes (ADD REF package) to derive case fatality (not available in GBD) from GBD inputs. GBD data is available for rates per 100,000 people, total numbers and percentage by age groups (5-years smallest category) and sex. Percentage represents proportion of the contribution of a diseases to the total burden, we do not use percentages. All data inputs are by sex and one year age groups, except populaiton numbers which is for 5-year age groups. The model assumes that a cohort (e.g. males aged 40 years in 2017) will have the same observed data data for health for a 50 year old today when they reach the age of 50. This can be addressed with incorporating trends (TO DO).
+Data inputs for the proportional multi-state life table model (PMSLT) include inputs for: life table (population, mortality rates and prevalent years lived with disability rates for all causes (YLD)), diseases processes (incidence and case fatality) and injuries process (mortality rates and years lived with disability rates-FOR REVISION). Table \@ref(tab:Table1) describes all data inputs for the PMSLT. Each of the PMSLT components and related code are explained below Table \@ref(tab:Table1). Data inputs were generated for: United Kingdon, England, Wales, Scotland, England Regions and English city regions/Combined Authorities. We used Global Burden of Disease data [@RN4] for all data inputs, and an Disbayes (ADD REF package) to derive case fatality (not available in GBD) from GBD inputs. GBD data is available for rates per 100,000 people, total numbers and percentage by age groups (5-years smallest category) and sex. Percentage represents proportion of the contribution of a diseases to the total burden, we do not use percentages. All data inputs are by sex and one year age groups, except population numbers which is for 5-year age groups. The model assumes that a cohort (e.g. males aged 40 years in 2017) will have the same observed data data for health for a 50 year old today when they reach the age of 50. This can be addressed with incorporating trends (TO DO).
 
 ```{r Table1, echo=FALSE, include=TRUE}
 
@@ -173,7 +173,7 @@ kableExtra::kable_styling(inputs_outputs, latex_options = "striped", position = 
 
 ```
 
-The below code generates inputs for: United Kingdom, England, Wales, Northen Ireland, Scotland, Wales, English regions (East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England, West Midlands, Yorkshire and the Humber) and the English City Regions (Liverpool, Nottingham, Bristol, Northeast, Greater Manchester, Sheffield, West Midlands, Leeds and London). 
+The below code generates inputs for: United Kingdom, England, Wales, Northern Ireland, Scotland, Wales, English regions (East Midlands, East of England, Greater London, North East England, North West England, South East England, South West England, West Midlands, Yorkshire and the Humber) and the English City Regions (Liverpool, Nottingham, Bristol, Northeast, Greater Manchester, Sheffield, West Midlands, Leeds and London). 
 Raw inputs are in "inputs" folder. Processed data is in "output" folder. Final data save in mh-execute inputs/mslt. Intermediate files are not saved. 
 *GBD will update data end of October*
 
@@ -188,7 +188,7 @@ local_government_areas <- GetGEO(data_local)
 head(local_government_areas)
 ```
 ### Map geographical are to GBD names
-Use **GetGBD** to map local_goverment_areas names to GBD input data names.
+Use **GetGBD** to map local_government_areas names to GBD input data names.
 Read original GBD data for 2017 and map to local government area. This step is required to map local government areas to gbd data and then to city regions.
 This is an intermediate step to be used in code that follows.
 
@@ -209,7 +209,7 @@ The output is saved to be used when running the PMSLT in mh-execute.
 
 ```{r,eval=FALSE}
 source("~/mh-mslt/R/get_disease_names.R")
-disease_names_execute=read_csv("~/mh-execute/inputs/dose_response/disease_outcomes_lookup.csv")
+disease_names_execute=read_xlsx("~/mh-execute/inputs/dose_response/disease_outcomes_lookup_2.xlsx")
 DISEASE_SHORT_NAMES <- GetDiseaseTable(disease_names_execute)
 
 head(DISEASE_SHORT_NAMES)
@@ -222,7 +222,7 @@ saveRDS(DISEASE_SHORT_NAMES, "~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rd
 Steps and code to generate inputs to run PMSLT from above generated files: gbd, local_goverment_areas and DISEASE_SHORT_NAMES.
 
 ### Calculate baseline data by area
-Orginal GBD data tidy up with **GBDwider** for later processing for PMSLT dataframe and disbayes inputs. Generates dataframe for all areas (city regions, UK, countries and English Regions). Inputs are by age (5-year groups) and sex.
+Original GBD data tidy up with **GBDwider** for later processing for PMSLT dataframe and disbayes inputs. Generates dataframe for all areas (city regions, UK, countries and English Regions). Inputs are by age (5-year groups) and sex.
 Intermediate data. 
 ```{r,eval=FALSE}
 source("~/mh-mslt/R/prepare_GBD.R")
@@ -329,7 +329,7 @@ To be included in metahit_functions.R Variables with normal distribution.
     DIABETES_IHD_RR_M <- 2.16 ## c(2.16, CI (1.82, 2.56) get SD from CI
     DIABETES_STROKE_RR_M <- 1.83 ## c(1.83) CI (1.60, 2.08) get SD from CI
     
-### Probabilitic input
+### Probabilistic input
 # DIABETES_IHD_RR_F <- c(2.82, GetStDevRR(2.82, 2.35, 3.38))
 # DIABETES_STROKE_RR_F <- c(2.28, GetStDevRR(2.28, 1.93, 2.69))
 # DIABETES_IHD_RR_M <- c(2.16, GetStDevRR(2.16, 1.82, 2.56)) 
@@ -820,7 +820,7 @@ outputs <- RunMSLT(
 ```
 
 
-# Examles of output
+# Examples of output
 
 ## Tables
 ```{r, function_hook, echo=FALSE}
