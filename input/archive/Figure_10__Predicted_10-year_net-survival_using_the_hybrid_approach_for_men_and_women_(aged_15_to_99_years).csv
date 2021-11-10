@@ -1,0 +1,26 @@
+Figure 10: Predicted 10-year net-survival using the hybrid approach for men and women (aged 15 to 99 years),,
+England ,,
+,,
+Notes,1. The ':' symbol denotes that the age-standardised estimate is not available,
+Unit,Net-survival (%),
+,,
+Cancer,Men,Women
+Melanoma,85,90.9
+Prostate,79.6,:
+Breast,:,77
+Hodgkin,73.3,:
+Uterus,:,70.3
+Larynx,55.4,:
+Colon,54.1,54.3
+Colorectal,53.6,54.8
+Non-hodgkin lymphoma,51.3,58.5
+Rectal,52,55.5
+Kidney ,49.8,52.9
+Cervix,:,51.3
+Kidney urinary tract,48.2,51.2
+Bladder,49.9,:
+Leukaemia,42.4,41.2
+Ovary,:,34.6
+Myeloma,28.8,28.6
+Stomach,16.2,17.7
+Lung,7,10.6

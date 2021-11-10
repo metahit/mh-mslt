@@ -1,20 +1,17 @@
 ### Functions to create MSLT dataframe.
 
-calculateGBDwider <- function(gbd, local_government_areas) {
-
-  disease <- DISEASE_SHORT_NAMES %>% dplyr::filter(acronym!="no_pif") %>% dplyr::select(disease) ### process diseases with PIFS
+calculateGBDwider <- function(gbd) {
   
-# 
-#        gbd <- gbd
-#        local_government_areas <- local_government_areas
+  #gbd <- gbd_data
 
   ## Clean names columns
-  gbd <- gbd
+  gbd <- gbd_data
   # remove '_name' from column names
   names(gbd) <- gsub(pattern = "_name", replacement = "", x = names(gbd))
   gbd <- gbd %>%
     dplyr::select(-contains("id")) %>%
-    mutate(cause = tolower(cause)) 
+    mutate(cause = tolower(cause)) %>%
+    filter(!cause=="chronic myeloid leukemia") ## remove, no disbayes outcomes (check why, too small disease?)
   
   ## Calculate population numbers
   gbd_tmp <- gbd %>%
@@ -28,13 +25,13 @@ calculateGBDwider <- function(gbd, local_government_areas) {
     mutate(rate = rate / 100000) %>%
     mutate(pop = number / rate) %>%
     dplyr::select(measure,sex,age,cause,location,number,cityregion,pop) %>%
-    group_by(measure, sex, age, cause, cityregion) %>%
+    group_by(measure, sex, age, cause, cityregion) %>% ### Adds localities within city regions
     dplyr::summarise(number = sum(number), pop = sum(pop)) %>%
     ungroup() %>%
     # Calculate rates per one
     mutate(rate=number/pop)
   
-    #Aggregate by city regions and recalculate rates
+  ## Population data city regions
   
   gbd_pop <- gbd_tmp %>%
     ## filter and select pop data only
@@ -42,17 +39,29 @@ calculateGBDwider <- function(gbd, local_government_areas) {
     dplyr::select(age,sex, cityregion, pop)
   
   ## Dataframe with rates per one
-  gbd_rate <- gbd_tmp %>%
-    # left_join(gbd_pop, by=c("age","sex")) %>%
-    dplyr::select(measure,sex,age,cause,rate,cityregion,number) %>%
-    rowwise() %>%
-    mutate(from_age = as.numeric(str_split(age,' to ')[[1]][1])) %>%
-    mutate(to_age = as.numeric(str_split(age,' to ')[[1]][2])) %>%
-    mutate(age_cat = from_age + 2) %>%
+  gbd_rate <- gbd_tmp #%>%
+
+  ## Add up individual diseases for head-neck-cancer
+  
+  gbd_rate_2 <- gbd_rate %>% dplyr::filter(cause %in% c("larynx cancer", "lip and oral cavity cancer",
+                                                       "nasopharynx cancer", "other pharynx cancer")) %>%
+    mutate(cause="head and neck cancer") %>%
+    group_by(measure, cause, sex, age, cityregion) %>%
+    summarise(number = sum(number)) %>%
+    ungroup() %>%
+    left_join(gbd_pop, by=c("age","sex", "cityregion")) %>%
+    mutate(rate=number/pop) %>%
     # using rowwise() turns the dataframe into a tibble
-    data.frame()
+    data.frame() %>%
+    select(-pop)
   
   gbd_wider <- gbd_rate %>% 
+    filter(!cause %in% c("larynx cancer", "lip and oral cavity cancer",
+                          "nasopharynx cancer", "other pharynx cancer")) %>%
+    bind_rows(gbd_rate_2) %>%
+    rowwise() %>%
+    separate(age, c("from_age", "to_age"), " to ", remove = FALSE) %>%
+    mutate(age_cat = as.numeric(from_age) + 2) %>%
     mutate(disease = tolower(abbreviate(cause))) %>%
     mutate(measure = tolower(measure)) %>%
     mutate(age_sex = paste(age_cat, tolower(sex), sep = "_")) %>%
@@ -68,12 +77,12 @@ calculateGBDwider <- function(gbd, local_government_areas) {
 }  
 
 
-calculateMSLT <- function(gbd_wider, location, disease) {
+calculateMSLT <- function(gbd_wider, location, disbayes) {
    # location="bristol"
    # gbd_wider <- gbd_wider %>% filter(area==location)
-   # load("C:/Metahit/mh-mslt/input/city regions/Output disbayes/cityregions_smoothed_res.rda")
-   # disease <- DISEASE_SHORT_NAMES %>% dplyr::filter(acronym!="no_pif") %>% dplyr::select(disease) ### process diseases with PIFS
+   # disbayes="~/mh-mslt/input/city regions/Output disbayes/resall_selected.rds"
 
+   
   ## Create MSLT dataframe
   mslt_df <- data.frame(age = rep(c(0:100), 2), sex = append(rep("male", 101), 
                                                              rep("female", 101))) %>%
@@ -140,6 +149,7 @@ calculateMSLT <- function(gbd_wider, location, disease) {
     dplyr::mutate(ylds_rate_allc_adj_1 = (ylds_number_allc - yld_total_included)/pop)
   
   
+  ### Here we could also try the `tempdisagg` package (Chris used it with numbers for disbayes, check with rates (or logs))
   interpolateFunction <- function(valuesToInterpolate){
     age_group=0:100
     # only use ages where there is a value present
@@ -160,9 +170,7 @@ calculateMSLT <- function(gbd_wider, location, disease) {
     left_join(gbd_df%>%dplyr::select(-age,-age_sex)) %>%
     pivot_longer(names_to=c("measure","rate_num","disease"),
                  names_sep="_",
-                 cols= deaths_rate_allc:ylds_number_utrc) %>% ### BZ: how can we do this without manual entry?
-    ## drop rows for combination of values measure=deaths and disease=mjdd and measure=incidence and disease=hypertensive heart disease
-    dplyr::filter(!disease %in% c("hyhd", "mjdd", "acml"))
+                 cols= deaths_rate_allc:ylds_number_hanc)
 
   
   
@@ -178,61 +186,70 @@ calculateMSLT <- function(gbd_wider, location, disease) {
     # interpolate dw_adj
     dplyr::mutate(dw_adj=exp(interpolateFunction(dw_adj))) %>%
     ## Interpolate mortality and ylds (all cause mortality is from Melbourne data)
-    dplyr::mutate(deaths_rate=exp(interpolateFunction(deaths_rate))) %>%
+    dplyr::mutate(deaths_rate=ifelse(disease=="dprd", 0, exp(interpolateFunction(deaths_rate)))) %>% ### depression does not have mortality data
     dplyr::mutate(ylds_rate=exp(interpolateFunction(ylds_rate))) %>%
+    dplyr::mutate(incidence_rate=ifelse(disease=="dprd", exp(interpolateFunction(incidence_rate)),0)) %>% ## interpolate depression inc only
     ## not sure if we were supposed to interpolate this one
     dplyr::mutate(ylds_rate_allc_adj_1=exp(interpolateFunction(ylds_rate_allc_adj_1))) %>%
     ungroup()
   
   mslt_df_wider <- mslt_df_by_disease %>%
     dplyr::select(age,sex,sex_age_cat, age_cat, age_cat_2,ylds_rate_allc_adj_1,
-                  disease,deaths_rate,ylds_rate,dw_adj, pop)%>%
-    pivot_wider(id_cols = c(age,sex,sex_age_cat, age_cat,age_cat_2,ylds_rate_allc_adj_1,pop),
+                  disease,deaths_rate,ylds_rate,dw_adj, pop, incidence_rate) %>%
+    pivot_wider(id_cols = c(age,sex,sex_age_cat, age_cat,age_cat_2,ylds_rate_allc_adj_1,pop, incidence_rate),
                 names_from=disease,
-                values_from=c(deaths_rate,ylds_rate,dw_adj)) %>%
+                values_from=c(deaths_rate,ylds_rate,dw_adj, incidence_rate)) %>%
     dplyr::rename(pyld_rate=ylds_rate_allc_adj_1)
   
   
   
-  ### Add Disbayes outputs rates per one
-
-  disease <- cityregions_smoothed_res %>% dplyr::filter(area==location) %>% dplyr::select(med, gender, disease)
+  ### Add Disbayes outputs rates per one for case fatality, remission and incidence (Stroke, Lung cancer, Colon and rectum cancer, 
+  ### Dementia, Type 2 diabetes, Parkinson's disease, Non-rheumatic valvular heart disease, 
+  ### Stomach cancer, Liver cancer, Cardiomyopathy and myocarditis, Multiple myeloma, Uterine cancer, 
+  ### Head and neck cancer, Rheumatic heart disease, Ischemic heart disease, Breast cancer, COPD
   
-  ## Sort data
-  ### create column one with outcome and year
-  disease <- cbind(
-    mes=rownames(disease), disease)
   
-  ### Separate avoce in outcome and year
-  disease <- cbind(disease, (str_split_fixed(disease$mes, fixed('['), 2)))
-
-  disease <- disease[ (disease$`1` %in% c("inc", "cf", "prev")), ]
-  disease$`1` <- as.character(disease$`1`)
-  disease$`2` <- as.character(disease$`2`)
-  disease$`2` <- gsub("].*", "",disease$`2`)
-
-
-  ### Rename columns
-  names(disease)[names(disease) == "1"] <- "rates"
-  names(disease)[names(disease) == "2"] <- "age"
-  names(disease)[names(disease) == "gender"] <- "sex"
-   
+  
+  ### sort data
+  #### For small diseases we use data from England
+  
+  disbayes_output <- readRDS(disbayes)
+  
+  disbayes_England <- disbayes_output %>% dplyr::filter(area=="England", var %in% c("cf", "rem", "inc")) %>% 
+  dplyr::select(age, `50%`, gender, disease, area, var) %>%
+  rename(rates=`50%`,
+         sex=gender) %>% 
+  filter(!age==-1)
+  
+  ### Data city region, add England (summarion city regions) data for small diseases
+  
+  disbayes_cityregion <- disbayes_output %>% dplyr::filter(area==str_to_title(location), var %in% c("cf", "rem", "inc")) %>% 
+    dplyr::select(age, `50%`, gender, disease, area, var) %>%
+    rename(rates=`50%`,
+           sex=gender) %>% 
+    filter(!age==-1) %>%
+    bind_rows(disbayes_England)
+  
   ### Rename string values inc to incidence, cf to case fatality and prev to prevalence
    
-  disease <- disease %>%
-    mutate(rates = str_replace(rates, "inc", "incidence"))  %>%
-    mutate(rates = str_replace(rates, "cf", "case_fatality"))  %>%
-    mutate(rates = str_replace(rates, "prev", "prevalence"))
+  disbayes_cityregion <-  disbayes_cityregion %>%
+    mutate(var = str_replace(var, "inc", "incidence"))  %>%
+    mutate(var = str_replace(var, "cf", "case_fatality"))  %>%
+    mutate(var = str_replace(var, "rem", "remission"))
   
-  ### Age to int
-  disease$age <- as.integer(disease$age)
-  
+
   ### Pivot wider
-  disease <- disease %>% dplyr::select(med, sex, disease, rates, age) %>%
-    pivot_wider(names_from=c("rates","disease"),
-                 values_from=med) 
+  disbayes_cityregion <- disbayes_cityregion %>% dplyr::select(var, sex, disease, rates, age) %>%
+    dplyr::mutate(across(where(is.character), tolower)) %>%
+    mutate(disease=case_when(disease ==  "lung cancer" ~ "tracheal, bronchus, and lung cancer",
+                             disease == "type 2 diabetes" ~ "diabetes mellitus type 2",
+                             disease == "dementia" ~ "alzheimers disease and other dementias",
+                             TRUE ~ as.character(disease))) %>%
+    mutate(disease = abbreviate(disease)) %>% 
+    pivot_wider(names_from=c("var","disease"),
+                 values_from=rates) 
   
-  mslt_df_wider <- left_join(mslt_df_wider, disease) 
+  mslt_df_wider <- left_join(mslt_df_wider, disbayes_cityregion) 
   
   ### Replace NaN, inf for 0 (younger ages to not have chronic diseases and some diseases are men/female only)
   
@@ -243,25 +260,16 @@ calculateMSLT <- function(gbd_wider, location, disease) {
   
   mslt_df_wider <- mslt_df_wider %>% 
     dplyr::rename(mx = deaths_rate_allc, 
-           population_number=pop) 
+           population_number=pop) %>% # remove interpolated incidence, except for depression
+    rename(incidence_dprd=incidence_rate_dprd) %>%
+    select(-starts_with("incidence_rate")) %>%
+    mutate(area=location)
 
   return(mslt_df_wider)
 }
 
-
-# compare <- read_csv(paste0(relative_path_execute, "/inputs/mslt/bristol_mslt.csv")) %>% arrange(sex, age)
-# # # 
-# difference <- mslt_df_wider$population_number- compare$population_number #minor diff
-# difference <- mslt_df_wider$mx- compare$mx ## minor diff
-# difference <- mslt_df_wider$pyld_rate- compare$pyld_rate ## significant, seems issue with original data, check all_ylds_counts order (female, age)
-# difference <- mslt_df_wider$incidence_brsc- compare$incidence_brsc
-# difference <- mslt_df_wider$incidence_copd- compare$incidence_copd ## there seems to be a systematic issue with females
-# difference <- mslt_df_wider %>% select(age, sex, starts_with("case_fatality"))
-# compare2 <- select(compare, age, sex, starts_with("case_fatality"))
-# compare3 <- left_join(difference, compare2, by=c("age", "sex"))
 # 
-# plot_case_fatality <- compare3 %>% filter(sex=="female") %>%
-#   ggplot(aes(x=age, y=case_fatality_ishd.x)) +
-#   geom_line(aes(x = age, y = case_fatality_ishd.x),colour = "red") +
-#   geom_line(aes(x = age, y = case_fatality_ishd.y),colour = "green")
+# plot_case_fatality <- mslt_df_wider %>% filter(sex=="female") %>%
+#   ggplot(aes(x=age, y=case_fatality_brsc)) +
+#   geom_line(colour = "red")
 
