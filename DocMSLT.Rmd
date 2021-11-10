@@ -244,12 +244,32 @@ write.csv(mslt_inputs[[index]], file=paste0("~/mh-execute/inputs/mslt/", loc, "_
 index <- index + 1
 
 }
+
+mslt_all <- mslt_inputs %>% bind_rows()
 ```
 
 
-# Check mslt estimates
+# Check mslt estimates using plots
 
+``````{r,eval=FALSE}
 
+mx <- mslt_all %>%
+  ggplot(aes(x=age, y=mx, colour=area)) +
+  geom_line() +
+  facet_wrap(~ sex) +
+  theme_classic()
+
+mx
+
+ylds_total <- mslt_all %>%
+  ggplot(aes(x=age, y=pyld_rate, colour=area)) +
+  geom_line() +
+  facet_wrap(~ sex) +
+  theme_classic()
+
+ylds_total
+
+```
 
 # Code explained to run the PMSLT for one area (e.g. city regions, country); 
 
