@@ -21,7 +21,7 @@ source("~/mh-mslt/R/prepare_DATA.R")
     lad= paste0(relative_path_mslt,"/input/Local_Authority_District_to_Region_(December_2017)_Lookup_in_England.csv"),
     utla=paste0(relative_path_mslt,"/input/Lower_Tier_Local_Authority_to_Upper_Tier_Local_Authority_(December_2017)_Lookup_in_England_and_Wales.csv"),
     gbd_data= paste0(relative_path_mslt, "/input/gbd/GBD2019/ITHIM/"))
-  head(gbd_data)  
+
 
 ### Calculate baseline data by area (city regions)
 
