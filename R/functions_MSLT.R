@@ -103,29 +103,31 @@ RunLifeTable <- function(in_idata, in_sex, in_mid_age, death_rates=NA) {
 ########################################### Run disase life table #########################################################
 
 RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_trends=NA, mortality_trends=NA) {
-  # in_idata=MSLT_DF
-  # in_sex='male'
+  # in_idata=mslt_df
+  # in_sex='female'
   # in_mid_age=17
-  # in_disease='dmt2'
+  # in_disease='brsc'
   
   # create disease variable for the disease life table function 
   dw_disease <- paste("dw_adj", in_disease, sep = "_")
   incidence_disease <- paste("incidence", in_disease, sep = "_")
   case_fatality_disease <- paste("case_fatality", in_disease, sep = "_")
+  remission_disease <- paste("remission", in_disease, sep = "_") ### only cancers have remission
   
   ## add generic variable names to the source data frame (in_idata)
   in_idata$dw_disease <- in_idata[[dw_disease]]
   in_idata$incidence_disease <- in_idata[[incidence_disease]]
   in_idata$case_fatality_disease <- in_idata[[case_fatality_disease]]
+  in_idata$remission_disease <- in_idata[[remission_disease]]
   
   # Select columns for lifetable calculations
   
   ##BZ: back yo using filtering, otherwise the life tables are not run by cohort (age and sex)
   dlt_df <- in_idata %>%
     dplyr::filter(age >= in_mid_age & sex == in_sex) %>% 
-    dplyr::select('sex', 'age', dw_disease, incidence_disease, case_fatality_disease)
+    dplyr::select('sex', 'age', dw_disease, incidence_disease, case_fatality_disease, remission_disease)
   
-  ##BZ: Rob, line 264 does not filter by age and sex, each disease life table starts at firt age cohort (e.g. 17) and by gender. 
+
   
   # dlt_df <- in_idata[,colnames(in_idata) %in% c('sex', 'age', 'dw_disease', 'incidence_disease', 'case_fatality_disease')] # dplyr::select(sex, age, dw_disease, incidence_disease, case_fatality_disease)
   
@@ -138,12 +140,11 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
       dplyr::filter(sex == in_sex) %>%
       dplyr::select('year',mortality_trend=in_disease) %>%
       dplyr::mutate(row_num=row_number())
-    # BELEN: I'm not sure what to do with the incidence trend so I just multiplied it with case_fatality_disease
     dlt_df <- dlt_df %>%
       dplyr::mutate(row_num=row_number()) %>%
       dplyr::inner_join(cohort_mortality_trends, by=c('row_num')) %>%
       dplyr::mutate(case_fatality_disease=case_fatality_disease*mortality_trend) %>%
-      dplyr::select('sex', 'age', 'dw_disease', 'incidence_disease', 'case_fatality_disease', 'disease')
+      dplyr::select('sex', 'age', 'dw_disease', 'incidence_disease', 'case_fatality_disease', 'remission_disease', 'disease')
   }
   
   # are we using modified incidence trends?
@@ -153,12 +154,11 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
       dplyr::filter(sex == in_sex) %>%
       dplyr::select('year',incidence_trend=in_disease) %>%
       dplyr::mutate(row_num=row_number())
-    # BELEN: I'm not sure what to do with the incidence trend so I just multiplied it with incidence_disease
     dlt_df <- dlt_df %>%
       dplyr::mutate(row_num=row_number()) %>%
       dplyr::inner_join(cohort_incidence_trends, by=c('row_num')) %>%
       dplyr::mutate(incidence_disease=incidence_disease*incidence_trend) %>%
-      dplyr::select('sex', 'age', 'dw_disease', 'incidence_disease', 'case_fatality_disease', 'disease')
+      dplyr::select('sex', 'age', 'dw_disease', 'incidence_disease', 'case_fatality_disease', 'remission_disease', 'disease')
   }
   
   # create list of life table variables. Created as vectors and then added to dataframe. 
@@ -168,8 +168,13 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
   
   ### lx, qx, wx and vx are intermediate variables, 
   
-  lx <- dlt_df$incidence_disease + dlt_df$case_fatality_disease
-  qx <-  sqrt((dlt_df$incidence_disease - dlt_df$case_fatality_disease) * (dlt_df$incidence_disease - dlt_df$case_fatality_disease))
+  lx <- dlt_df$incidence_disease + dlt_df$case_fatality_disease + dlt_df$remission_disease ## BZD (12/11/21) added remission
+  qx <- sqrt(dlt_df$incidence_disease^2 + 2*dlt_df$incidence_disease*dlt_df$remission_disease - 
+               2*dlt_df$incidence_disease*dlt_df$case_fatality_disease + 
+               dlt_df$remission_disease^2 + 2*dlt_df$case_fatality_disease*dlt_df$remission_disease +
+               dlt_df$case_fatality_disease^2) ### CHECK RESULTS diseases with 0 remission value
+  
+  # sqrt((dlt_df$incidence_disease - dlt_df$case_fatality_disease) *(dlt_df$incidence_disease - dlt_df$case_fatality_disease))
   wx <- exp(-1*(lx+qx)/2)
   vx <- exp(-1*(lx-qx)/2)
   
@@ -202,6 +207,8 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
       qxplx <- qx[i-1] + lx[i-1]
       
       ### Healthy (Sx), Diseases (Cx) and Death from the Disease (Dx)
+      
+      ### BELEN: add remission here, check above calculations
       
       Sx[i] <- Sx[i-1] * (2*vxmwx * cfds[i-1]  + (vx[i-1] * qxmlx + wx[i-1] * qxplx)) / dqx
       Cx[i] <- -1*(vxmwx*(2*(cfds[i-1]  * SxpCx - lx[i-1] * Sx[i-1]) - Cx[i-1] * lx[i-1]) - Cx[i-1] * qx[i-1] * (vx[i-1]+wx[i-1])) / dqx

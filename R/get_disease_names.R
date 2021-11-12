@@ -34,14 +34,15 @@ GetDiseaseTable <- function(disease_names_execute, gbd_data) {
     mutate(is_not_dis = case_when(sname == "allc"  ~  2,
                                   sname == "lwri"  ~  1,
                                   sname == "npls" ~ 2,
+                                  sname == "crdd" ~ 2,
                                   # ## Code for major depressive disorder (no deaths) and hypertensive heart disease (no incidence)
-                                  # sname == "hyhd"  ~  3,
-                                  # sname == "dprd"  ~  3,
+                                  sname == "hyhd"  ~  3,
+                                  sname == "dprd"  ~  3,
                                   TRUE  ~  is_not_dis)) %>%
     mutate(
       males = ifelse(disease %in% c("uterine cancer", "breast cancer"), 0, 1),
       females = ifelse(disease %in% "prostate cancer", 0, 1),
-      sname = gsub("'", '', sname),
+      #sname = gsub("'", '', sname),
       acronym = ifelse(is.na(acronym), sapply(strsplit(disease, " "), head, 1), acronym))
   return(DISEASE_SHORT_NAMES)
   

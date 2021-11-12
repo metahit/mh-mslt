@@ -3,15 +3,15 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   
   
   ### Functions requiered 
-  source(paste0(relative_path_mslt, "R/functions_MSLT.R"))
+  source(paste0(relative_path_mslt, "/R/functions_MSLT.R"))
   # mslt_df=read_csv("~/mh-execute/inputs/mslt/bristol_mslt.csv")
   # disease_names=readRDS("~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds")
   # i_sex=c("male", "female")
   # i_age_cohort=seq(from=17, to=97, by =5)
-  # pif=read_csv("~/mh-mslt/input/pif.csv")
+  # pif=read_csv("~/mh-mslt/input/pif_place_holder.csv") ## PLACE HOLDER (from Aus)
 
-  
-  ### Relative risks diabetes
+  # 
+  # ### Relative risks diabetes
   DIABETES_IHD_RR_F <- 2.82 ## c(2.82, CI (2.35, 3.38) get SD from CI
   DIABETES_STROKE_RR_F <- 2.28 ## c(2.28) CI (1.93, 2.69) get SD from CI
   DIABETES_IHD_RR_M <- 2.16 ## c(2.16, CI (1.82, 2.56) get SD from CI
@@ -19,46 +19,25 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   
   DISEASE_SHORT_NAMES <- disease_names
   
+  
+  ### USE Australian pifs for diseases as not ready for city regions
   ### Get pif, generated in mh-execute and saved in input mh-mslt
   pif_expanded <- pif %>%
-    mutate(age_cat = case_when(age_cat =="16-19" ~ 17, ### Create matching age cohort variable to match mslt_df input
-                               age_cat =="20-24" ~ 22, 
-                               age_cat =="25-29" ~ 27,
-                               age_cat =="30-34" ~ 32, 
-                               age_cat =="35-39" ~ 37, 
-                               age_cat =="40-44" ~ 42,
-                               age_cat =="45-49" ~ 47,
-                               age_cat =="50-54" ~ 52,
-                               age_cat =="55-59" ~ 57,
-                               age_cat =="60-64" ~ 62,
-                               age_cat =="65-69" ~ 67,
-                               age_cat =="70-74" ~ 72,
-                               age_cat =="75-79" ~ 77,
-                               age_cat =="80-84" ~ 82,
-                               age_cat =="85-89" ~ 87,
-                               age_cat =="90-94" ~ 92,
-                               age_cat =="95-120" ~ 97)) %>% 
-    dplyr::rename(pif_ihd=scen_pif_pa_ap_noise_no2_ihd, ### rename all original pif columnst to match diseases
-           pif_stroke=scen_pif_pa_ap_stroke,
-           pif_colon=scen_pif_pa_colon, 
-           pif_t2d=scen_pif_pa_t2d,
-           pif_endo=scen_pif_pa_endo,
-           pif_lc=scen_pif_pa_ap_lc,
-           pif_lri_deaths=scen_pif_ap_lri,
-           pif_copd=scen_pif_ap_copd,
-           pif_breast=scen_pif_pa_breast,
-           pif_cyclist_deaths=scen_cyclist_Fatal,
-           pif_pedestrian_deaths=scen_pedestrian_Fatal,
-           pif_cyclist_ylds=scen_cyclist_Serious,
-           pif_pedestrian_ylds=scen_pedestrian_Serious,
-           pif_motor_deaths='scen_car/taxi_Fatal',
-           pif_motorcyclist_deaths='scen_motorcycle_Fatal',
-           pif_motor_ylds='scen_car/taxi_Serious',
-           pif_motorcyclist_ylds=scen_motorcycle_Serious) %>% 
-    mutate(pif_lri_ylds=pif_lri_deaths) %>% ###Repeat pif lri for deaths and ylds
+    mutate(pif_cyclist_deaths=1.1,
+           pif_pedestrian_deaths=1.1,
+           pif_cyclist_ylds=1.1,
+           pif_pedestrian_ylds=1.1,
+           pif_motor_deaths=1.1,
+           pif_motorcyclist_deaths=1.1,
+           pif_motor_ylds=1.1,
+           pif_motorcyclist_ylds=1.1,
+           pif_road_deaths=1.1,
+           pif_road_ylds=1.1,
+           pif_lri_ylds=0.03,
+           pif_lri_deaths=0.03,
+           pif_copd=0.03) %>%
     dplyr::slice(rep(1:dplyr::n(), each = 5)) %>% ### expand to 1-yr group (repeat values)
     mutate(age=rep(seq(16,100,1), times = 2))
-  
 
   
   # dataframe of the age and sex cohorts (crossing just does a cross product) for loop below
@@ -156,7 +135,7 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   disease_life_table_list_sc <- list()
   
   for (i in 1:nrow(age_sex_disease_cohorts)){
-    # i=6
+    # i=39
     td1_age_sex <- mslt_df %>% ### new mslt dataframe with modified incidence rates
       filter(age >= age_sex_disease_cohorts$age[i] & sex == age_sex_disease_cohorts$sex[i])
     
@@ -311,7 +290,7 @@ non_disease_life_table_sc <- bind_rows(non_disease_life_table_list_sc, .id = "ag
 mx_pylds_sc_total_disease_df <- disease_life_table_sc %>%
   group_by(age_group,sex,age) %>%
   dplyr::summarise(mortality_sum=sum(diff_mort_disease,na.rm=T),
-            pylds_sum=sum(diff_pylds_disease,na.rm=T)) %>%
+                   pylds_sum=sum(diff_pylds_disease,na.rm=T)) %>%
   ungroup() %>%
   mutate(age_sex_cohort=paste0(age_group,'_',sex))
 
@@ -319,7 +298,7 @@ mx_pylds_sc_total_disease_df <- disease_life_table_sc %>%
 mx_pylds_sc_total_non_disease_df <- non_disease_life_table_sc %>%
   group_by(age_group,sex,age) %>%
   dplyr::summarise(mortality_sum=sum(diff_mort,na.rm=T),
-            pylds_sum=sum(diff_pylds,na.rm=T)) %>%
+                   pylds_sum=sum(diff_pylds,na.rm=T)) %>%
   ungroup() %>%
   mutate(age_sex_cohort=paste0(age_group,'_',sex))
 

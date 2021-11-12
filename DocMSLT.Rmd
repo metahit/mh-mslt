@@ -202,7 +202,8 @@ The output is saved to be used when running the PMSLT in mh-execute.
 source("~/mh-mslt/R/get_disease_names.R")
 
 DISEASE_SHORT_NAMES <- GetDiseaseTable(gbd_data= paste0(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/"),
-disease_names_execute=paste0(relative_path_execute, "/inputs/dose_response/disease_outcomes_lookup_new.csv"))
+disease_names_execute=paste0(relative_path_execute, "/inputs/dose_response/disease_outcomes_lookup_new.csv")) %>% ### diseases not to include
+   dplyr::filter(!acronym %in% c("bladder-cancer", "alzheimer's-disease", "esophageal-cancer", "kidney-cancer", "prostate-cancer", "rectum-cancer", "myeloid-leukemia", "Road injuries", "Other road injuries"))
 
 
 head(DISEASE_SHORT_NAMES)
@@ -291,42 +292,20 @@ For now this is place holder. We can generate pifs as an outcome of mh-execute a
 The code below expands input pifs from 5-year age groups to one-year age groups. This is done to facilitate working with the mslt data in one-year age groups. Names of original pifs are also changed to match mslt inputs.
 This file is not saved, and use in later code. 
 ```{r, eval=FALSE}
-pif_expanded <- read_csv("~/mh-mslt/input/pif.csv") %>% ## PLACE HOLDER
-  mutate(age_cat = case_when(age_cat =="16-19" ~ 17, ### Create matching age cohort variable to match mslt_df input
-                        age_cat =="20-24" ~ 22, 
-                        age_cat =="25-29" ~ 27,
-                        age_cat =="30-34" ~ 32, 
-                        age_cat =="35-39" ~ 37, 
-                        age_cat =="40-44" ~ 42,
-                        age_cat =="45-49" ~ 47,
-                        age_cat =="50-54" ~ 52,
-                        age_cat =="55-59" ~ 57,
-                        age_cat =="60-64" ~ 62,
-                        age_cat =="65-69" ~ 67,
-                        age_cat =="70-74" ~ 72,
-                        age_cat =="75-79" ~ 77,
-                        age_cat =="80-84" ~ 82,
-                        age_cat =="85-89" ~ 87,
-                        age_cat =="90-94" ~ 92,
-                        age_cat =="95-120" ~ 97)) %>% 
-                  dplyr::rename(pif_ihd=scen_pif_pa_ap_noise_no2_ihd, ### rename all original pif columnst to match diseases
-                  pif_stroke=scen_pif_pa_ap_stroke,
-                  pif_colon=scen_pif_pa_colon, 
-                  pif_t2d=scen_pif_pa_t2d,
-                  pif_endo=scen_pif_pa_endo,
-                  pif_lc=scen_pif_pa_ap_lc,
-                  pif_lri_deaths=scen_pif_ap_lri,
-                  pif_copd=scen_pif_ap_copd,
-                  pif_breast=scen_pif_pa_breast,
-                  pif_cyclist_deaths=scen_cyclist_Fatal,
-                  pif_pedestrian_deaths=scen_pedestrian_Fatal,
-                  pif_cyclist_ylds=scen_cyclist_Serious,
-                  pif_pedestrian_ylds=scen_pedestrian_Serious,
-                  pif_motor_deaths='scen_car/taxi_Fatal',
-                  pif_motorcyclist_deaths='scen_motorcycle_Fatal',
-                  pif_motor_ylds='scen_car/taxi_Serious',
-                  pif_motorcyclist_ylds=scen_motorcycle_Serious) %>% 
-                  mutate(pif_lri_ylds=pif_lri_deaths) %>% ###Repeat pif lri for deaths and ylds
+pif_expanded <- read_csv("~/mh-mslt/input/pif_place_holder.csv") %>% ## PLACE HOLDER (from Aus)
+   mutate(pif_cyclist_deaths=1.1,
+                  pif_pedestrian_deaths=1.1,
+                  pif_cyclist_ylds=1.1,
+                  pif_pedestrian_ylds=1.1,
+                  pif_motor_deaths=1.1,
+                  pif_motorcyclist_deaths=1.1,
+                  pif_motor_ylds=1.1,
+                  pif_motorcyclist_ylds=1.1,
+                  pif_road_deaths=1.1,
+                  pif_road_ylds=1.1,
+                  pif_lri_ylds=0.03,
+                  pif_lri_deaths=0.03,
+                  pif_copd=0.03) %>%
                   dplyr::slice(rep(1:dplyr::n(), each = 5)) %>% ### expand to 1-yr group (repeat values)
                   mutate(age=rep(seq(16,100,1), times = 2))
 
@@ -361,6 +340,7 @@ NOTE: 1) mh-execute functions need updating with mh-mslt code; 2) Mortality tren
 ```{r,eval=FALSE}
 source("~/mh-mslt/R/functions_MSLT.R")
 
+
 # dataframe of the age and sex cohorts (crossing just does a cross product) for loop below
   age_sex_cohorts <- crossing(data.frame(age=i_age_cohort),
                               data.frame(sex=c('male', 'female'))) %>%
@@ -368,7 +348,7 @@ source("~/mh-mslt/R/functions_MSLT.R")
   
 ### Select inputs for area of interest
 
-mslt_df <- mslt_inputs[["bristol"]]
+mslt_df <- read_csv(paste0(relative_path_execute, "/inputs/mslt/bristol_mslt.csv")) #use read_csv
   
  general_life_table_list_bl <- list()
   
@@ -459,7 +439,7 @@ source("~/mh-mslt/R/functions_MSLT.R")
   
 ```
 
-### Run scenarios diseases processes
+### Run scenarios diseases processes (CHECK ISSUE HERE: 10-11-22)
 Re run diseases processes with modified incidence rates by the pif.
 New incidence rates = bl incidence rates * (1-disease_pif).
 ```{r,eval=FALSE}
@@ -829,8 +809,7 @@ outputs <- RunMSLT(
   disease_names=readRDS("~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds"),
   i_sex=c("male", "female"),
   i_age_cohort=seq(from=17, to=97, by =5),
-  pif=read_csv("~/mh-mslt/input/pif.csv"))
-  
+  pif=read_csv("~/mh-mslt/input/pif_place_holder.csv"))
 ```
 
 
