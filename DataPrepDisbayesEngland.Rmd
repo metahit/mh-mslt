@@ -1,0 +1,259 @@
+---
+title:  "Preparing data from the Global Burden of Disease for METAHIT modelling for England"
+author:
+- "Jackson, Chris <chris.jackson@mrc-bsu.cam.ac.uk>"
+date:   "`r Sys.time()`"
+output:
+    html_document:
+        code_folding: show
+params:
+    date:   !r Sys.Date() - 1
+---
+See DataPrepDisbayes.Rdm for details
+# Read data
+## First load required packages and specify local file paths 
+
+```{r}
+library(tidyverse)
+library(progress)
+library(disbayes)
+library(tempdisagg)
+# relative_path_gbd <- "~/scratch/chronic"
+# relative_path_execute <- "~/scratch/chronic/mh-execute"
+
+relative_path_execute <- paste0("~/mh-execute")
+relative_path_mslt <- paste0("~/mh-mslt")
+```
+
+## Read files
+
+```{r,eval=FALSE}
+list_of_files <- list.files(path = paste0(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/"),
+                            pattern = "\\.csv$",
+                            full.names = TRUE)
+gbd <- do.call(rbind, lapply(list_of_files, read.csv)) 
+names(gbd) <- gsub(pattern = "_name", replacement = "", x = names(gbd))
+gbd <- gbd %>%
+    select(-contains("id")) %>%
+    mutate(cause = tolower(cause)) %>% filter(location=="England") %>%
+  filter(!str_detect(cause, "injuries")) %>%
+  filter(!cause %in% "Lower respiratory infections")
+```
+
+# Determining "effective sample sizes" behind estimates
+
+```{r,eval=FALSE}
+gbdp <- 
+    gbd %>%
+    filter(metric == "Rate") %>% 
+    filter(cause != "all causes") %>% 
+    mutate(num = NA, denom = NA) %>%
+    mutate(val = val/100000, lower = lower / 100000, upper = upper / 100000) %>%
+    mutate(lower = if_else(lower==0, pmin(val/2, 0.00001), lower)) %>% 
+    mutate(upper = if_else(upper>=1, pmax((1+val)/2, 0.99999), upper))
+```
+
+The function `ci2num` in the `disbayes` package is then used to calculate the effective sample sizes.  This takes about 1 minutes on a fairly fast laptop.   It could be made a lot faster by using parallel processing.
+
+
+```{r,eval=FALSE,cache=TRUE}
+nest <- nrow(gbdp) 
+pb <- progress_bar$new(total = nest) # show progress of computation
+for (i in 1:nest){
+  if (gbdp$val[i] < gbdp$upper[i] &
+      gbdp$val[i] > gbdp$lower[i]) { 
+    pb$tick()
+    counts <- disbayes::ci2num(gbdp$val[i], gbdp$lower[i], gbdp$upper[i])
+    gbdp$num[i] <- counts$num
+    gbdp$denom[i] <- counts$denom
+  }
+}
+saveRDS(gbdp, file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdpEngland.rds"))
+```
+# Determining actual population sizes
+
+```{r,eval=FALSE}
+gbdp <- readRDS(file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdpEngland.rds")) %>%
+  select(!Number)
+gbdnum <- gbd %>%
+   filter(metric=="Number") %>%
+   select(measure, location, sex, age, cause, Number=val)
+gbdp <- gbdp %>% left_join(gbdnum, by=c("measure","location","sex","age","cause")) %>%
+   mutate(pop = Number / val)
+saveRDS(gbdp, file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdpEngland.rds"))
+gbdp <- readRDS(file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdpEngland.rds"))
+```
+
+We can then use these to fill in the effective sample sizes "d"  that were missing or implausible, and deduce the effective numerators "n" by multiplying "d" by the point estimate of the proportion.
+
+```{r}
+gbdp <- gbdp %>%
+  mutate(pop = if_else(is.na(pop), 5000, pop)) %>% 
+  mutate(nodenom = is.na(denom) | (denom > pop),
+         denom = if_else(is.na(denom), pop, denom),
+         denom = if_else(denom > pop, pop, denom),
+         num = ifelse(nodenom, round(val*denom), num))
+```
+
+Note that the data are still grouped as originally published - estimates by five-year age groups (not one year.
+
+Now we have reconstructed the implicit count "data" on which these estimates are based, these counts can now be easily aggregated or disaggregated to produce estimates for smaller or larger subgroups.  The counts will retain their meaning as the implicit number of events, or number of individuals, observed in the subgroup.
+
+#  Disaggregating by age groups 
+
+Firstly we can disaggregate the five year age groups to single years of age. If we assume that there was an equal amount of information from each single year contributing to the five-year result, we can simply divide the numerators r and denominators n for the five-year estimates by 5 (and round to the nearest integer).
+
+However a smarter method involves a temporal disaggregation model, using the `tempdisagg` package (Sax and Steiner, 2020).  For each measure, location, sex, and cause, the five year counts are disaggregated to one-year counts in a way that preserves the five year totals, but the resulting one-year counts vary smoothly. 
+
+```{r} 
+# Working with the data that has one row per five-year age group, 
+# first construct 1-year counts as an extra column. 
+gbdp <- gbdp %>%
+  extract(age, c("from_age", "to_age"), "(.+) to (.+)", remove=FALSE, convert=TRUE) %>%
+  mutate(from_age = case_when(age=="95 plus"  ~  95L,
+                              age=="Under 5"  ~  0L,
+                              TRUE  ~  from_age),
+         to_age = case_when(age=="95 plus"  ~  99L,
+                            age=="Under 5"  ~  4L,
+                            TRUE  ~  to_age),
+         agediff = to_age - from_age + 1,  # this will equal 5 
+         num1yr = round(num/agediff),
+         denom1yr = round(denom/agediff)) %>%
+  rename(agegroup = age)
+## Now stretch the data out using an index, to create a data frame with 1 row per year of age and create a variable for year of age. 
+index <- rep(1:nrow(gbdp), gbdp$agediff)
+gbdpyrd5 <- gbdp[index,] %>%
+    mutate(ageyr = from_age + sequence(gbdp$agediff) - 1)
+gbdpyrd5 <- gbdpyrd5 %>% 
+  select(measure, location, ageyr, sex, agegroup, from_age, to_age, cause, year, num1yr, denom1yr, pop) 
+
+saveRDS(gbdpyrd5, file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdpyrd5England.rds"))
+
+## More advanced method for smooth disaggregation 
+## using the tempdisagg package 
+# tmp <- gbdp %>% group_by(measure, location, sex, cause) %>% filter(cur_group_id()==1)
+gbdp_grp <- gbdp %>% 
+  group_by(measure, location, sex, cause) %>%  # filter(cur_group_id() %in% 1:3) %>%
+  arrange(measure, location, sex, cause, from_age)
+disagg <- function(dat, key){ 
+  res <- with(dat, { 
+    data.frame( 
+      ageyr = rep(from_age,agediff) + sequence(agediff) - 1,
+      num = predict(td(num ~ 1, to=5, method="fast")),
+      denom = predict(td(denom ~ 1, to=5, method="fast"))
+    ) } )
+  res 
+}
+# This takes about a minute 
+gbdpyr <- group_modify(gbdp_grp, disagg) %>% 
+  ungroup %>%
+  left_join(gbdpyrd5, select("measure","location","ageyr","sex","cause"), by=c("measure","location","ageyr","sex","cause"))
+# Sometimes the results are negative.  
+# Revert to dividing by 5 for all agegroups that contain a negative result 
+neg_num <- gbdpyr %>%
+  filter(num<0) %>%
+  select("measure","location","sex","cause","agegroup") %>%
+  distinct() %>%
+  mutate(zeronum = TRUE)
+neg_denom <- gbdpyr %>%
+  filter(denom<0) %>%
+  select("measure","location","sex","cause","agegroup") %>%
+  distinct() %>%
+  mutate(zerodenom = TRUE)
+gbdpyr <- gbdpyr %>% 
+  left_join(neg_num, by=c("measure", "location","sex","cause","agegroup")) %>% 
+  left_join(neg_denom, by=c("measure", "location","sex","cause","agegroup")) %>%
+  mutate(zeronum = replace_na(zeronum, FALSE)) %>%
+  mutate(zerodenom = replace_na(zerodenom, FALSE)) %>%
+  mutate(num = if_else(zeronum, num1yr, round(num)),
+         denom = if_else(zerodenom, denom1yr, round(denom)))
+
+saveRDS(gbdpyr, file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdpyrEngland.rds"))
+## Check for a few cases that the series match with the naive dividing by 5 method and the smooth methods
+# tloc <- sample(unique(gbdpyrd5$location), 3)
+test2 <- gbdpyrd5 %>%
+  filter(cause=="ischemic heart disease", sex=="Male", measure=="Deaths") #,
+         #location %in% tloc)
+gbdpyr %>% 
+  filter(cause=="ischemic heart disease", sex=="Male", measure=="Deaths") %>% 
+  ggplot(aes(x=ageyr, y=denom, col=location, group=location)) + 
+  geom_line() + geom_point() + 
+  geom_line(data=test2, aes(y=denom1yr))
+```
+# Aggregating by area
+
+Secondly we can aggregate the data from local authorities to produce data by city regions (defined as groups of local authorities), and regions excluding city regions.   This covers the whole of England with mutually exclusive areas.   No extra assumptions are required to do this.   It doesn't matter whether this is done before or after converting from 5-year to 1-year age groups.
+Update: BZ added nations to then use English data for small diseases
+
+### Spreading so one row by subgroup
+
+Put numerators and denominators for incidence, prevalence and mortality in different columns
+
+Rename variables for consistency with disbayes 
+
+```{r}
+gbdmod <- readRDS(file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdpyrEngland.rds"))
+gbddb <- gbdmod %>% 
+  select(measure, sex, ageyr, cause, location, num, denom) %>%
+  filter(measure %in% c("Deaths","Incidence", "Prevalence")) %>%
+  mutate(measure = fct_recode(measure, mort="Deaths", inc="Incidence", prev="Prevalence")) %>% pivot_wider(names_from=measure,
+              values_from=c("num","denom"),
+              values_fill = list(num=0, denom=5000)) %>% 
+  mutate(disease = str_to_sentence(cause)) %>%
+  rename(age = ageyr,
+         gender = sex,
+         inc_num = num_inc, inc_denom = denom_inc,
+         prev_num = num_prev, prev_denom = denom_prev,
+         mort_num = num_mort, mort_denom = denom_mort
+  ) %>% 
+  select(age, gender, disease, inc_num, inc_denom, prev_num, prev_denom, mort_num, mort_denom) %>%
+  arrange(disease, gender, age) %>%
+  filter(! disease %in% c("Hypertensive heart disease"))
+saveRDS(gbddb, file=file.path(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/gbdbbEngland.rds"))
+  
+```
+
+# Cancer remission rates
+
+```{r}
+library(readxl)
+
+rem <- read_excel(path=paste0(relative_path_mslt,"/input/Figure_10__Predicted_10-year_net-survival_using_the_hybrid_approach_for_men_and_women_(aged_15_to_99_years).xls"), range="A7:C26", na=":") %>%
+  pivot_longer(cols=c("Men","Women"), names_to = "sex", values_to = "surv10") %>% 
+  mutate(prem1 = 1 - (1 - as.numeric(surv10)/100)^(1/10)) %>% 
+  filter(Cancer %in% c("Breast","Uterus","Colorectal", "Kidney", "Bladder", "Liver", "Leukaemia", "Myeloma", "Stomach","Lung"),
+         !is.na(prem1)) %>%
+  mutate(Cancer = fct_recode(Cancer, 
+                             "Breast cancer"="Breast",
+                             "Uterine cancer"="Uterus",
+                             "Colon and rectum cancer"="Colorectal",
+                             "Kidney cancer"="Kidney",
+                             "Bladder cancer"="Bladder",
+                             # "Liver cancer"="Liver",
+                             "Chronic myeloid leukemia"="Leukaemia",
+                             "Multiple myeloma"="Myeloma",
+                             "Stomach cancer"="Stomach",
+                             "Tracheal, bronchus, and lung cancer"="Lung"
+                             ),
+         gender = fct_recode(sex, "Male"="Men", "Female"="Women")) %>% 
+  rename(disease = Cancer)
+cancers <- c("Breast cancer", "Uterine cancer",  "Colon and rectum cancer",
+              "Kidney cancer", "Bladder cancer", "Chronic myeloid leukemia", "Multiple myeloma",
+                             "Stomach cancer", "Tracheal, bronchus, and lung cancer")
+num_cancer <- gbddb %>% 
+  filter(disease %in% cancers, 
+         age %in% 15:99) %>% 
+  group_by(gender, disease) %>% 
+  summarise(ncases = sum(prev_num)) %>% 
+  left_join(rem, by=c("disease","gender")) %>%
+  mutate(rem_num = round(ncases*prem1 / 100),
+         rem_denom = round(ncases / 100)) %>% 
+  select(gender, disease, rem_num, rem_denom)
+num_cancer
+gbddb <- gbddb %>% 
+  left_join(num_cancer) %>% 
+  mutate(rem_num = replace_na(rem_num, 0),
+         rem_denom = replace_na(rem_denom, 0))
+saveRDS(gbddb,file=file.path(relative_path_mslt, "/input/england/Input disbayes/disbayes_input_7_11_21.rds"))
+```
+
