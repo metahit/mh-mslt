@@ -106,8 +106,8 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
   # in_idata=mslt_df
   # in_sex='female'
   # in_mid_age=17
-  # in_disease='brsc'
-  
+  # in_disease='dmt2'
+
   # create disease variable for the disease life table function 
   dw_disease <- paste("dw_adj", in_disease, sep = "_")
   incidence_disease <- paste("incidence", in_disease, sep = "_")
@@ -122,7 +122,7 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
   
   # Select columns for lifetable calculations
   
-  ##BZ: back yo using filtering, otherwise the life tables are not run by cohort (age and sex)
+
   dlt_df <- in_idata %>%
     dplyr::filter(age >= in_mid_age & sex == in_sex) %>% 
     dplyr::select('sex', 'age', dw_disease, incidence_disease, case_fatality_disease, remission_disease)
@@ -186,8 +186,10 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
   
   number_of_ages <- nrow(dlt_df)
   Sx <- Cx <- Dx <- Tx  <- Ax <- PYx <- px <- mx <- rep(0,number_of_ages)
-  cfds <- dlt_df$case_fatality_disease
+  cfds <- dlt_df$case_fatality_disease + dlt_df$remission_disease ## BZ: added remission (18/11)
   ages <- dlt_df$age
+  rx <- dlt_df$remission_disease
+  cf <- dlt_df$case_fatality_disease
   
   #### Starts with 1000 healthy (Sx) and total (Ax) people. 
   
@@ -198,21 +200,24 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
   ##### variables without exceptions (else includes exception for year one of the simulation)  
   for (i in 2:(number_of_ages-1)){ ##!! this can go to "number_of_ages" now (?)
     if(qx[i-1] > 0){
-      
+      # i=3
       ### The following five variables are created to simplify Sx, Cx and Dx calculations, and do not form part of the disease life tables.
       vxmwx <- vx[i-1] - wx[i-1]
       SxpCx <- Sx[i-1]+Cx[i-1]
       dqx <- 2 * qx[i-1]
       qxmlx <- qx[i-1] - lx[i-1]
       qxplx <- qx[i-1] + lx[i-1]
+ 
       
       ### Healthy (Sx), Diseases (Cx) and Death from the Disease (Dx)
       
       ### BELEN: add remission here, check above calculations
       
-      Sx[i] <- Sx[i-1] * (2*vxmwx * cfds[i-1]  + (vx[i-1] * qxmlx + wx[i-1] * qxplx)) / dqx
-      Cx[i] <- -1*(vxmwx*(2*(cfds[i-1]  * SxpCx - lx[i-1] * Sx[i-1]) - Cx[i-1] * lx[i-1]) - Cx[i-1] * qx[i-1] * (vx[i-1]+wx[i-1])) / dqx
-      Dx[i] <- (vxmwx * (2 * cfds[i-1] * Cx[i-1] - lx[i-1]*SxpCx)- qx[i-1] * SxpCx*(vx[i-1]+wx[i-1]) + dqx * (SxpCx+Dx[i-1]) ) / dqx
+      
+      Sx[i] <- (2*vxmwx * (Sx[i-1]*cfds[i] + Cx[i-1]*rx[i]) + Sx[i-1]* (vx[i-1] * qxmlx + wx[i-1] * qxplx)) / dqx
+      # Sx[i] <- Sx[i-1] * (2*vxmwx * cfds[i-1]  + (vx[i-1] * qxmlx + wx[i-1] * qxplx)) / dqx
+      Cx[i] <- -1*(vxmwx*(2*(cfds[i]  * SxpCx - lx[i-1] * Sx[i-1]) - Cx[i-1] * lx[i-1]) - Cx[i-1] * qx[i-1] * (vx[i-1]+wx[i-1])) / dqx
+      Dx[i] <- (vxmwx * (2 * cf[i] * Cx[i-1] - lx[i-1]*SxpCx)- qx[i-1] * SxpCx*(vx[i-1]+wx[i-1]) + dqx * (SxpCx+Dx[i-1]) ) / dqx
     }else{
       Sx[i] <- Sx[i - 1] 
       Cx[i] <- Cx[i - 1]
@@ -230,6 +235,12 @@ RunDisease <- function(in_idata,  in_sex, in_mid_age, in_disease, incidence_tren
   mx[first_indices] <- (Dx[last_indices] - Dx[first_indices])/PYx[first_indices]
   mx[mx<0] <- 0
   px[first_indices] <- (Cx[last_indices] + Cx[first_indices])/2/PYx[first_indices]
+  
+  ## BZ: added the below for checking puposes
+  dlt_df$Sx <- Sx
+  dlt_df$Cx <- Cx
+  dlt_df$Dx <- Dx
+  
   
   dlt_df$Tx <- Tx
   dlt_df$mx <- mx
