@@ -35,9 +35,9 @@ GetDiseaseTable <- function(disease_names_execute, gbd_data) {
                                   sname == "lwri"  ~  1,
                                   sname == "npls" ~ 2,
                                   sname == "crdd" ~ 2,
-                                  # ## Code for major depressive disorder (no deaths) and hypertensive heart disease (no incidence)
-                                  sname == "hyhd"  ~  3,
-                                  sname == "dprd"  ~  3,
+                                  # # ## Code for major depressive disorder (no deaths) and hypertensive heart disease (no incidence)
+                                  # sname == "hyhd"  ~  3,
+                                  # sname == "dprd"  ~  3,
                                   TRUE  ~  is_not_dis)) %>%
     mutate(
       males = ifelse(disease %in% c("uterine cancer", "breast cancer"), 0, 1),

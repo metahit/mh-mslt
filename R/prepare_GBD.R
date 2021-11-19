@@ -256,6 +256,11 @@ calculateMSLT <- function(gbd_wider, location, disbayes) {
   mslt_df_wider <- mslt_df_wider %>% mutate_if(is.numeric, ~replace(., is.na(.), 0))
   mslt_df_wider[mslt_df_wider == Inf] <- 0
   
+  ### Add depression (case fatality and remission are 0)
+  
+  mslt_df_wider$remission_dprd <- 0
+  mslt_df_wider$case_fatality_dprd <- 0
+  
   ### Rename variables
   
   mslt_df_wider <- mslt_df_wider %>% 

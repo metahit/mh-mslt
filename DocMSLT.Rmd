@@ -205,9 +205,6 @@ DISEASE_SHORT_NAMES <- GetDiseaseTable(gbd_data= paste0(relative_path_mslt, "/in
 disease_names_execute=paste0(relative_path_execute, "/inputs/dose_response/disease_outcomes_lookup_new.csv")) %>% ### diseases not to include
    dplyr::filter(!acronym %in% c("bladder-cancer", "alzheimer's-disease", "esophageal-cancer", "kidney-cancer", "prostate-cancer", "rectum-cancer", "myeloid-leukemia", "Road injuries", "Other road injuries"))
 
-
-head(DISEASE_SHORT_NAMES)
-
 saveRDS(DISEASE_SHORT_NAMES, "~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds")
 ```    
 
@@ -439,7 +436,7 @@ source("~/mh-mslt/R/functions_MSLT.R")
   
 ```
 
-### Run scenarios diseases processes (CHECK ISSUE HERE: 10-11-22)
+### Run scenarios diseases processes 
 Re run diseases processes with modified incidence rates by the pif.
 New incidence rates = bl incidence rates * (1-disease_pif).
 ```{r,eval=FALSE}
@@ -830,6 +827,8 @@ kableExtra::kable_styling(Diseases, latex_options = "striped", position = "float
 ```
 
 ## Graphs
+
+Examples, manual entry of diseases to be changed. 
 
 
 ```{r, echo=FALSE}
