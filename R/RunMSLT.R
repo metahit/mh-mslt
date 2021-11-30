@@ -3,13 +3,25 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   
   
   ### Functions requiered 
-  source(paste0(relative_path_mslt, "/R/functions_MSLT.R"))
+  #source(paste0(relative_path_mslt, "/R/functions_MSLT.R"))
   # mslt_df=read_csv("~/mh-execute/inputs/mslt/bristol_mslt.csv")
   # disease_names=readRDS("~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds")
   # i_sex=c("male", "female")
   # i_age_cohort=seq(from=17, to=97, by =5)
   # pif=read_csv("~/mh-mslt/input/pif_place_holder.csv") ## PLACE HOLDER (from Aus)
-
+  
+  
+  ## AA - 30th November 2021
+  ## Added example datasets for mh-execute
+  ## Liverpool region for cyc_100p_inc_scen
+  ## May require loading tidyverse - library(tidyverse)
+  # mslt_df = read_csv("../mh-execute/inputs/mslt/bristol_mslt.csv")
+  # disease_names = read_csv("../mh-execute/inputs/gbd/new_disease_names.csv")
+  # i_sex = c("male", "female")
+  # i_age_cohort = seq(from=17, to=97, by =5)
+  # pif = readRDS("../mh-execute/outputs/scenarios/cyc_100p_inc_scen/files/liverpool_results.Rds")[[1]]$pif_table
+  # names(pif)[5:ncol(pif)] <- stringr::str_replace_all(names(pif)[5:ncol(pif)], paste0('cyc_100p_inc_scen_|pa_ap_|ap_|pa_'), replacement = "")
+  
   # 
   # ### Relative risks diabetes
   DIABETES_IHD_RR_F <- 2.82 ## c(2.82, CI (2.35, 3.38) get SD from CI
