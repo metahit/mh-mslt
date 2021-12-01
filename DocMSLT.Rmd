@@ -202,8 +202,9 @@ The output is saved to be used when running the PMSLT in mh-execute.
 source("~/mh-mslt/R/get_disease_names.R")
 
 DISEASE_SHORT_NAMES <- GetDiseaseTable(gbd_data= paste0(relative_path_mslt, "/input/gbd/GBD2019/METAHIT/"),
-disease_names_execute=paste0(relative_path_execute, "/inputs/dose_response/disease_outcomes_lookup_new.csv")) %>% ### diseases not to include
+disease_names_execute=paste0(relative_path_execute, "/inputs/gbd/new_disease_names.csv")) %>% ### diseases not to include
    dplyr::filter(!acronym %in% c("bladder-cancer", "alzheimer's-disease", "esophageal-cancer", "kidney-cancer", "prostate-cancer", "rectum-cancer", "myeloid-leukemia", "Road injuries", "Other road injuries"))
+
 
 saveRDS(DISEASE_SHORT_NAMES, "~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds")
 ```    
