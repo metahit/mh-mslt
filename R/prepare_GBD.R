@@ -2,10 +2,9 @@
 
 calculateGBDwider <- function(gbd) {
   
-  #gbd <- gbd_data
+  # gbd <- gbd_data
 
   ## Clean names columns
-  gbd <- gbd_data
   # remove '_name' from column names
   names(gbd) <- gsub(pattern = "_name", replacement = "", x = names(gbd))
   gbd <- gbd %>%
