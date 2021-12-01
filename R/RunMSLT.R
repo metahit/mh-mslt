@@ -3,7 +3,7 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   
   
   ### Functions requiered 
-  #source(paste0(relative_path_mslt, "/R/functions_MSLT.R"))
+  # source(paste0(relative_path_mslt, "/R/functions_MSLT.R"))
   # mslt_df=read_csv("~/mh-execute/inputs/mslt/bristol_mslt.csv")
   # disease_names=readRDS("~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds")
   # i_sex=c("male", "female")
@@ -15,13 +15,13 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   ## Added example datasets for mh-execute
   ## Liverpool region for cyc_100p_inc_scen
   ## May require loading tidyverse - library(tidyverse)
-  # mslt_df = read_csv("../mh-execute/inputs/mslt/bristol_mslt.csv")
-  # disease_names = read_csv("../mh-execute/inputs/gbd/new_disease_names.csv")
-  # i_sex = c("male", "female")
-  # i_age_cohort = seq(from=17, to=97, by =5)
-  # pif = readRDS("../mh-execute/outputs/scenarios/cyc_100p_inc_scen/files/liverpool_results.Rds")[[1]]$pif_table
-  # names(pif)[5:ncol(pif)] <- stringr::str_replace_all(names(pif)[5:ncol(pif)], paste0('cyc_100p_inc_scen_|pa_ap_|ap_|pa_'), replacement = "")
-  
+  mslt_df = read_csv("../mh-execute/inputs/mslt/bristol_mslt.csv")
+  disease_names = read_csv("../mh-execute/inputs/gbd/new_disease_names.csv")
+  i_sex = c("male", "female")
+  i_age_cohort = seq(from=17, to=97, by =5)
+  pif = readRDS("../mh-execute/outputs/scenarios/cyc_100p_inc_scen/files/liverpool_results.Rds")[[1]]$pif_table
+  names(pif)[5:ncol(pif)] <- stringr::str_replace_all(names(pif)[5:ncol(pif)], paste0('cyc_100p_inc_scen_|pa_ap_|ap_|pa_'), replacement = "")
+
   # 
   # ### Relative risks diabetes
   DIABETES_IHD_RR_F <- 2.82 ## c(2.82, CI (2.35, 3.38) get SD from CI
@@ -29,8 +29,12 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   DIABETES_IHD_RR_M <- 2.16 ## c(2.16, CI (1.82, 2.56) get SD from CI
   DIABETES_STROKE_RR_M <- 1.83 ## c(1.83) CI (1.60, 2.08) get SD from CI
   
-  DISEASE_SHORT_NAMES <- disease_names
+  ## BZD (02/12/2021): addded names adjustments to match mslt_df
+  DISEASE_SHORT_NAMES <- disease_names %>%
+  filter(!disease=="chronic myeloid leukemia") ## remove, no disbayes outcomes (check why, too small disease?) ## BZD (02/12/21): changed to match data input MSLT
   
+  DISEASE_SHORT_NAMES$sname[which(DISEASE_SHORT_NAMES$sname == "card")] <- "cram" ## BZD (02/12/21): changed to match data input MSLT
+  DISEASE_SHORT_NAMES$sname[which(DISEASE_SHORT_NAMES$sname == "rhd")] <- "rhhd" ## BZD (02/12/21): changed to match data input MSLT
   
   ### USE Australian pifs for diseases as not ready for city regions
   ### Get pif, generated in mh-execute and saved in input mh-mslt
