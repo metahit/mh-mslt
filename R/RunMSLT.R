@@ -16,32 +16,30 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
   ## Liverpool region for cyc_100p_inc_scen
   ## May require loading tidyverse - library(tidyverse)
   mslt_df = read_csv("../mh-execute/inputs/mslt/bristol_mslt.csv")
-  disease_names = read_csv("../mh-execute/inputs/gbd/new_disease_names.csv")
+  disease_names = read_csv("./output/parameters/DISEASE_SHORT_NAMES.csv")
   i_sex = c("male", "female")
   i_age_cohort = seq(from=17, to=97, by =5)
   pif = readRDS("../mh-execute/outputs/scenarios/cyc_100p_inc_scen/files/liverpool_results.Rds")[[1]]$pif_table
   names(pif)[5:ncol(pif)] <- stringr::str_replace_all(names(pif)[5:ncol(pif)], paste0('cyc_100p_inc_scen_|pa_ap_|ap_|pa_'), replacement = "")
 
   # 
+  pif <- pif %>%
+    dplyr::mutate(`pif_all-cause-cvd`=pif_CVD,
+                  pif_cyclist_deaths=cyclist_Fatal)
+  
   # ### Relative risks diabetes
   DIABETES_IHD_RR_F <- 2.82 ## c(2.82, CI (2.35, 3.38) get SD from CI
   DIABETES_STROKE_RR_F <- 2.28 ## c(2.28) CI (1.93, 2.69) get SD from CI
   DIABETES_IHD_RR_M <- 2.16 ## c(2.16, CI (1.82, 2.56) get SD from CI
   DIABETES_STROKE_RR_M <- 1.83 ## c(1.83) CI (1.60, 2.08) get SD from CI
   
-  ## BZD (02/12/2021): addded names adjustments to match mslt_df
-  DISEASE_SHORT_NAMES <- disease_names %>%
-  filter(!disease=="chronic myeloid leukemia") ## remove, no disbayes outcomes (check why, too small disease?) ## BZD (02/12/21): changed to match data input MSLT
-  
-  DISEASE_SHORT_NAMES$sname[which(DISEASE_SHORT_NAMES$sname == "card")] <- "cram" ## BZD (02/12/21): changed to match data input MSLT
-  DISEASE_SHORT_NAMES$sname[which(DISEASE_SHORT_NAMES$sname == "rhd")] <- "rhhd" ## BZD (02/12/21): changed to match data input MSLT
-  
+
   ### USE Australian pifs for diseases as not ready for city regions
   ### Get pif, generated in mh-execute and saved in input mh-mslt
   pif_expanded <- pif %>%
-    mutate(pif_cyclist_deaths=1.1,
+    mutate(pif_cyclist_deaths=cyclist_Fatal,
            pif_pedestrian_deaths=1.1,
-           pif_cyclist_ylds=1.1,
+           pif_cyclist_ylds=cyclist_Fatal,
            pif_pedestrian_ylds=1.1,
            pif_motor_deaths=1.1,
            pif_motorcyclist_deaths=1.1,
@@ -148,10 +146,13 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
     "female",  "dmt2"     ,  "strk"  ,  DIABETES_STROKE_RR_F
   )
   
+
+  
+  
   disease_life_table_list_sc <- list()
   
   for (i in 1:nrow(age_sex_disease_cohorts)){
-    # i=39
+    i=5
     td1_age_sex <- mslt_df %>% ### new mslt dataframe with modified incidence rates
       filter(age >= age_sex_disease_cohorts$age[i] & sex == age_sex_disease_cohorts$sex[i])
     
@@ -238,7 +239,7 @@ RunMSLT <- function(mslt_df, i_sex, i_age_cohort, disease_names, pif) {
 non_disease_life_table_list_sc <- list()
 
 for (i in 1:nrow(age_sex_non_disease_cohorts)){
-  # i=6
+  # i=1
   td1_age_sex <- mslt_df %>% ### new mslt dataframe with modified injuries and lri deaths and ylds rates
     filter(age >= age_sex_non_disease_cohorts$age[i] & sex == age_sex_non_disease_cohorts$sex[i])
   

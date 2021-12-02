@@ -206,7 +206,7 @@ disease_names_execute=paste0(relative_path_execute, "/inputs/gbd/new_disease_nam
    dplyr::filter(!acronym %in% c("bladder-cancer", "alzheimer's-disease", "esophageal-cancer", "kidney-cancer", "prostate-cancer", "rectum-cancer", "myeloid-leukemia", "Road injuries", "Other road injuries"))
 
 
-saveRDS(DISEASE_SHORT_NAMES, "~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.rds")
+write.csv(DISEASE_SHORT_NAMES, "~/mh-mslt/output/parameters/DISEASE_SHORT_NAMES.csv")
 ```    
 
 

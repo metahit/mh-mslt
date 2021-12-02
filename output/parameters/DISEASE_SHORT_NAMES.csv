@@ -1,0 +1,30 @@
+"","GBD_name","acronym","disease","sname","is_not_dis","males","females"
+"1","All causes","all-cause-mortality","all causes","allc",2,1,1
+"2","Cardiovascular diseases","all-cause-cvd","cardiovascular diseases","crdd",2,1,1
+"3","Ischemic heart disease","all-cause-cvd","ischemic heart disease","ishd",0,1,1
+"4","Neoplasms","all-cause-cancer","neoplasms","npls",2,1,1
+"5","Tracheal, bronchus, and lung cancer","lung-cancer","tracheal, bronchus, and lung cancer","tbalc",0,1,1
+"6","Stroke","all-cause-cvd","stroke","strk",0,1,1
+"7","Diabetes mellitus type 2","diabetes","diabetes mellitus type 2","dmt2",0,1,1
+"8","Lower respiratory infections","lri","lower respiratory infections","lwri",1,1,1
+"9","Breast cancer","breast-cancer","breast cancer","brsc",0,0,1
+"10","Colon and rectum cancer","colon-cancer","colon and rectum cancer","carc",0,1,1
+"11","Uterine cancer","endometrial-cancer","uterine cancer","utrc",0,0,1
+"12","Depressive disorders","depression","depressive disorders","dprd",0,1,1
+"13","Multiple myeloma","myeloma","multiple myeloma","mltm",0,1,1
+"14","Stomach cancer","gastric-cardia-cancer","stomach cancer","stmc",0,1,1
+"15","Liver cancer","liver-cancer","liver cancer","lvrc",0,1,1
+"16","Alzheimers disease and other dementias","all-cause-dementia","alzheimers disease and other dementias","adaod",0,1,1
+"17","Parkinson's disease","parkinson's-disease","parkinson's disease","pr'd",0,1,1
+"18","Chronic obstructive pulmonary disease","copd","chronic obstructive pulmonary disease","copd",0,1,1
+"19","Road injuries","road","road injuries","rdin",1,1,1
+"20","Pedestrian road injuries","pedestrian","pedestrian road injuries","pdri",1,1,1
+"21","Cyclist road injuries       ","cyclist","cyclist road injuries       ","cyri",1,1,1
+"22","Motorcyclist road injuries","motorcyclist","motorcyclist road injuries","mtri",1,1,1
+"23","Motor vehicle road injuries","motor","motor vehicle road injuries","mvri",1,1,1
+"24","Other road injuries","other","other road injuries","otri",1,1,1
+"25","head and neck cancer","head-and-neck-cancer","head and neck cancer","hanc",0,1,1
+"26","cardiomyopathy and myocarditis","all-cause-cvd","cardiomyopathy and myocarditis","cram",0,1,1
+"27","rheumatic heart disease","all-cause-cvd","rheumatic heart disease","rhhd",0,1,1
+"28","non-rheumatic valvular heart disease","all-cause-cvd","non-rheumatic valvular heart disease","nvhd",0,1,1
+"29","head and neck cancer","head-and-neck-cancer","head and neck cancer","hanc",0,1,1
